@@ -33,6 +33,7 @@ body {
   color: var(--asphalt);
   font-family: var(--body);
   font-size: 15px;
+  word-break: keep-all;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 24px;
@@ -95,6 +96,7 @@ body {
   padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px));
   display: flex; flex-direction: column; gap: 14px;
   box-shadow: 0 -8px 22px rgba(42,49,64,.10);
+  max-height: 72%; overflow-y: auto;
 }
 .grip { width: 38px; height: 4px; border-radius: 4px; background: var(--line); align-self: center; }
 .row-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -153,18 +155,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .progress span { color: var(--muted); font-size: 12px; }
 .progress strong { font-family: var(--display); font-size: 24px; font-weight: 400; }
 /* 도착 공유 카드 */
-.done { background: #1E2430; color: var(--zebra); align-items: center; justify-content: center; gap: 18px; padding: 48px 26px 26px; }
+.done { background: #1E2430; color: var(--zebra); align-items: center; justify-content: safe center; gap: clamp(8px, 2vh, 18px); padding: 48px 26px 20px; overflow-y: auto; }
 .card {
   width: 100%; border-radius: 26px; padding: 26px 22px 22px; position: relative; overflow: hidden;
   background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 26px, transparent 26px 52px), #262D3B;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none;
 }
 .card .logo { position: absolute; top: 16px; left: 20px; font-family: var(--display); font-size: 18px; color: var(--lane); }
 .card .date { position: absolute; top: 19px; right: 20px; font-size: 12px; color: #A7B0C0; }
-.card svg { width: 220px; height: 220px; margin-top: 22px; }
+.card svg { width: clamp(110px, 24vh, 220px); height: clamp(110px, 24vh, 220px); margin-top: 22px; }
 .card .kind { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
 .stat-big { display: flex; flex-direction: column; align-items: center; }
-.stat-big strong { font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-big strong { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 4.2vh, 34px); line-height: 1.15; font-variant-numeric: tabular-nums; }
 .stat-big span { font-size: 12px; color: #A7B0C0; }
 .compare { margin: 12px 0 0; font-size: 14px; color: var(--lane); font-weight: 600; text-align: center; }
 .done .hint { font-size: 12.5px; color: #A7B0C0; margin: 0; text-align: center; }
