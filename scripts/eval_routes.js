@@ -21,7 +21,11 @@ const N = +process.argv[2] || 300;
     const realSIG = { ...SIG };
     const allCits = [...SIGMETA.entries()].filter(([, m]) => m.cits).map(([id]) => id);
     const setTiming = on => { for (const k of Object.keys(SIG)) delete SIG[k]; Object.assign(SIG, realSIG); if (on) for (const id of allCits) SIG[id] = exampleSig(id); };
-    const better = (sj, ss) => sj.stops < ss.stops || sj.wait < ss.wait - 5 || sj.unknownN + sj.knownN < ss.unknownN + ss.knownN;
+    const better = (sj, ss) => {
+      const nSig = s => s.unknownN + s.knownN, extra = sj.total - ss.total;
+      const st = ss.stops - sj.stops, sg = nSig(ss) - nSig(sj), w = ss.wait - sj.wait;
+      return st >= 0 && w >= -5 && sg >= 0 && (st > 0 || w > 5 || sg > 0) && extra <= SLOW_OK;
+    };
     const rows = [];
     for (const [a, c, d] of pairs) {
       state.from = { name: a.name, ll: a.ll }; state.to = { name: c.name, ll: c.ll };
@@ -29,7 +33,7 @@ const N = +process.argv[2] || 300;
       const sa = snap(a.ll), sc = snap(c.ll);
       if (sa.d > 300 || sc.d > 300) { rows.push({ skip: 'snap' }); continue; }
       state.src = sa.id; state.dst = sc.id;
-      const short = routeFor('short', 0);
+      const short = routeFor('short', 0); // 최단 시간(기다림 포함)
       if (!short) { rows.push({ skip: 'noroute' }); continue; }
       const r = { a: a.name, c: c.name, straight: Math.round(d), shortM: Math.round(short.length) };
       for (const mode of ['A', 'B']) {

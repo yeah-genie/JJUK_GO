@@ -466,6 +466,7 @@ const $ = id => document.getElementById(id);
 const DATA = new URL("seoul/", document.baseURI).href;
 const SPEED = 1.2, BASE = 8 * 3600 + 40 * 60;      // 걷는 속도 m/s, 기준 출발 08:40
 const UNKNOWN_SIG_COST = 45;                        // 패턴을 모르는 신호를 지날 때 쭉고가 치는 비용(초): 평균 대기 근사
+const SLOW_OK = 30;                                 // 쭉고가 최단 시간보다 늦게 도착해도 되는 한계(초)
 const STOP_COST = 15;                               // 멈춤 한 번에 더하는 비용(초): 같은 대기라도 덜 멈추는 길을 고른다
 const ME = { name: "내 위치", sub: "예시: 역삼역", ll: [127.0369311, 37.500825], me: true };
 const DEMO_TO = { name: "선릉역 북쪽", sub: "테헤란로 예시", ll: [127.048718, 37.505321] };
@@ -562,10 +563,11 @@ class Heap {
   pop() { const a = this.a, top = a[0], last = a.pop(); if (a.length) { a[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < a.length && a[l][0] < a[m][0]) m = l; if (r < a.length && a[r][0] < a[m][0]) m = r; if (m === i) break; [a[m], a[i]] = [a[i], a[m]]; i = m; } } return top; }
   get size() { return this.a.length; }
 }
-// mode "short": 거리만. mode "jjuk": 걷는 시간 + 신호 비용(패턴 있으면 도착 시각의 예상 대기 + 멈춤 비용, 없으면 평균 비용).
+// 둘 다 "걷는 시간 + 신호 기다림"을 따진다(패턴 있는 신호는 도착 시각의 예상 대기, 모르는 신호는 평균 대기 45초).
+// mode "short"(최단 시간): 그 합이 가장 작은 길. mode "jjuk"(쭉고): 거기에 멈출 때마다 비용을 더해 덜 멈추는 길.
 function search(src, dst, mode, dep) {
   // 출발점이 신호 교차로 안이면 그 신호는 세지 않는다(어느 쪽으로 건널지 아직 정하지 않은 자리라서). buildRoute도 같다
-  const D = G.node.get(dst), unit = mode === "short" ? 1 : 1 / SPEED;
+  const D = G.node.get(dst), unit = 1 / SPEED;
   const hEst = n => Math.hypot((n.x - D.x) * KXQ, (n.y - D.y) * KYQ) * unit * 0.999;
   const cost = new Map([[src, 0]]), time = new Map([[src, 0]]), prev = new Map(), done = new Set(), h = new Heap();
   h.push(hEst(G.node.get(src)), src);
@@ -578,13 +580,14 @@ function search(src, dst, mode, dep) {
     for (const e of G.adj.get(u) || []) {
       const v = e.a === u ? e.b : e.a, nv = G.node.get(v);
       if (!nv || done.has(v)) continue;
-      let tv = tu + e.len / SPEED, cv = c + (mode === "short" ? e.len : e.len / SPEED);
-      if (mode === "jjuk") {
-        // 횡단보도 신호는 건너기 전에 기다린다. 골목 교차로 신호(노드)는 예전처럼 들어설 때 센다
+      let tv = tu + e.len / SPEED, cv = c + e.len / SPEED;
+      {
+        // 횡단보도 신호는 건너기 전에 기다린다. 골목 교차로 신호(노드)는 들어설 때 센다
         const s = e.sig || (nv.s && nv.s !== nu.s ? nv.s : null), share = e.sig && e.half ? 0.5 : 1;
+        const stop = mode === "jjuk" ? STOP_COST * share : 0;
         if (s) {
-          if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv)); tv += w; cv += w + (w > 2 ? STOP_COST * share : 0); }
-          else cv += UNKNOWN_SIG_COST * share;
+          if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv)); tv += w; cv += w + (w > 2 ? stop : 0); }
+          else { tv += UNKNOWN_SIG_COST * share; cv += UNKNOWN_SIG_COST * share + stop * 0.8; }
         }
       }
       if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); time.set(v, tv); prev.set(v, [u, e]); h.push(cv + hEst(nv), v); }
@@ -926,7 +929,7 @@ async function computeTrip() {
   if (a.d > 300 || b.d > 300) { state.error = { title: "근처에 걸을 수 있는 길 정보가 없어요", text: "서울 안의 다른 곳을 골라 주세요." }; return; }
   state.src = a.id; state.dst = b.id;
   const t0 = performance.now();
-  const short = routeFor("short", 0), jjuk = routeFor("jjuk", state.dep);
+  const short = routeFor("short", state.dep), jjuk = routeFor("jjuk", state.dep);
   state.lastRouteMs = performance.now() - t0;
   if (!short || !jjuk) { state.error = { title: "길을 못 찾았어요", text: "두 곳이 걸어서 이어지지 않아요(강·고속도로 등). 다른 곳을 골라 주세요." }; return; }
   state.routes = { short, jjuk, dep: state.dep };
@@ -934,13 +937,17 @@ async function computeTrip() {
 }
 function refreshSims() {
   if (!state.routes) { state.sims = null; return; }
-  // 출발 시각이 바뀌면 신호 위상이 달라지므로 쭉고 길을 다시 찾는다
-  if (state.routes.dep !== state.dep) { state.routes.jjuk = routeFor("jjuk", state.dep); state.routes.dep = state.dep; }
+  // 출발 시각이 바뀌면 신호 위상이 달라지므로 두 길을 다시 찾는다
+  if (state.routes.dep !== state.dep) { state.routes.short = routeFor("short", state.dep); state.routes.jjuk = routeFor("jjuk", state.dep); state.routes.dep = state.dep; }
   const R = state.routes;
   let sj = simulate(R.jjuk, state.dep), ss = simulate(R.short, state.dep);
-  // 쭉고 길이 보이는 숫자로 나아진 게 없으면(덜 멈추지도, 덜 기다리지도, 신호를 덜 지나지도 않으면) 최단을 그대로 쓴다
-  const better = sj.stops < ss.stops || sj.wait < ss.wait - 5 || sj.unknownN + sj.knownN < ss.unknownN + ss.knownN;
-  if (!better && R.jjuk.key !== R.short.key) { R.jjuk = R.short; sj = ss; }
+  // 쭉고 길은 "최단 시간"보다 나쁘면 안 된다: 멈춤·기다림·신호 수 중 어느 것도 늘지 않고 하나는 줄어야 하며,
+  // 도착이 늦어지더라도 SLOW_OK초 이내일 때만 보여준다. 아니면 최단 시간 길이 곧 쭉고 길이다.
+  const nSig = s => s.unknownN + s.knownN, extra = sj.total - ss.total;
+  const savedStops = ss.stops - sj.stops, savedSig = nSig(ss) - nSig(sj), savedWait = ss.wait - sj.wait;
+  const notWorse = savedStops >= 0 && savedWait >= -5 && savedSig >= 0;
+  const improves = savedStops > 0 || savedWait > 5 || savedSig > 0;
+  if (!(notWorse && improves && extra <= SLOW_OK) && R.jjuk.key !== R.short.key) { R.jjuk = R.short; sj = ss; }
   state.same = R.jjuk.key === R.short.key;
   state.sims = { jjuk: sj, short: ss };
   if (state.same) state.focus = "jjuk";
@@ -996,13 +1003,13 @@ async function renderResult() {
     const sim = S[k], c = $("card-" + k);
     c.hidden = k === "short" && state.same;
     c.setAttribute("aria-pressed", String(state.focus === k));
-    const name = k === "jjuk" ? (state.same ? "쭉고 = 최단" : "쭉고") : "최단";
+    const name = k === "jjuk" ? (state.same ? "쭉고 = 최단 시간" : "쭉고") : "최단 시간";
     c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span><span class="stat">${statLine(sim)}</span>
       <span class="strip" aria-hidden="true">${stripHTML(sim, scale, k === "jjuk" ? "walk-j" : "walk-s")}</span>`;
   }
   const kn = S.jjuk.knownN + S.short.knownN, dWalk = S.jjuk.walk - S.short.walk;
   let t;
-  if (state.same) t = S.jjuk.unknownN + S.jjuk.knownN === 0 ? "신호 없이 쭉 갈 수 있어요." : "최단 길이 신호도 가장 적어요.";
+  if (state.same) t = S.jjuk.unknownN + S.jjuk.knownN === 0 ? "신호 없이 쭉 갈 수 있어요." : "기다림까지 따진 최단 시간 길이 신호도 가장 적어요.";
   else if (kn) {
     const dWait = S.short.wait - S.jjuk.wait, dStops = S.short.stops - S.jjuk.stops, dUnk = S.short.unknownN - S.jjuk.unknownN;
     if (dWait > 5) t = `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}${phrase(dWait)} 덜 기다려요.`;
@@ -1014,7 +1021,7 @@ async function renderResult() {
     t = dSig > 0 ? `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}신호를 ${dSig}곳 덜 지나요.` : "두 길이 지나는 신호 수가 같아요.";
   }
   $("tradeoff").textContent = t;
-  $("start-walk").textContent = state.focus === "jjuk" ? "쭉고로 걷기 시작" : "최단으로 걷기 시작";
+  $("start-walk").textContent = state.focus === "jjuk" ? "쭉고로 걷기 시작" : "최단 시간 길로 걷기 시작";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
@@ -1030,7 +1037,7 @@ async function renderResult() {
 function renderDetail() {
   if (!state.sims) return go("result");
   const sim = state.sims[state.focus];
-  $("detail-title").textContent = `${state.focus === "jjuk" ? "쭉고" : "최단"} 길의 신호 ${sim.xings.length}곳`;
+  $("detail-title").textContent = `${state.focus === "jjuk" ? "쭉고" : "최단 시간"} 길의 신호 ${sim.xings.length}곳`;
   $("detail-list").innerHTML = (sim.xings.length ? sim.xings.map(x => {
     const cls = !x.known ? "unk" : x.wait > 2 ? "stop" : "go";
     const msg = !x.known ? "신호 있음 · 패턴을 아직 몰라요" : x.wait > 2 ? `도착하면 빨간불, 약 ${x.wait}초 기다려요` : "도착하면 초록불, 그대로 건너요";
@@ -1087,9 +1094,9 @@ function renderDone() {
   $("c-wait-l").textContent = kn ? "신호 기다림" : "걸은 거리";
   $("c-time").textContent = mmss(sim.total);
   $("card-kind").textContent = `걷기 · ${tripLabel(state.from)} → ${state.to.name}`;
-  if (state.same) $("c-compare").textContent = "오늘은 최단 길이 곧 쭉고 길이었어요";
-  else if (kn) $("c-compare").textContent = other.stops <= sim.stops && other.wait <= sim.wait + 5 ? "오늘은 다른 길로 갔어도 비슷했을 거예요" : `${o === "short" ? "최단" : "쭉고"}으로 갔다면 ${other.stops}번 멈추고 ${mmss(other.wait)} 기다렸을 거예요`;
-  else $("c-compare").textContent = other.unknownN > sim.unknownN ? `${o === "short" ? "최단" : "쭉고"} 길보다 신호를 ${other.unknownN - sim.unknownN}곳 덜 지났어요` : "신호 수는 다른 길과 같았어요";
+  if (state.same) $("c-compare").textContent = "오늘은 최단 시간 길이 곧 쭉고 길이었어요";
+  else if (kn) $("c-compare").textContent = other.stops <= sim.stops && other.wait <= sim.wait + 5 ? "오늘은 다른 길로 갔어도 비슷했을 거예요" : `${o === "short" ? "최단 시간 길" : "쭉고 길"}으로 갔다면 ${other.stops}번 멈추고 ${mmss(other.wait)} 기다렸을 거예요`;
+  else $("c-compare").textContent = other.unknownN > sim.unknownN ? `${o === "short" ? "최단 시간 길" : "쭉고 길"} 길보다 신호를 ${other.unknownN - sim.unknownN}곳 덜 지났어요` : "신호 수는 다른 길과 같았어요";
   $("card-date").textContent = `10월 28일 ${clock(BASE + state.dep)}`;
   $("done-hint").textContent = kn && !realCount() ? "스크린샷을 찍어 공유해 보세요 · 신호 대기는 예시 값이에요" : "스크린샷을 찍어 공유해 보세요";
   const kx = 111320 * Math.cos(37.55 * Math.PI / 180), pts = route.coords.map(c => [c[0] * kx, -c[1] * 110540]);
