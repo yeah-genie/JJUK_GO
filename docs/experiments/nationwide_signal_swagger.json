@@ -1,0 +1,1485 @@
+{
+ "swagger": "2.0",
+ "info": {
+  "description": "전국 자치단체에서 운행중인 교차로 신호등 점등 상태 및 잔여시간 정보의 실시간 정보의 제공을 위해 지자체 코드, 지차체 명, 교차로아이디, 교차로명, 교차로 위도 및 경도, 차로 폭, 제한속도 유형명, 제한속도, 교차로 영문명 등 교차로에 대한 기본적인 정보인 교차로 정보와 지자체 코드, 지차체 명 및 교차로 신호제어기 기준 8개방향(북쪽, 동쪽, 남쪽, 서쪽, 북동쪽, 남동쪽,남서쪽,북서쪽)별 신호등 방향별 버스신호 잔여시간, 자전거신호 잔여시간, 좌회전신호 잔여시간, 보행신호 잔여시간, 직진신호 잔여시간, 유턴신호 잔여시간 및 버스신호 점등상태명, 자전거신호 점등상태명, 좌회전신호 점등상태명, 보행신호 점등상태명, 직진신호 점등상태명, 유턴신호 점등상태명 등 실시간 신호정보인 신호제어기 신호잔여 시간 정보를 제공 합니다.\n\n※ 본 개방데이터는 데이터 처리 과정 등으로 인해 실제 신호 시간과 차이가 발생할 수 있으며, 참고용으로 사용하는 것을 권고 드립니다. \n     본 개방데이터를 기반으로 발생한 어떠한 손해, 사고 또는 법적 책임에 대하여 제공기관은 책임을 지지 않습니다.",
+  "version": "1.0.0",
+  "title": "행정안전부 한국지역정보개발원_(전국 통합데이터) 교통안전 신호등 실시간 정보"
+ },
+ "host": "apis.data.go.kr/B551982/rti",
+ "basePath": "",
+ "schemes": [
+  "https",
+  "http"
+ ],
+ "paths": {
+  "/crsrd_map_info": {
+   "get": {
+    "responses": {
+     "200": {
+      "description": "성공",
+      "schema": {
+       "type": "object",
+       "properties": {
+        "header": {
+         "type": "object",
+         "description": "header",
+         "properties": {
+          "resultCode": {
+           "type": "string",
+           "description": "결과코드(K0)",
+           "properties": {}
+          },
+          "resultMsg": {
+           "type": "string",
+           "description": "결과메세지(NORMAL_SERVICE)",
+           "properties": {}
+          }
+         }
+        },
+        "body": {
+         "type": "object",
+         "description": "body",
+         "properties": {
+          "totalCount": {
+           "type": "string",
+           "description": "전체 결과 수(5000)",
+           "properties": {}
+          },
+          "pageNo": {
+           "type": "string",
+           "description": "페이지번호(1)",
+           "properties": {}
+          },
+          "numOfRows": {
+           "type": "string",
+           "description": "한 페이지 결과 수(5)",
+           "properties": {}
+          },
+          "items": {
+           "type": "object",
+           "description": "items",
+           "properties": {
+            "item": {
+             "type": "object",
+             "description": "교차로 맵 정보",
+             "properties": {
+              "stdgCd": {
+               "type": "string",
+               "description": "지자체코드(서울특별시: 1100000000)",
+               "properties": {}
+              },
+              "lclgvNm": {
+               "type": "string",
+               "description": "지방자치단체명(서울특별시)",
+               "properties": {}
+              },
+              "crsrdId": {
+               "type": "string",
+               "description": "교차로아이디(148)",
+               "properties": {}
+              },
+              "crsrdNm": {
+               "type": "string",
+               "description": "교차로명(국회의사당)",
+               "properties": {}
+              },
+              "mapCtptIntLat": {
+               "type": "string",
+               "description": "Map중심점위도(37.5288059000)",
+               "properties": {}
+              },
+              "mapCtptIntLot": {
+               "type": "string",
+               "description": "Map중심점경도(126.9165964000)",
+               "properties": {}
+              },
+              "laneWdth": {
+               "type": "string",
+               "description": "차로폭(286)",
+               "properties": {}
+              },
+              "lmtSpdTypeNm": {
+               "type": "string",
+               "description": "제한속도유형명(vehicleMaxSpeed)",
+               "properties": {}
+              },
+              "lmtSpd": {
+               "type": "string",
+               "description": "제한속도(833)",
+               "properties": {}
+              },
+              "crsrdEngNm": {
+               "type": "string",
+               "description": "교차로영문명(gukhoeuisadang)",
+               "properties": {}
+              },
+              "regId": {
+               "type": "string",
+               "description": "등록자아이디(V2X)",
+               "properties": {}
+              },
+              "regDt": {
+               "type": "string",
+               "description": "등록일시(2026-03-11 16:31:14)",
+               "properties": {}
+              },
+              "totDt": {
+               "type": "string",
+               "description": "집계일시(20260312050006)",
+               "properties": {}
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       },
+       "xml": {
+        "name": "response"
+       }
+      }
+     },
+     "K01": {
+      "description": "APPLICATION_ERROR(어플리케이션 에러)"
+     },
+     "K02": {
+      "description": "DB_ERROR(데이터베이스 에러)"
+     },
+     "K03": {
+      "description": "NODATA_ERROR(데이터없음 에러)"
+     },
+     "K04": {
+      "description": "HTTP_ERROR(HTTP 에러)"
+     },
+     "K05": {
+      "description": "SERVICETIMEOUT_ERROR(서비스 연결실패 에러)"
+     },
+     "K10": {
+      "description": "INVALID_REQUEST_PARAMETER_ERROR(잘못된 요청 파라메터 에러)"
+     },
+     "K11": {
+      "description": "NO_MANDATORY_REQUEST_PARAMETERS_ERROR(필수요청 파라메터가 없음)"
+     },
+     "K12": {
+      "description": "NO_OPENAPI_SERVICE_ERROR(해당 오픈API서비스가 없거나 폐기됨)"
+     },
+     "K20": {
+      "description": "SERVICE_ACCESS_DENIED_ERROR(서비스 접근거부)"
+     },
+     "K21": {
+      "description": "TEMPORARILY_DISABLE_THE_SERVICEKEY_ERROR(일시적으로 사용할 수 없는 서비스키)"
+     },
+     "K22": {
+      "description": "LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR(서비스 요청제한횟수 초과에러)"
+     },
+     "K30": {
+      "description": "SERVICE_KEY_IS_NOT_REGISTERED_ERROR(등록되지 않은 서비스키)"
+     },
+     "K31": {
+      "description": "DEADLINE_HAS_EXPIRED_ERROR(기한만료된 서비스키)"
+     },
+     "K32": {
+      "description": "UNREGISTERED_IP_ERROR(등록되지 않은 IP)"
+     },
+     "K33": {
+      "description": "UNSIGNED_CALL_ERROR(서명되지 않은 호출)"
+     },
+     "K90": {
+      "description": "RUNTIME_ERROR(런타임에러)"
+     },
+     "K99": {
+      "description": "UNKNOWN_ERROR(기타에러)"
+     }
+    },
+    "tags": [
+     "API 목록"
+    ],
+    "summary": "교차로 맵 정보",
+    "description": "지자체 코드, 지차체 명, 교차로아이디, 교차로명, 교차로 위도 및 경도, 차로 폭, 제한속도 유형명, 제한속도, 교차로 영문명 등 교차로에 대한 기본적인 정보를 제공합니다.",
+    "operationId": "crsrd_map_info",
+    "consumes": [
+     "application/json"
+    ],
+    "produces": [
+     "application/json",
+     "application/xml"
+    ]
+   },
+   "parameters": [
+    {
+     "name": "serviceKey",
+     "description": "공공데이터포털에서 받은 인증키",
+     "type": "string",
+     "required": true,
+     "in": "query"
+    },
+    {
+     "name": "pageNo",
+     "description": "페이지번호",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    },
+    {
+     "name": "numOfRows",
+     "description": "한 페이지 결과 수",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    },
+    {
+     "name": "type",
+     "description": "요청파일 타입",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    },
+    {
+     "name": "stdgCd",
+     "description": "지자체코드(법정동코드, 서울특별시 : 1100000000) ※ https://www.code.go.kr/stdcode/regCodeL.do 참조",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    }
+   ]
+  },
+  "/tl_drct_info": {
+   "get": {
+    "responses": {
+     "200": {
+      "description": "성공",
+      "schema": {
+       "type": "object",
+       "properties": {
+        "header": {
+         "type": "object",
+         "description": "header",
+         "properties": {
+          "resultCode": {
+           "type": "string",
+           "description": "결과코드(K0)",
+           "properties": {}
+          },
+          "resultMsg": {
+           "type": "string",
+           "description": "결과메세지(NORMAL_SERVICE)",
+           "properties": {}
+          }
+         }
+        },
+        "body": {
+         "type": "object",
+         "description": "body",
+         "properties": {
+          "totalCount": {
+           "type": "string",
+           "description": "전체 결과 수(5000)",
+           "properties": {}
+          },
+          "pageNo": {
+           "type": "string",
+           "description": "페이지번호(1)",
+           "properties": {}
+          },
+          "numOfRows": {
+           "type": "string",
+           "description": "한 페이지 결과 수(5)",
+           "properties": {}
+          },
+          "items": {
+           "type": "object",
+           "description": "items",
+           "properties": {
+            "item": {
+             "type": "object",
+             "description": "신호제어기 신호잔여시간 정보",
+             "properties": {
+              "totDt": {
+               "type": "string",
+               "description": "집계일시(2026-03-12 10:04:01.587)",
+               "properties": {}
+              },
+              "stdgCd": {
+               "type": "string",
+               "description": "지자체코드(서울특별시: 1100000000)",
+               "properties": {}
+              },
+              "lclgvNm": {
+               "type": "string",
+               "description": "지방자치단체명(서울특별시)",
+               "properties": {}
+              },
+              "crsrdId": {
+               "type": "string",
+               "description": "교차로아이디(20035)",
+               "properties": {}
+              },
+              "regId": {
+               "type": "string",
+               "description": "등록자아이디(v2x)",
+               "properties": {}
+              },
+              "regDt": {
+               "type": "string",
+               "description": "등록일자(2026-03-10)",
+               "properties": {}
+              },
+              "ntBssgRmndCs": {
+               "type": "string",
+               "description": "북쪽_버스신호_잔여_센티초(36001)",
+               "properties": {}
+              },
+              "ntBcsgRmndCs": {
+               "type": "string",
+               "description": "북쪽_자전거신호_잔여_센티초(352)",
+               "properties": {}
+              },
+              "ntLtsgRmndCs": {
+               "type": "string",
+               "description": "북쪽_좌회전신호_잔여_센티초(102)",
+               "properties": {}
+              },
+              "ntPdsgRmndCs": {
+               "type": "string",
+               "description": "북쪽_보행신호_잔여_센티초(352)",
+               "properties": {}
+              },
+              "ntStsgRmndCs": {
+               "type": "string",
+               "description": "북쪽_직진신호_잔여_센티초(1138)",
+               "properties": {}
+              },
+              "ntUtsgRmndCs": {
+               "type": "string",
+               "description": "북쪽_유턴신호_잔여_센티초(309)",
+               "properties": {}
+              },
+              "ntBssgSttsNm": {
+               "type": "string",
+               "description": "북쪽_버스신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "ntBcsgSttsNm": {
+               "type": "string",
+               "description": "북쪽_자전거신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "ntLtsgSttsNm": {
+               "type": "string",
+               "description": "북쪽_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "ntPdsgSttsNm": {
+               "type": "string",
+               "description": "북쪽_보행신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "ntStsgSttsNm": {
+               "type": "string",
+               "description": "북쪽_직진신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "ntUtsgSttsNm": {
+               "type": "string",
+               "description": "북쪽_유턴신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "etBssgRmndCs": {
+               "type": "string",
+               "description": "동쪽_버스신호_잔여_센티초(412)",
+               "properties": {}
+              },
+              "etBcsgRmndCs": {
+               "type": "string",
+               "description": "동쪽_자전거신호_잔여_센티초(824)",
+               "properties": {}
+              },
+              "etLtsgRmndCs": {
+               "type": "string",
+               "description": "동쪽_좌회전신호_잔여_센티초(4)",
+               "properties": {}
+              },
+              "etPdsgRmndCs": {
+               "type": "string",
+               "description": "동쪽_보행신호_잔여_센티초(824)",
+               "properties": {}
+              },
+              "etStsgRmndCs": {
+               "type": "string",
+               "description": "동쪽_직진신호_잔여_센티초(724)",
+               "properties": {}
+              },
+              "etUtsgRmndCs": {
+               "type": "string",
+               "description": "동쪽_유턴신호_잔여_센티초(309)",
+               "properties": {}
+              },
+              "etBssgSttsNm": {
+               "type": "string",
+               "description": "동쪽_버스신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "etBcsgSttsNm": {
+               "type": "string",
+               "description": "동쪽_자전거신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "etLtsgSttsNm": {
+               "type": "string",
+               "description": "동쪽_좌회전신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "etPdsgSttsNm": {
+               "type": "string",
+               "description": "동쪽_보행신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "etStsgSttsNm": {
+               "type": "string",
+               "description": "동쪽_직진신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "etUtsgSttsNm": {
+               "type": "string",
+               "description": "동쪽_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "stBssgRmndCs": {
+               "type": "string",
+               "description": "남쪽_버스신호_잔여_센티초(556)",
+               "properties": {}
+              },
+              "stBcsgRmndCs": {
+               "type": "string",
+               "description": "남쪽_자전거신호_잔여_센티초(736)",
+               "properties": {}
+              },
+              "stLtsgRmndCs": {
+               "type": "string",
+               "description": "남쪽_좌회전신호_잔여_센티초(986)",
+               "properties": {}
+              },
+              "stPdsgRmndCs": {
+               "type": "string",
+               "description": "남쪽_보행신호_잔여_센티초(736)",
+               "properties": {}
+              },
+              "stStsgRmndCs": {
+               "type": "string",
+               "description": "남쪽_직진신호_잔여_센티초(716)",
+               "properties": {}
+              },
+              "stUtsgRmndCs": {
+               "type": "string",
+               "description": "남쪽_유턴신호_잔여_센티초(309)",
+               "properties": {}
+              },
+              "stBssgSttsNm": {
+               "type": "string",
+               "description": "남쪽_버스신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "stBcsgSttsNm": {
+               "type": "string",
+               "description": "남쪽_자전거신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "stLtsgSttsNm": {
+               "type": "string",
+               "description": "남쪽_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "stPdsgSttsNm": {
+               "type": "string",
+               "description": "남쪽_보행신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "stStsgSttsNm": {
+               "type": "string",
+               "description": "남쪽_직진신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "stUtsgSttsNm": {
+               "type": "string",
+               "description": "남쪽_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "wtBssgRmndCs": {
+               "type": "string",
+               "description": "서쪽_버스신호_잔여_센티초(36001)",
+               "properties": {}
+              },
+              "wtBcsgRmndCs": {
+               "type": "string",
+               "description": "서쪽_자전거신호_잔여_센티초(736)",
+               "properties": {}
+              },
+              "wtLtsgRmndCs": {
+               "type": "string",
+               "description": "서쪽_좌회전신호_잔여_센티초(482)",
+               "properties": {}
+              },
+              "wtPdsgRmndCs": {
+               "type": "string",
+               "description": "서쪽_보행신호_잔여_센티초(85)",
+               "properties": {}
+              },
+              "wtStsgRmndCs": {
+               "type": "string",
+               "description": "서쪽_직진신호_잔여_센티초(345)",
+               "properties": {}
+              },
+              "wtUtsgRmndCs": {
+               "type": "string",
+               "description": "서쪽_유턴신호_잔여_센티초(309)",
+               "properties": {}
+              },
+              "wtBssgSttsNm": {
+               "type": "string",
+               "description": "서쪽_버스신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "wtBcsgSttsNm": {
+               "type": "string",
+               "description": "서쪽_자전거신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "wtLtsgSttsNm": {
+               "type": "string",
+               "description": "서쪽_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "wtPdsgSttsNm": {
+               "type": "string",
+               "description": "서쪽_보행신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "wtStsgSttsNm": {
+               "type": "string",
+               "description": "서쪽_직진신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "wtUtsgSttsNm": {
+               "type": "string",
+               "description": "서쪽_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "neBssgRmndCs": {
+               "type": "string",
+               "description": "북동_버스신호_잔여_센티초(36001)",
+               "properties": {}
+              },
+              "neBcsgRmndCs": {
+               "type": "string",
+               "description": "북동_자전거신호_잔여_센티초(736)",
+               "properties": {}
+              },
+              "neLtsgRmndCs": {
+               "type": "string",
+               "description": "북동_좌회전신호_잔여_센티초(986)",
+               "properties": {}
+              },
+              "nePdsgRmndCs": {
+               "type": "string",
+               "description": "북동_보행신호_잔여_센티초(85)",
+               "properties": {}
+              },
+              "neStsgRmndCs": {
+               "type": "string",
+               "description": "북동_직진신호_잔여_센티초(716)",
+               "properties": {}
+              },
+              "neUtsgRmndCs": {
+               "type": "string",
+               "description": "북동_유턴신호_잔여_센티초(309)",
+               "properties": {}
+              },
+              "neBssgSttsNm": {
+               "type": "string",
+               "description": "북동_버스신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "neBcsgSttsNm": {
+               "type": "string",
+               "description": "북동_자전거신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "neLtsgSttsNm": {
+               "type": "string",
+               "description": "북동_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nePdsgSttsNm": {
+               "type": "string",
+               "description": "북동_보행신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "neStsgSttsNm": {
+               "type": "string",
+               "description": "북동_직진신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "neUtsgSttsNm": {
+               "type": "string",
+               "description": "북동_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "seBssgRmndCs": {
+               "type": "string",
+               "description": "남동_버스신호_잔여_센티초(1322)",
+               "properties": {}
+              },
+              "seBcsgRmndCs": {
+               "type": "string",
+               "description": "남동_자전거신호_잔여_센티초(153)",
+               "properties": {}
+              },
+              "seLtsgRmndCs": {
+               "type": "string",
+               "description": "남동_좌회전신호_잔여_센티초(383)",
+               "properties": {}
+              },
+              "sePdsgRmndCs": {
+               "type": "string",
+               "description": "남동_보행신호_잔여_센티초(153)",
+               "properties": {}
+              },
+              "seStsgRmndCs": {
+               "type": "string",
+               "description": "남동_직진신호_잔여_센티초(2540)",
+               "properties": {}
+              },
+              "seUtsgRmndCs": {
+               "type": "string",
+               "description": "남동_유턴신호_잔여_센티초(640)",
+               "properties": {}
+              },
+              "seBssgSttsNm": {
+               "type": "string",
+               "description": "남동_버스신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "seBcsgSttsNm": {
+               "type": "string",
+               "description": "남동_자전거신호_상태_명(permissive-Movement-Allowed)",
+               "properties": {}
+              },
+              "seLtsgSttsNm": {
+               "type": "string",
+               "description": "남동_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "sePdsgSttsNm": {
+               "type": "string",
+               "description": "남동_보행신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "seStsgSttsNm": {
+               "type": "string",
+               "description": "남동_직진신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "seUtsgSttsNm": {
+               "type": "string",
+               "description": "남동_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "swBssgRmndCs": {
+               "type": "string",
+               "description": "남서_버스신호_잔여_센티초(573)",
+               "properties": {}
+              },
+              "swBcsgRmndCs": {
+               "type": "string",
+               "description": "남서_자전거신호_잔여_센티초(383)",
+               "properties": {}
+              },
+              "swLtsgRmndCs": {
+               "type": "string",
+               "description": "남서_좌회전신호_잔여_센티초(1383)",
+               "properties": {}
+              },
+              "swPdsgRmndCs": {
+               "type": "string",
+               "description": "남서_보행신호_잔여_센티초(343)",
+               "properties": {}
+              },
+              "swStsgRmndCs": {
+               "type": "string",
+               "description": "남서_직진신호_잔여_센티초(225)",
+               "properties": {}
+              },
+              "swUtsgRmndCs": {
+               "type": "string",
+               "description": "남서_유턴신호_잔여_센티초(19)",
+               "properties": {}
+              },
+              "swBssgSttsNm": {
+               "type": "string",
+               "description": "남서_버스신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "swBcsgSttsNm": {
+               "type": "string",
+               "description": "남서_자전거신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "swLtsgSttsNm": {
+               "type": "string",
+               "description": "남서_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "swPdsgSttsNm": {
+               "type": "string",
+               "description": "남서_보행신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "swStsgSttsNm": {
+               "type": "string",
+               "description": "남서_직진신호_상태_명(protected-Movement-Allowed)",
+               "properties": {}
+              },
+              "swUtsgSttsNm": {
+               "type": "string",
+               "description": "남서_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nwBssgRmndCs": {
+               "type": "string",
+               "description": "북서_버스신호_잔여_센티초(1322) nwBcsgRmndCs",
+               "properties": {}
+              },
+              "nwBcsgRmndCs": {
+               "type": "string",
+               "description": "북서_자전거신호_잔여_센티초(153)",
+               "properties": {}
+              },
+              "nwLtsgRmndCs": {
+               "type": "string",
+               "description": "북서_좌회전신호_잔여_센티초(163)",
+               "properties": {}
+              },
+              "nwPdsgRmndCs": {
+               "type": "string",
+               "description": "북서_보행신호_잔여_센티초(153)",
+               "properties": {}
+              },
+              "nwStsgRmndCs": {
+               "type": "string",
+               "description": "북서_직진신호_잔여_센티초(163)",
+               "properties": {}
+              },
+              "nwUtsgRmndCs": {
+               "type": "string",
+               "description": "북서_유턴신호_잔여_센티초(163)",
+               "properties": {}
+              },
+              "nwBssgSttsNm": {
+               "type": "string",
+               "description": "북서_버스신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nwBcsgSttsNm": {
+               "type": "string",
+               "description": "북서_자전거신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nwLtsgSttsNm": {
+               "type": "string",
+               "description": "북서_좌회전신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nwPdsgSttsNm": {
+               "type": "string",
+               "description": "북서_보행신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nwStsgSttsNm": {
+               "type": "string",
+               "description": "북서_직진신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              },
+              "nwUtsgSttsNm": {
+               "type": "string",
+               "description": "북서_유턴신호_상태_명(stop-And-Remain)",
+               "properties": {}
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       },
+       "xml": {
+        "name": "response"
+       }
+      }
+     },
+     "K01": {
+      "description": "APPLICATION_ERROR(어플리케이션 에러)"
+     },
+     "K02": {
+      "description": "DB_ERROR(데이터베이스 에러)"
+     },
+     "K03": {
+      "description": "NODATA_ERROR(데이터없음 에러)"
+     },
+     "K04": {
+      "description": "HTTP_ERROR(HTTP 에러)"
+     },
+     "K05": {
+      "description": "SERVICETIMEOUT_ERROR(서비스 연결실패 에러)"
+     },
+     "K10": {
+      "description": "INVALID_REQUEST_PARAMETER_ERROR(잘못된 요청 파라메터 에러)"
+     },
+     "K11": {
+      "description": "NO_MANDATORY_REQUEST_PARAMETERS_ERROR(필수요청 파라메터가 없음)"
+     },
+     "K12": {
+      "description": "NO_OPENAPI_SERVICE_ERROR(해당 오픈API서비스가 없거나 폐기됨)"
+     },
+     "K20": {
+      "description": "SERVICE_ACCESS_DENIED_ERROR(서비스 접근거부)"
+     },
+     "K21": {
+      "description": "TEMPORARILY_DISABLE_THE_SERVICEKEY_ERROR(일시적으로 사용할 수 없는 서비스키)"
+     },
+     "K22": {
+      "description": "LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR(서비스 요청제한횟수 초과에러)"
+     },
+     "K30": {
+      "description": "SERVICE_KEY_IS_NOT_REGISTERED_ERROR(등록되지 않은 서비스키)"
+     },
+     "K31": {
+      "description": "DEADLINE_HAS_EXPIRED_ERROR(기한만료된 서비스키)"
+     },
+     "K32": {
+      "description": "UNREGISTERED_IP_ERROR(등록되지 않은 IP)"
+     },
+     "K33": {
+      "description": "UNSIGNED_CALL_ERROR(서명되지 않은 호출)"
+     },
+     "K90": {
+      "description": "RUNTIME_ERROR(런타임에러)"
+     },
+     "K99": {
+      "description": "UNKNOWN_ERROR(기타에러)"
+     }
+    },
+    "tags": [
+     "API 목록"
+    ],
+    "summary": "신호제어기 신호잔여시간 정보",
+    "description": "지자체 코드, 지차체 명 및 교차로 신호제어기 기준 8개방향(북쪽, 동쪽, 남쪽, 서쪽, 북동쪽, 남동쪽,남서쪽,북서쪽)별 신호등 방향별 버스신호 잔여시간, 자전거신호 잔여시간, 좌회전신호 잔여시간, 보행신호 잔여시간, 직진신호 잔여시간, 유턴신호 잔여시간 및 버스신호 점등상태명, 자전거신호 점등상태명, 좌회전신호 점등상태명, 보행신호 점등상태명, 직진신호 점등상태명, 유턴신호 점등상태명 등 실시간 신호정보인 신호제어기 신호잔여 시간 정보를 제공 합니다.",
+    "operationId": "tl_drct_info",
+    "consumes": [
+     "application/json"
+    ],
+    "produces": [
+     "application/json",
+     "application/xml"
+    ]
+   },
+   "parameters": [
+    {
+     "name": "serviceKey",
+     "description": "공공데이터포털에서 받은 인증키",
+     "type": "string",
+     "required": true,
+     "in": "query"
+    },
+    {
+     "name": "pageNo",
+     "description": "페이지번호",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    },
+    {
+     "name": "numOfRows",
+     "description": "한 페이지 결과 수",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    },
+    {
+     "name": "type",
+     "description": "요청파일 타입",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    },
+    {
+     "name": "stdgCd",
+     "description": "지자체코드(법정동코드, 서울특별시 : 1100000000) ※ https://www.code.go.kr/stdcode/regCodeL.do 참조",
+     "type": "string",
+     "required": false,
+     "in": "query"
+    }
+   ]
+  }
+ },
+ "definitions": {
+  "crsrd_map_info_response": {
+   "type": "object",
+   "properties": {
+    "header": {
+     "type": "object",
+     "description": "header",
+     "properties": {
+      "resultCode": {
+       "type": "string",
+       "description": "결과코드(K0)"
+      },
+      "resultMsg": {
+       "type": "string",
+       "description": "결과메세지(NORMAL_SERVICE)"
+      }
+     }
+    },
+    "body": {
+     "type": "object",
+     "description": "body",
+     "properties": {
+      "totalCount": {
+       "type": "string",
+       "description": "전체 결과 수(5000)"
+      },
+      "pageNo": {
+       "type": "string",
+       "description": "페이지번호(1)"
+      },
+      "numOfRows": {
+       "type": "string",
+       "description": "한 페이지 결과 수(5)"
+      },
+      "items": {
+       "type": "object",
+       "description": "items",
+       "properties": {
+        "item": {
+         "type": "object",
+         "description": "교차로 맵 정보",
+         "properties": {
+          "stdgCd": {
+           "type": "string",
+           "description": "지자체코드(서울특별시: 1100000000)"
+          },
+          "lclgvNm": {
+           "type": "string",
+           "description": "지방자치단체명(서울특별시)"
+          },
+          "crsrdId": {
+           "type": "string",
+           "description": "교차로아이디(148)"
+          },
+          "crsrdNm": {
+           "type": "string",
+           "description": "교차로명(국회의사당)"
+          },
+          "mapCtptIntLat": {
+           "type": "string",
+           "description": "Map중심점위도(37.5288059000)"
+          },
+          "mapCtptIntLot": {
+           "type": "string",
+           "description": "Map중심점경도(126.9165964000)"
+          },
+          "laneWdth": {
+           "type": "string",
+           "description": "차로폭(286)"
+          },
+          "lmtSpdTypeNm": {
+           "type": "string",
+           "description": "제한속도유형명(vehicleMaxSpeed)"
+          },
+          "lmtSpd": {
+           "type": "string",
+           "description": "제한속도(833)"
+          },
+          "crsrdEngNm": {
+           "type": "string",
+           "description": "교차로영문명(gukhoeuisadang)"
+          },
+          "regId": {
+           "type": "string",
+           "description": "등록자아이디(V2X)"
+          },
+          "regDt": {
+           "type": "string",
+           "description": "등록일시(2026-03-11 16:31:14)"
+          },
+          "totDt": {
+           "type": "string",
+           "description": "집계일시(20260312050006)"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "tl_drct_info_response": {
+   "type": "object",
+   "properties": {
+    "header": {
+     "type": "object",
+     "description": "header",
+     "properties": {
+      "resultCode": {
+       "type": "string",
+       "description": "결과코드(K0)"
+      },
+      "resultMsg": {
+       "type": "string",
+       "description": "결과메세지(NORMAL_SERVICE)"
+      }
+     }
+    },
+    "body": {
+     "type": "object",
+     "description": "body",
+     "properties": {
+      "totalCount": {
+       "type": "string",
+       "description": "전체 결과 수(5000)"
+      },
+      "pageNo": {
+       "type": "string",
+       "description": "페이지번호(1)"
+      },
+      "numOfRows": {
+       "type": "string",
+       "description": "한 페이지 결과 수(5)"
+      },
+      "items": {
+       "type": "object",
+       "description": "items",
+       "properties": {
+        "item": {
+         "type": "object",
+         "description": "신호제어기 신호잔여시간 정보",
+         "properties": {
+          "totDt": {
+           "type": "string",
+           "description": "집계일시(2026-03-12 10:04:01.587)"
+          },
+          "stdgCd": {
+           "type": "string",
+           "description": "지자체코드(서울특별시: 1100000000)"
+          },
+          "lclgvNm": {
+           "type": "string",
+           "description": "지방자치단체명(서울특별시)"
+          },
+          "crsrdId": {
+           "type": "string",
+           "description": "교차로아이디(20035)"
+          },
+          "regId": {
+           "type": "string",
+           "description": "등록자아이디(v2x)"
+          },
+          "regDt": {
+           "type": "string",
+           "description": "등록일자(2026-03-10)"
+          },
+          "ntBssgRmndCs": {
+           "type": "string",
+           "description": "북쪽_버스신호_잔여_센티초(36001)"
+          },
+          "ntBcsgRmndCs": {
+           "type": "string",
+           "description": "북쪽_자전거신호_잔여_센티초(352)"
+          },
+          "ntLtsgRmndCs": {
+           "type": "string",
+           "description": "북쪽_좌회전신호_잔여_센티초(102)"
+          },
+          "ntPdsgRmndCs": {
+           "type": "string",
+           "description": "북쪽_보행신호_잔여_센티초(352)"
+          },
+          "ntStsgRmndCs": {
+           "type": "string",
+           "description": "북쪽_직진신호_잔여_센티초(1138)"
+          },
+          "ntUtsgRmndCs": {
+           "type": "string",
+           "description": "북쪽_유턴신호_잔여_센티초(309)"
+          },
+          "ntBssgSttsNm": {
+           "type": "string",
+           "description": "북쪽_버스신호_상태_명(protected-Movement-Allowed)"
+          },
+          "ntBcsgSttsNm": {
+           "type": "string",
+           "description": "북쪽_자전거신호_상태_명(protected-Movement-Allowed)"
+          },
+          "ntLtsgSttsNm": {
+           "type": "string",
+           "description": "북쪽_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "ntPdsgSttsNm": {
+           "type": "string",
+           "description": "북쪽_보행신호_상태_명(protected-Movement-Allowed)"
+          },
+          "ntStsgSttsNm": {
+           "type": "string",
+           "description": "북쪽_직진신호_상태_명(protected-Movement-Allowed)"
+          },
+          "ntUtsgSttsNm": {
+           "type": "string",
+           "description": "북쪽_유턴신호_상태_명(protected-Movement-Allowed)"
+          },
+          "etBssgRmndCs": {
+           "type": "string",
+           "description": "동쪽_버스신호_잔여_센티초(412)"
+          },
+          "etBcsgRmndCs": {
+           "type": "string",
+           "description": "동쪽_자전거신호_잔여_센티초(824)"
+          },
+          "etLtsgRmndCs": {
+           "type": "string",
+           "description": "동쪽_좌회전신호_잔여_센티초(4)"
+          },
+          "etPdsgRmndCs": {
+           "type": "string",
+           "description": "동쪽_보행신호_잔여_센티초(824)"
+          },
+          "etStsgRmndCs": {
+           "type": "string",
+           "description": "동쪽_직진신호_잔여_센티초(724)"
+          },
+          "etUtsgRmndCs": {
+           "type": "string",
+           "description": "동쪽_유턴신호_잔여_센티초(309)"
+          },
+          "etBssgSttsNm": {
+           "type": "string",
+           "description": "동쪽_버스신호_상태_명(protected-Movement-Allowed)"
+          },
+          "etBcsgSttsNm": {
+           "type": "string",
+           "description": "동쪽_자전거신호_상태_명(stop-And-Remain)"
+          },
+          "etLtsgSttsNm": {
+           "type": "string",
+           "description": "동쪽_좌회전신호_상태_명(protected-Movement-Allowed)"
+          },
+          "etPdsgSttsNm": {
+           "type": "string",
+           "description": "동쪽_보행신호_상태_명(stop-And-Remain)"
+          },
+          "etStsgSttsNm": {
+           "type": "string",
+           "description": "동쪽_직진신호_상태_명(stop-And-Remain)"
+          },
+          "etUtsgSttsNm": {
+           "type": "string",
+           "description": "동쪽_유턴신호_상태_명(stop-And-Remain)"
+          },
+          "stBssgRmndCs": {
+           "type": "string",
+           "description": "남쪽_버스신호_잔여_센티초(556)"
+          },
+          "stBcsgRmndCs": {
+           "type": "string",
+           "description": "남쪽_자전거신호_잔여_센티초(736)"
+          },
+          "stLtsgRmndCs": {
+           "type": "string",
+           "description": "남쪽_좌회전신호_잔여_센티초(986)"
+          },
+          "stPdsgRmndCs": {
+           "type": "string",
+           "description": "남쪽_보행신호_잔여_센티초(736)"
+          },
+          "stStsgRmndCs": {
+           "type": "string",
+           "description": "남쪽_직진신호_잔여_센티초(716)"
+          },
+          "stUtsgRmndCs": {
+           "type": "string",
+           "description": "남쪽_유턴신호_잔여_센티초(309)"
+          },
+          "stBssgSttsNm": {
+           "type": "string",
+           "description": "남쪽_버스신호_상태_명(stop-And-Remain)"
+          },
+          "stBcsgSttsNm": {
+           "type": "string",
+           "description": "남쪽_자전거신호_상태_명(protected-Movement-Allowed)"
+          },
+          "stLtsgSttsNm": {
+           "type": "string",
+           "description": "남쪽_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "stPdsgSttsNm": {
+           "type": "string",
+           "description": "남쪽_보행신호_상태_명(stop-And-Remain)"
+          },
+          "stStsgSttsNm": {
+           "type": "string",
+           "description": "남쪽_직진신호_상태_명(stop-And-Remain)"
+          },
+          "stUtsgSttsNm": {
+           "type": "string",
+           "description": "남쪽_유턴신호_상태_명(stop-And-Remain)"
+          },
+          "wtBssgRmndCs": {
+           "type": "string",
+           "description": "서쪽_버스신호_잔여_센티초(36001)"
+          },
+          "wtBcsgRmndCs": {
+           "type": "string",
+           "description": "서쪽_자전거신호_잔여_센티초(736)"
+          },
+          "wtLtsgRmndCs": {
+           "type": "string",
+           "description": "서쪽_좌회전신호_잔여_센티초(482)"
+          },
+          "wtPdsgRmndCs": {
+           "type": "string",
+           "description": "서쪽_보행신호_잔여_센티초(85)"
+          },
+          "wtStsgRmndCs": {
+           "type": "string",
+           "description": "서쪽_직진신호_잔여_센티초(345)"
+          },
+          "wtUtsgRmndCs": {
+           "type": "string",
+           "description": "서쪽_유턴신호_잔여_센티초(309)"
+          },
+          "wtBssgSttsNm": {
+           "type": "string",
+           "description": "서쪽_버스신호_상태_명(protected-Movement-Allowed)"
+          },
+          "wtBcsgSttsNm": {
+           "type": "string",
+           "description": "서쪽_자전거신호_상태_명(protected-Movement-Allowed)"
+          },
+          "wtLtsgSttsNm": {
+           "type": "string",
+           "description": "서쪽_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "wtPdsgSttsNm": {
+           "type": "string",
+           "description": "서쪽_보행신호_상태_명(stop-And-Remain)"
+          },
+          "wtStsgSttsNm": {
+           "type": "string",
+           "description": "서쪽_직진신호_상태_명(protected-Movement-Allowed)"
+          },
+          "wtUtsgSttsNm": {
+           "type": "string",
+           "description": "서쪽_유턴신호_상태_명(stop-And-Remain)"
+          },
+          "neBssgRmndCs": {
+           "type": "string",
+           "description": "북동_버스신호_잔여_센티초(36001)"
+          },
+          "neBcsgRmndCs": {
+           "type": "string",
+           "description": "북동_자전거신호_잔여_센티초(736)"
+          },
+          "neLtsgRmndCs": {
+           "type": "string",
+           "description": "북동_좌회전신호_잔여_센티초(986)"
+          },
+          "nePdsgRmndCs": {
+           "type": "string",
+           "description": "북동_보행신호_잔여_센티초(85)"
+          },
+          "neStsgRmndCs": {
+           "type": "string",
+           "description": "북동_직진신호_잔여_센티초(716)"
+          },
+          "neUtsgRmndCs": {
+           "type": "string",
+           "description": "북동_유턴신호_잔여_센티초(309)"
+          },
+          "neBssgSttsNm": {
+           "type": "string",
+           "description": "북동_버스신호_상태_명(stop-And-Remain)"
+          },
+          "neBcsgSttsNm": {
+           "type": "string",
+           "description": "북동_자전거신호_상태_명(stop-And-Remain)"
+          },
+          "neLtsgSttsNm": {
+           "type": "string",
+           "description": "북동_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "nePdsgSttsNm": {
+           "type": "string",
+           "description": "북동_보행신호_상태_명(protected-Movement-Allowed)"
+          },
+          "neStsgSttsNm": {
+           "type": "string",
+           "description": "북동_직진신호_상태_명(protected-Movement-Allowed)"
+          },
+          "neUtsgSttsNm": {
+           "type": "string",
+           "description": "북동_유턴신호_상태_명(stop-And-Remain)"
+          },
+          "seBssgRmndCs": {
+           "type": "string",
+           "description": "남동_버스신호_잔여_센티초(1322)"
+          },
+          "seBcsgRmndCs": {
+           "type": "string",
+           "description": "남동_자전거신호_잔여_센티초(153)"
+          },
+          "seLtsgRmndCs": {
+           "type": "string",
+           "description": "남동_좌회전신호_잔여_센티초(383)"
+          },
+          "sePdsgRmndCs": {
+           "type": "string",
+           "description": "남동_보행신호_잔여_센티초(153)"
+          },
+          "seStsgRmndCs": {
+           "type": "string",
+           "description": "남동_직진신호_잔여_센티초(2540)"
+          },
+          "seUtsgRmndCs": {
+           "type": "string",
+           "description": "남동_유턴신호_잔여_센티초(640)"
+          },
+          "seBssgSttsNm": {
+           "type": "string",
+           "description": "남동_버스신호_상태_명(stop-And-Remain)"
+          },
+          "seBcsgSttsNm": {
+           "type": "string",
+           "description": "남동_자전거신호_상태_명(permissive-Movement-Allowed)"
+          },
+          "seLtsgSttsNm": {
+           "type": "string",
+           "description": "남동_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "sePdsgSttsNm": {
+           "type": "string",
+           "description": "남동_보행신호_상태_명(protected-Movement-Allowed)"
+          },
+          "seStsgSttsNm": {
+           "type": "string",
+           "description": "남동_직진신호_상태_명(stop-And-Remain)"
+          },
+          "seUtsgSttsNm": {
+           "type": "string",
+           "description": "남동_유턴신호_상태_명(stop-And-Remain)"
+          },
+          "swBssgRmndCs": {
+           "type": "string",
+           "description": "남서_버스신호_잔여_센티초(573)"
+          },
+          "swBcsgRmndCs": {
+           "type": "string",
+           "description": "남서_자전거신호_잔여_센티초(383)"
+          },
+          "swLtsgRmndCs": {
+           "type": "string",
+           "description": "남서_좌회전신호_잔여_센티초(1383)"
+          },
+          "swPdsgRmndCs": {
+           "type": "string",
+           "description": "남서_보행신호_잔여_센티초(343)"
+          },
+          "swStsgRmndCs": {
+           "type": "string",
+           "description": "남서_직진신호_잔여_센티초(225)"
+          },
+          "swUtsgRmndCs": {
+           "type": "string",
+           "description": "남서_유턴신호_잔여_센티초(19)"
+          },
+          "swBssgSttsNm": {
+           "type": "string",
+           "description": "남서_버스신호_상태_명(stop-And-Remain)"
+          },
+          "swBcsgSttsNm": {
+           "type": "string",
+           "description": "남서_자전거신호_상태_명(stop-And-Remain)"
+          },
+          "swLtsgSttsNm": {
+           "type": "string",
+           "description": "남서_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "swPdsgSttsNm": {
+           "type": "string",
+           "description": "남서_보행신호_상태_명(protected-Movement-Allowed)"
+          },
+          "swStsgSttsNm": {
+           "type": "string",
+           "description": "남서_직진신호_상태_명(protected-Movement-Allowed)"
+          },
+          "swUtsgSttsNm": {
+           "type": "string",
+           "description": "남서_유턴신호_상태_명(stop-And-Remain)"
+          },
+          "nwBssgRmndCs": {
+           "type": "string",
+           "description": "북서_버스신호_잔여_센티초(1322) nwBcsgRmndCs"
+          },
+          "nwBcsgRmndCs": {
+           "type": "string",
+           "description": "북서_자전거신호_잔여_센티초(153)"
+          },
+          "nwLtsgRmndCs": {
+           "type": "string",
+           "description": "북서_좌회전신호_잔여_센티초(163)"
+          },
+          "nwPdsgRmndCs": {
+           "type": "string",
+           "description": "북서_보행신호_잔여_센티초(153)"
+          },
+          "nwStsgRmndCs": {
+           "type": "string",
+           "description": "북서_직진신호_잔여_센티초(163)"
+          },
+          "nwUtsgRmndCs": {
+           "type": "string",
+           "description": "북서_유턴신호_잔여_센티초(163)"
+          },
+          "nwBssgSttsNm": {
+           "type": "string",
+           "description": "북서_버스신호_상태_명(stop-And-Remain)"
+          },
+          "nwBcsgSttsNm": {
+           "type": "string",
+           "description": "북서_자전거신호_상태_명(stop-And-Remain)"
+          },
+          "nwLtsgSttsNm": {
+           "type": "string",
+           "description": "북서_좌회전신호_상태_명(stop-And-Remain)"
+          },
+          "nwPdsgSttsNm": {
+           "type": "string",
+           "description": "북서_보행신호_상태_명(stop-And-Remain)"
+          },
+          "nwStsgSttsNm": {
+           "type": "string",
+           "description": "북서_직진신호_상태_명(stop-And-Remain)"
+          },
+          "nwUtsgSttsNm": {
+           "type": "string",
+           "description": "북서_유턴신호_상태_명(stop-And-Remain)"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

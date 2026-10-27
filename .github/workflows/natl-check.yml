@@ -1,0 +1,35 @@
+name: natl-check
+
+# 전국 통합 교통안전 신호등 실시간 정보 API 점검 (수동 실행, 호출 10회 안팎).
+# 결과: data 브랜치 meta/natl_check.json, static/seoul_crossings.csv, meta/natl_signal_sample.json
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-maint
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: bash scripts/data_branch.sh checkout
+      - name: Check
+        run: |
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          PYTHONPATH=src python -m jjukgo.natl_check --data-dir datastore | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save
+        if: always()
+        run: bash scripts/data_branch.sh push "nationwide signal API check $(date -u +%Y-%m-%dT%H:%MZ)"
