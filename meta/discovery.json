@@ -1,11 +1,39 @@
 {
-  "discovered_at_utc": "2026-10-27T16:19:32.506966+00:00",
-  "pages": [
+  "discovered_at_utc": "2026-10-27T16:35:15.123452+00:00",
+  "steps": [
     {
-      "page_no": 1,
-      "error": "HTTP 429: {\"timestamp\":\"2026-10-28 01:19:33\",\"status\":429,\"error\":\"Too Many Requests\",\"code\":\"V2X_REPEAT_CALL_LIMIT\",\"api\":\"v2xSignalPhaseTimingFusionInformation\",\"limitSeconds\":300,\"retryAfterSeconds\":101,\"nex"
+      "name": "unfiltered_5000",
+      "itst_id": null,
+      "num_of_rows": 5000,
+      "records": 5000,
+      "distinct_itst": 3,
+      "span_s": 2097.4,
+      "total_count": null,
+      "elapsed_s": 5.5
+    },
+    {
+      "name": "filtered_immediately",
+      "itst_id": "2691",
+      "num_of_rows": 1000,
+      "rate_limited": {
+        "retry_after_s": 295,
+        "limit_s": 300
+      },
+      "elapsed_s": 0.9
+    },
+    {
+      "name": "filtered_after_wait",
+      "itst_id": "2691",
+      "num_of_rows": 1000,
+      "records": 1000,
+      "distinct_itst": 1,
+      "span_s": 999.0,
+      "total_count": null,
+      "elapsed_s": 299.1
     }
   ],
-  "per_intersection": [],
-  "discovered_ids_total": 0
+  "max_rows_ok": true,
+  "limit_is_global": true,
+  "filter_works": true,
+  "discovered_ids_total": 3
 }
