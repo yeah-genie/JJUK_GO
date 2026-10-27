@@ -1,0 +1,509 @@
+<title>쭉고 프로토타입</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 레이아웃: 데스크톱에선 폰 프레임 안 앱, 폰에선 화면 전체. 위 지도, 아래 시트.
+   색은 도로에서: 차선 노랑(브랜드), 아스팔트(글자), 횡단보도 흰색(시트). 신호 초록/빨강은 신호 마커에만. */
+:root {
+  --lane: #F6C343;
+  --lane-deep: #C99A12;
+  --asphalt: #2A3140;
+  --asphalt-2: #3B4456;
+  --zebra: #F7F8F5;
+  --map: #E3E7EC;
+  --block: #D5DBE3;
+  --road: #FFFFFF;
+  --muted: #687082;
+  --line: #CCD3DC;
+  --go: #1FA35B;
+  --stop: #E5484D;
+  --page: #C9D0D9;
+  --display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--asphalt);
+  font-family: var(--body);
+  font-size: 15px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px;
+  display: grid;
+  place-items: center;
+}
+.phone {
+  width: 390px;
+  max-width: 100%;
+  height: 844px;
+  max-height: calc(100dvh - 48px);
+  background: var(--map);
+  border-radius: 44px;
+  border: 10px solid var(--asphalt);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 480px) {
+  body { padding: 0; display: block; }
+  .phone { width: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
+}
+.badge {
+  position: absolute; z-index: 30; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--asphalt); color: var(--zebra);
+  font-size: 11.5px; font-weight: 500; padding: 5px 11px; border-radius: 999px; white-space: nowrap;
+}
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.map { flex: 1 1 auto; min-height: 0; position: relative; }
+.map { background: var(--block); }
+.map svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.topbar {
+  position: absolute; z-index: 10; left: 14px; right: 14px; top: 46px;
+  background: var(--zebra); border-radius: 16px; padding: 12px 14px;
+  box-shadow: 0 6px 18px rgba(42,49,64,.14);
+  display: flex; align-items: center; gap: 10px;
+}
+.topbar input {
+  border: 0; background: transparent; font: inherit; font-size: 16px; width: 100%; color: var(--asphalt);
+}
+.topbar input:focus { outline: none; }
+.topbar:focus-within { box-shadow: 0 0 0 3px var(--lane), 0 6px 18px rgba(42,49,64,.14); }
+.trip { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.trip b { font-weight: 600; }
+.trip span { color: var(--muted); font-size: 13px; }
+.icon-btn {
+  border: 0; background: none; font: inherit; font-size: 20px; color: var(--asphalt);
+  width: 32px; height: 32px; border-radius: 10px; cursor: pointer; flex: none;
+}
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  border: 1.5px solid var(--line); background: var(--zebra); color: var(--asphalt);
+  font: inherit; font-size: 14px; font-weight: 500; padding: 7px 13px; border-radius: 999px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--asphalt); color: var(--zebra); border-color: var(--asphalt); }
+.home-chips { position: absolute; z-index: 10; left: 14px; right: 14px; top: 108px; }
+.sheet {
+  flex: none; background: var(--zebra); border-radius: 22px 22px 0 0; margin-top: -22px; position: relative; z-index: 5;
+  padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 -8px 22px rgba(42,49,64,.10);
+}
+.grip { width: 38px; height: 4px; border-radius: 4px; background: var(--line); align-self: center; }
+.row-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.row-label h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.route {
+  border: 1.5px solid var(--line); border-radius: 16px; padding: 12px 14px; background: #fff;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: baseline; cursor: pointer;
+  text-align: left; font: inherit; color: inherit; width: 100%;
+}
+.route[aria-pressed="true"] { border-color: var(--asphalt); box-shadow: inset 0 0 0 1px var(--asphalt); }
+.route .name { font-weight: 700; }
+.route .mins { font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums; }
+.route .stat { justify-self: end; font-size: 13px; color: var(--muted); }
+.route .stat strong { color: var(--asphalt); font-weight: 700; }
+.strip { grid-column: 1 / -1; height: 12px; border-radius: 6px; overflow: hidden; display: flex; margin-top: 6px; background: var(--map); }
+.strip i { display: block; height: 100%; }
+.strip .walk-j { background: var(--lane); }
+.strip .walk-s { background: #9AA3B2; }
+.strip .wait { background: var(--stop); }
+.tradeoff { margin: 0; font-size: 15px; font-weight: 600; }
+.actions { display: flex; gap: 10px; }
+.btn {
+  flex: 1; border: 0; border-radius: 14px; padding: 14px; font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
+}
+.btn-primary { background: var(--lane); color: var(--asphalt); }
+.btn-ghost { background: var(--map); color: var(--asphalt); flex: 0 0 auto; padding-inline: 16px; }
+.safety { margin: 0; font-size: 12px; color: var(--muted); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); outline-offset: 2px; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+/* 상세 */
+.detail { background: var(--zebra); }
+.detail header { padding: 50px 18px 10px; display: flex; align-items: center; gap: 8px; }
+.detail h1 { margin: 0; font-size: 19px; }
+.detail .list { overflow-y: auto; padding: 0 18px 24px; display: flex; flex-direction: column; }
+.xing { display: grid; grid-template-columns: 58px 28px 1fr; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.xing time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
+.mark { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; }
+.mark.go { background: var(--go); }
+.mark.stop { background: var(--stop); }
+.mark.none { background: #B7BFCB; }
+.xing b { font-weight: 600; display: block; }
+.xing small { color: var(--muted); font-size: 12.5px; }
+.note { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); }
+/* 걷는 중 */
+.next {
+  position: absolute; z-index: 10; left: 14px; right: 14px; top: 46px; background: var(--asphalt); color: var(--zebra);
+  border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.next .dist { font-family: var(--display); font-size: 30px; }
+.next p { margin: 0; }
+.next .say { color: var(--lane); font-weight: 600; }
+.progress { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.progress div { display: flex; flex-direction: column; }
+.progress span { color: var(--muted); font-size: 12px; }
+.progress strong { font-family: var(--display); font-size: 24px; font-weight: 400; }
+/* 도착 공유 카드 */
+.done { background: #1E2430; color: var(--zebra); align-items: center; justify-content: center; gap: 18px; padding: 48px 26px 26px; }
+.card {
+  width: 100%; border-radius: 26px; padding: 26px 22px 22px; position: relative; overflow: hidden;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 26px, transparent 26px 52px), #262D3B;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.card .logo { position: absolute; top: 16px; left: 20px; font-family: var(--display); font-size: 18px; color: var(--lane); }
+.card .date { position: absolute; top: 19px; right: 20px; font-size: 12px; color: #A7B0C0; }
+.card svg { width: 220px; height: 220px; margin-top: 22px; }
+.card .kind { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+.stat-big { display: flex; flex-direction: column; align-items: center; }
+.stat-big strong { font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-big span { font-size: 12px; color: #A7B0C0; }
+.compare { margin: 12px 0 0; font-size: 14px; color: var(--lane); font-weight: 600; text-align: center; }
+.done .hint { font-size: 12.5px; color: #A7B0C0; margin: 0; text-align: center; }
+.done .actions { width: 100%; }
+.done .btn-ghost { background: #333B4B; color: var(--zebra); flex: 1; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="phone" id="phone">
+  <div class="badge">예시 화면 · 대기시간은 예시 값</div>
+
+  <!-- ① 홈 -->
+  <section class="screen" id="s-home" hidden>
+    <div class="map" id="map-home"></div>
+    <div class="topbar">
+      <span aria-hidden="true">🔍</span>
+      <label for="q" style="position:absolute;left:-9999px">목적지</label>
+      <input id="q" placeholder="어디로 걸어갈까요?" autocomplete="off">
+    </div>
+    <div class="home-chips chips">
+      <button class="chip" data-go="result">회사</button>
+      <button class="chip" data-go="result">집</button>
+      <button class="chip" data-go="result">최근 · 선릉 오피스</button>
+    </div>
+    <div class="sheet">
+      <div class="grip"></div>
+      <div class="row-label"><h2>지금 여기는 신호 패턴을 알고 있어요</h2></div>
+      <p class="safety" style="font-size:13px">테헤란로 역삼역–선릉역 구간의 횡단보도는 신호 주기를 반영해 길을 찾아요. 다른 곳은 신호 개수만 따져요.</p>
+      <button class="btn btn-primary" data-go="result">선릉 오피스까지 길 찾기</button>
+    </div>
+  </section>
+
+  <!-- ② 경로 결과 -->
+  <section class="screen" id="s-result" hidden>
+    <div class="map" id="map-result"></div>
+    <div class="topbar">
+      <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
+      <div class="trip"><b>역삼역 3번 출구 → 선릉 오피스</b><span id="depart-label">08:40 출발 · 걷는 속도 1.2m/s</span></div>
+    </div>
+    <div class="sheet">
+      <div class="grip"></div>
+      <div class="row-label">
+        <h2>언제 출발해요?</h2>
+        <div class="chips" role="group" aria-label="출발 시각">
+          <button class="chip" data-dep="0" aria-pressed="true">지금</button>
+          <button class="chip" data-dep="60" aria-pressed="false">+1분</button>
+          <button class="chip" data-dep="180" aria-pressed="false">+3분</button>
+        </div>
+      </div>
+      <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+      <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
+      <p class="tradeoff" id="tradeoff"></p>
+      <div class="legend"><span><i class="dot" style="background:var(--lane)"></i>걷는 시간</span><span><i class="dot" style="background:var(--stop)"></i>신호 기다림</span></div>
+      <div class="actions">
+        <button class="btn btn-ghost" data-go="detail">횡단보도 보기</button>
+        <button class="btn btn-primary" data-go="walk">쭉고로 걷기 시작</button>
+      </div>
+      <p class="safety">예상값이에요. 건널 때는 신호를 꼭 확인하세요.</p>
+    </div>
+  </section>
+
+  <!-- ③ 횡단보도 상세 -->
+  <section class="screen detail" id="s-detail" hidden>
+    <header>
+      <button class="icon-btn" data-go="result" aria-label="뒤로">‹</button>
+      <h1 id="detail-title"></h1>
+    </header>
+    <div class="list" id="detail-list"></div>
+  </section>
+
+  <!-- ④ 걷는 중 -->
+  <section class="screen" id="s-walk" hidden>
+    <div class="map" id="map-walk"></div>
+    <div class="next" aria-live="polite">
+      <p style="font-size:13px;color:#A7B0C0">다음 횡단보도</p>
+      <div class="dist" id="next-dist">—</div>
+      <p id="next-state"></p>
+      <p class="say" id="next-say"></p>
+    </div>
+    <div class="sheet">
+      <div class="grip"></div>
+      <div class="progress">
+        <div><span>멈춘 횟수</span><strong id="w-stops">0</strong></div>
+        <div><span>남은 시간</span><strong id="w-left">—</strong></div>
+        <div><span>도착 예상</span><strong id="w-eta">—</strong></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" data-go="result">그만 걷기</button>
+        <button class="btn btn-primary" data-go="done">도착 화면 보기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ 도착 공유 카드 -->
+  <section class="screen done" id="s-done" hidden>
+    <div class="card" id="share-card">
+      <span class="logo">쭉고</span>
+      <span class="date" id="card-date"></span>
+      <div id="card-shape"></div>
+      <div class="kind">걷기 · 역삼역 → 선릉</div>
+      <div class="stat-big"><strong id="c-stops"></strong><span>멈춘 횟수</span></div>
+      <div class="stat-big"><strong id="c-wait"></strong><span>신호 기다림</span></div>
+      <div class="stat-big"><strong id="c-time"></strong><span>걸은 시간</span></div>
+      <p class="compare" id="c-compare"></p>
+    </div>
+    <p class="hint">스크린샷을 찍어 공유해 보세요</p>
+    <div class="actions">
+      <button class="btn btn-ghost" data-go="result">다시 길 찾기</button>
+    </div>
+  </section>
+</div>
+
+<script>
+// 예시 데이터. 좌표는 지도 SVG(390×430) 기준, 1px ≈ 2m. 신호 계획(주기·초록·시작 오프셋)은 예시 값.
+const SPEED = 1.2, MPX = 2, BASE = 8 * 3600 + 40 * 60;
+const SIG = {
+  a: { c: 140, g: 30, o: 42, name: "테헤란로 횡단보도" },
+  b: { c: 140, g: 35, o: 9, name: "언주로 횡단보도 (북쪽)" },
+  c: { c: 150, g: 35, o: 95, name: "선릉로 횡단보도 (북쪽)" },
+  d: { c: 150, g: 25, o: 138, name: "언주로 횡단보도 (남쪽)" },
+  e: { c: 120, g: 35, o: 89, name: "역삼 골목 앞 횡단보도" },
+  f: { c: 140, g: 25, o: 17, name: "선릉로 횡단보도 (남쪽)" },
+  g: { c: 150, g: 25, o: 75, name: "선릉역 앞 테헤란로 횡단보도" },
+};
+const ROUTES = {
+  jjuk: { label: "쭉고", pts: [[65,268],[75,268],[75,150],[200,150],[345,150],[365,150],[365,132]],
+    x: [{ at:[75,259], s:"a" }, { at:[125,150], s:null, name:"골목 (신호 없음)" }, { at:[200,150], s:"b" },
+        { at:[275,150], s:null, name:"골목 (신호 없음)" }, { at:[345,150], s:"c" }] },
+  short: { label: "최단", pts: [[65,268],[358,268],[358,132],[365,132]],
+    x: [{ at:[125,268], s:null, name:"골목 (신호 없음)" }, { at:[200,268], s:"d" }, { at:[275,268], s:"e" },
+        { at:[345,268], s:"f" }, { at:[358,250], s:"g" }, { at:[358,150], s:null, name:"이면도로 (신호 없음)" }] },
+};
+
+function polyLen(p) { let s = 0; for (let i = 0; i < p.length - 1; i++) s += Math.hypot(p[i+1][0]-p[i][0], p[i+1][1]-p[i][1]); return s; }
+function along(pts, p) {
+  let acc = 0, best = 1e9, res = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i+1], dx = b[0]-a[0], dy = b[1]-a[1], L = Math.hypot(dx, dy);
+    let t = ((p[0]-a[0])*dx + (p[1]-a[1])*dy) / (L*L); t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(p[0]-(a[0]+t*dx), p[1]-(a[1]+t*dy));
+    if (d < best) { best = d; res = acc + t*L; }
+    acc += L;
+  }
+  return res;
+}
+function pointAt(pts, dist) {
+  let acc = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i+1], L = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    if (acc + L >= dist) { const t = (dist - acc) / L; return [a[0] + t*(b[0]-a[0]), a[1] + t*(b[1]-a[1])]; }
+    acc += L;
+  }
+  return pts[pts.length - 1];
+}
+
+// 경로를 따라 걸으며 횡단보도마다 도착 시각의 신호 위상으로 대기를 계산한다.
+function simulate(key, dep) {
+  const r = ROUTES[key];
+  let t = BASE + dep, prev = 0;
+  const xs = r.x.map(x => ({ ...x, d: along(r.pts, x.at) })).sort((a, b) => a.d - b.d);
+  const segs = [], xings = [];
+  for (const x of xs) {
+    const walk = (x.d - prev) * MPX / SPEED;
+    segs.push({ type: "walk", s: walk }); t += walk; prev = x.d;
+    let w = 0;
+    if (x.s) { const g = SIG[x.s]; const ph = ((t - g.o) % g.c + g.c) % g.c; if (ph >= g.g) w = g.c - ph; }
+    xings.push({ name: x.s ? SIG[x.s].name : x.name, sig: !!x.s, arrive: t, wait: Math.round(w), d: x.d });
+    if (w > 0) segs.push({ type: "wait", s: w });
+    t += w;
+  }
+  const tail = (polyLen(r.pts) - prev) * MPX / SPEED;
+  segs.push({ type: "walk", s: tail }); t += tail;
+  const wait = xings.reduce((a, x) => a + x.wait, 0);
+  return { key, segs, xings, wait, stops: xings.filter(x => x.wait > 2).length,
+           total: t - BASE - dep, walk: t - BASE - dep - wait, meters: Math.round(polyLen(r.pts) * MPX) };
+}
+
+const clock = s => { s = Math.round(s); const h = Math.floor(s/3600), m = Math.floor(s/60)%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); };
+const mmss = s => { s = Math.round(s); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); };
+const mins = s => Math.round(s/60) + "분";
+function phrase(s) { s = Math.round(Math.abs(s)); const m = Math.floor(s/60), r = s % 60; return (m ? m + "분 " : "") + (r ? r + "초" : (m ? "" : "0초")); }
+
+// ---------- 지도 ----------
+function mapSVG(opts) {
+  const roads = [
+    // [x1,y1,x2,y2,width,name]
+    [-200,250,600,250,24,"테헤란로"], [40,150,375,150,9,""], [40,345,375,345,9,""],
+    [50,-400,50,640,20,"논현로"], [200,-400,200,640,16,"언주로"], [345,-400,345,640,20,"선릉로"],
+    [125,60,125,420,7,""], [275,60,275,420,7,""],
+  ];
+  const pad = opts.pad || 0;
+  let s = `<svg viewBox="0 ${-pad} 390 ${430 + pad}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="역삼역에서 선릉역까지 지도">`;
+  s += `<rect x="-200" y="${-pad - 200}" width="790" height="${830 + pad}" fill="var(--block)"/>`;
+  for (const [x1,y1,x2,y2,w] of roads) s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--road)" stroke-width="${w}"/>`;
+  // 테헤란로 중앙선
+  s += `<line x1="-200" y1="250" x2="600" y2="250" stroke="#F2D27A" stroke-width="1.5"/>`;
+  // 길 이름
+  s += `<text x="150" y="243" font-size="10" fill="#8A93A3" font-family="var(--body)">테헤란로</text>`;
+  for (const [x, n] of [[50,"논현로"],[200,"언주로"],[345,"선릉로"]]) s += `<text x="${x+13}" y="395" font-size="10" fill="#8A93A3">${n}</text>`;
+  // 역
+  for (const [x, y, n, lx] of [[50,250,"역삼역",6],[345,250,"선릉역",292]]) {
+    s += `<circle cx="${x}" cy="${y}" r="9" fill="#fff" stroke="var(--asphalt)" stroke-width="3"/>`;
+    s += `<text x="${lx}" y="${y-18}" font-size="11" font-weight="700" fill="var(--asphalt)">${n}</text>`;
+  }
+  if (opts.routes) {
+    const order = opts.focus === "short" ? ["jjuk","short"] : ["short","jjuk"];
+    for (const k of order) {
+      const r = ROUTES[k], d = r.pts.map(p => p.join(",")).join(" ");
+      const on = opts.focus === k;
+      if (k === "short") s += `<polyline points="${d}" fill="none" stroke="#7E8899" stroke-width="${on?6:4}" stroke-dasharray="2 7" stroke-linecap="round" stroke-linejoin="round" opacity="${on?1:.85}"/>`;
+      else s += `<polyline points="${d}" fill="none" stroke="var(--asphalt)" stroke-width="${on?11:9}" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="${d}" fill="none" stroke="var(--lane)" stroke-width="${on?7:5}" stroke-linecap="round" stroke-linejoin="round" opacity="${on?1:.7}"/>`;
+    }
+    for (const k of ["short","jjuk"]) {
+      const sim = opts.sims[k];
+      sim.xings.forEach(x => {
+        if (!x.sig) return;
+        const [px, py] = ROUTES[k].x.find(z => z.s && SIG[z.s].name === x.name).at;
+        const stop = x.wait > 2;
+        s += `<g><circle cx="${px}" cy="${py}" r="9" fill="${stop ? "var(--stop)" : "var(--go)"}" stroke="#fff" stroke-width="2"/>`;
+        s += `<text x="${px}" y="${py+3.5}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">${stop ? "Ⅱ" : "✓"}</text></g>`;
+        if (stop && opts.focus === k) s += `<text x="${px+12}" y="${py-10}" font-size="11" font-weight="700" fill="var(--stop)">${x.wait}초</text>`;
+      });
+    }
+  }
+  // 출발·도착
+  s += `<circle cx="65" cy="268" r="7" fill="var(--asphalt)" stroke="#fff" stroke-width="3"/>`;
+  s += `<g><circle cx="365" cy="132" r="10" fill="var(--asphalt)"/><circle cx="365" cy="132" r="4" fill="var(--lane)"/></g>`;
+  s += `<text x="300" y="118" font-size="11" font-weight="600" fill="var(--asphalt)">선릉 오피스</text>`;
+  if (opts.walker) s += `<circle id="walker" cx="65" cy="268" r="9" fill="#2E7BF6" stroke="#fff" stroke-width="3"/>`;
+  if (opts.me) s += `<circle cx="65" cy="268" r="16" fill="#2E7BF6" opacity=".18"/><circle cx="65" cy="268" r="8" fill="#2E7BF6" stroke="#fff" stroke-width="3"/>`;
+  return s + "</svg>";
+}
+
+// ---------- 상태 ----------
+const state = { dep: 0, focus: "jjuk" };
+const $ = id => document.getElementById(id);
+function sims() { return { jjuk: simulate("jjuk", state.dep), short: simulate("short", state.dep) }; }
+
+function stripHTML(sim, scale, walkClass) {
+  return sim.segs.map(seg => `<i class="${seg.type === "wait" && seg.s > 2 ? "wait" : walkClass}" style="width:${(seg.s/scale*100).toFixed(2)}%"></i>`).join("");
+}
+function renderResult() {
+  const S = sims(), scale = Math.max(S.jjuk.total, S.short.total);
+  $("depart-label").textContent = `${clock(BASE + state.dep)} 출발 · 걷는 속도 1.2m/s`;
+  for (const k of ["jjuk","short"]) {
+    const sim = S[k], el = $("card-" + k);
+    el.setAttribute("aria-pressed", String(state.focus === k));
+    el.innerHTML = `<span class="name">${ROUTES[k].label}</span><span class="mins">${mins(sim.total)}</span>
+      <span class="stat">멈춤 <strong>${sim.stops}번</strong> · 기다림 <strong>${mmss(sim.wait)}</strong></span>
+      <span class="strip" aria-hidden="true">${stripHTML(sim, scale, k === "jjuk" ? "walk-j" : "walk-s")}</span>`;
+  }
+  const dWalk = S.jjuk.walk - S.short.walk, dWait = S.short.wait - S.jjuk.wait;
+  let t;
+  if (dWait <= 5) t = "지금은 두 길의 기다림이 비슷해요.";
+  else if (dWalk > 20) t = `${phrase(dWalk)} 더 걷고, ${phrase(dWait)} 덜 기다려요.`;
+  else t = `걷는 거리는 비슷하고, ${phrase(dWait)} 덜 기다려요.`;
+  $("tradeoff").textContent = t;
+  document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
+  $("map-result").innerHTML = mapSVG({ routes: true, sims: S, focus: state.focus, pad: 90 });
+}
+function renderDetail() {
+  const sim = simulate(state.focus, state.dep);
+  $("detail-title").textContent = `${ROUTES[state.focus].label} 경로의 횡단보도 ${sim.xings.length}곳`;
+  $("detail-list").innerHTML = sim.xings.map(x => {
+    const cls = !x.sig ? "none" : x.wait > 2 ? "stop" : "go";
+    const mark = !x.sig ? "–" : x.wait > 2 ? "Ⅱ" : "✓";
+    const say = !x.sig ? "신호 없는 길이라 그대로 지나가요" : x.wait > 2 ? `도착하면 빨간불, 약 ${x.wait}초 기다려요` : "도착하면 초록불, 그대로 건너요";
+    return `<div class="xing"><time>${clock(x.arrive)}</time><span class="mark ${cls}">${mark}</span><div><b>${x.name}</b><small>${say}</small></div></div>`;
+  }).join("") + `<p class="note">시간은 걷는 속도 1.2m/s 기준 예상이고, 신호는 수집한 패턴으로 예측해요. 이 화면의 신호 값은 예시예요. 건널 때는 신호를 꼭 확인하세요.</p>`;
+}
+
+let walkTimer = null;
+function renderWalk() {
+  const sim = simulate("jjuk", state.dep);
+  $("map-walk").innerHTML = mapSVG({ routes: true, sims: { jjuk: sim, short: simulate("short", state.dep) }, focus: "jjuk", walker: true, pad: 170 });
+  const pts = ROUTES.jjuk.pts, L = polyLen(pts), DUR = 9000;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const start = performance.now();
+  cancelAnimationFrame(walkTimer);
+  const step = now => {
+    const f = reduce ? 0.32 : Math.min(1, (now - start) / DUR), dist = f * L;
+    const [x, y] = pointAt(pts, dist), w = $("walker");
+    if (w) { w.setAttribute("cx", x); w.setAttribute("cy", y); }
+    const elapsed = f * sim.total;
+    const next = sim.xings.find(z => z.sig && z.d > dist + 1);
+    const passed = sim.xings.filter(z => z.d <= dist && z.wait > 2).length;
+    $("w-stops").textContent = passed;
+    $("w-left").textContent = mins(sim.total - elapsed);
+    $("w-eta").textContent = clock(BASE + state.dep + sim.total);
+    if (next) {
+      $("next-dist").textContent = Math.round((next.d - dist) * MPX) + "m";
+      if (next.wait > 2) { $("next-state").textContent = `${next.name} · 도착하면 약 ${next.wait}초 기다려요`; $("next-say").textContent = "천천히 가도 괜찮아요"; }
+      else { $("next-state").textContent = `${next.name} · 도착하면 초록불이에요`; $("next-say").textContent = "지금처럼 걸으면 돼요"; }
+    } else { $("next-dist").textContent = "도착 직전"; $("next-state").textContent = "남은 신호가 없어요"; $("next-say").textContent = "쭉 가세요"; }
+    if (f < 1 && !reduce) walkTimer = requestAnimationFrame(step);
+  };
+  walkTimer = requestAnimationFrame(step);
+}
+function renderDone() {
+  const sim = simulate("jjuk", state.dep), other = simulate("short", state.dep);
+  $("c-stops").textContent = sim.stops + "번";
+  $("c-wait").textContent = mmss(sim.wait);
+  $("c-time").textContent = mmss(sim.total);
+  $("c-compare").textContent = `최단으로 갔다면 ${other.stops}번 멈추고 ${mmss(other.wait)} 기다렸을 거예요`;
+  $("card-date").textContent = `10월 28일 ${clock(BASE + state.dep)}`;
+  // 경로 실루엣: 쭉고 경로를 정사각형 안에 맞춰 그리고 멈춘 곳만 빨간 점
+  const pts = ROUTES.jjuk.pts, xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const k = 150 / Math.max(maxX - minX, maxY - minY), ox = (190 - (maxX - minX) * k) / 2, oy = (190 - (maxY - minY) * k) / 2;
+  const tx = p => [(p[0] - minX) * k + ox, (p[1] - minY) * k + oy];
+  let s = `<svg viewBox="0 0 190 190" aria-label="걸은 경로 모양">`;
+  s += `<polyline points="${pts.map(p => tx(p).join(",")).join(" ")}" fill="none" stroke="var(--lane)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const [sx, sy] = tx(pts[0]), [ex, ey] = tx(pts[pts.length - 1]);
+  s += `<circle cx="${sx}" cy="${sy}" r="6" fill="#262D3B" stroke="var(--lane)" stroke-width="3"/><circle cx="${ex}" cy="${ey}" r="7" fill="var(--lane)"/>`;
+  sim.xings.filter(x => x.wait > 2).forEach(x => { const [px, py] = tx(pointAt(pts, x.d)); s += `<circle cx="${px}" cy="${py}" r="7" fill="var(--stop)" stroke="#262D3B" stroke-width="2.5"/>`; });
+  $("card-shape").innerHTML = s + "</svg>";
+}
+
+// ---------- 화면 전환 (#home #result #detail #walk #done) ----------
+const SCREENS = ["home","result","detail","walk","done"];
+function show(name) {
+  if (!SCREENS.includes(name)) name = "result";
+  SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
+  if (name !== "walk") cancelAnimationFrame(walkTimer);
+  if (name === "home") $("map-home").innerHTML = mapSVG({ me: true, pad: 120 });
+  if (name === "result") renderResult();
+  if (name === "detail") renderDetail();
+  if (name === "walk") renderWalk();
+  if (name === "done") renderDone();
+}
+function go(name) { if (location.hash === "#" + name) show(name); else location.hash = name; }
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-go],[data-dep],[data-route]");
+  if (!b) return;
+  if (b.dataset.dep !== undefined) { state.dep = +b.dataset.dep; renderResult(); return; }
+  if (b.dataset.route) { state.focus = b.dataset.route; renderResult(); return; }
+  go(b.dataset.go);
+});
+$("q").addEventListener("keydown", e => { if (e.key === "Enter") go("result"); });
+addEventListener("hashchange", () => show(location.hash.slice(1)));
+show(location.hash.slice(1) || "result");
+</script>
