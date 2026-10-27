@@ -5,17 +5,19 @@
   seoul_crossings.csv (전국 교차로 목록 중 서울 C-ITS 신호 교차로)
 
 출력 (OUT 아래, 웹앱 옆에 함께 올린다):
-  tiles/index.json, tiles/b*.bin  타일 묶음. 파일 수 제한 때문에 타일을 묶고, 위치는 index에 둔다.
+  tiles/index.json, tiles/b*.txt  타일 묶음(base64 글자). 파일 수 제한 때문에 타일을 묶고, 위치는 index에 둔다.
+                                  웹앱 호스팅이 바이너리 파일을 받지 않아 글자로 바꿔 둔다.
   graph/index.json, graph/c*.json 보행 그래프 조각(약 1.8km 칸). 길찾기는 브라우저에서 필요한 칸만 받아 한다.
   search.json                     장소 검색 목록(역·동네·주요 시설)
   signals.json                    신호 교차로 위치(C-ITS + OSM 신호 표시)
-  glyphs/*.pbf                    지도 글자(라틴·숫자·문장부호). 한글은 기기 글꼴로 그린다.
+  glyphs/*.txt                    지도 글자(base64)(라틴·숫자·문장부호). 한글은 기기 글꼴로 그린다.
                                   GLYPHS 폴더는 npm 패키지 smp-noto-glyphs의 fixtures/glyphs (Noto Sans, OFL)
 
 사용: python scripts/build_seoul_map.py Seoul.osm.pbf Seoul.mbtiles seoul_crossings.csv OUT [GLYPHS]
 """
 from __future__ import annotations
 
+import base64
 import csv
 import gzip
 import json
@@ -359,8 +361,8 @@ def write_tiles(mbtiles: Path, out: Path):
         for z, x, y, data in tiles:
             index["tiles"][f"{z}/{x}/{y}"] = [bi, len(buf), len(data)]
             buf += data
-        name = f"b{bi}.bin"
-        (out / "tiles" / name).write_bytes(bytes(buf))
+        name = f"b{bi}.txt"
+        (out / "tiles" / name).write_text(base64.b64encode(bytes(buf)).decode("ascii"), encoding="ascii")
         index["bundles"].append(name)
     (out / "tiles" / "index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
     return len(groups), len(index["tiles"])
@@ -385,7 +387,8 @@ def main():
     if len(sys.argv) > 5:
         (out / "glyphs").mkdir(exist_ok=True)
         for r in ("0-255", "256-511", "8192-8447"):
-            (out / "glyphs" / f"{r}.pbf").write_bytes(gzip.decompress((Path(sys.argv[5]) / f"{r}.pbf.gz").read_bytes()))
+            raw = gzip.decompress((Path(sys.argv[5]) / f"{r}.pbf.gz").read_bytes())
+            (out / "glyphs" / f"{r}.txt").write_text(base64.b64encode(raw).decode("ascii"), encoding="ascii")
 
 
 if __name__ == "__main__":

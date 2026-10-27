@@ -543,16 +543,17 @@ function loadCell(k) {
   return G.cells.get(k);
 }
 function snap(ll) {
-  const [X, Y] = toQ(ll); let best = null, bd = Infinity;
+  const [X, Y] = toQ(ll); let best = null, bd = Infinity, road = null, rd = Infinity;
   // 출발·도착은 지상 길에만 붙인다(역 좌표가 지하 통로 위에 있으면 이상하게 돌아간다)
   for (const [id, n] of G.node) {
     const es = G.adj.get(id);
     if (!es || !es.some(e => e.cls <= 2)) continue;  // 계단(3)·지하(4)만 이어진 점은 빼고
-    // 보행로만 이어진 점(광장·역 출입구 둘레 등)은 25m 손해로 쳐서, 가까운 도로가 있으면 도로에 붙인다
-    const dx = (n.x - X) * KXQ, dy = (n.y - Y) * KYQ, d = Math.hypot(dx, dy) + (es.some(e => e.cls <= 1) ? 0 : 25);
+    const d = Math.hypot((n.x - X) * KXQ, (n.y - Y) * KYQ);
     if (d < bd) { bd = d; best = id; }
+    if (d < rd && es.some(e => e.cls <= 1)) { rd = d; road = id; }
   }
-  return { id: best, d: bd };
+  // 보행로만 이어진 점(광장·역 둘레)은 지하 통로로만 이어진 경우가 있어, 60m 안에 도로가 있으면 도로에 붙인다
+  return rd <= 60 ? { id: road, d: rd } : { id: best, d: bd };
 }
 class Heap {
   constructor() { this.a = []; }
@@ -562,10 +563,9 @@ class Heap {
 }
 // mode "short": 거리만. mode "jjuk": 걷는 시간 + 신호 비용(패턴 있으면 도착 시각의 예상 대기 + 멈춤 비용, 없으면 평균 비용).
 function search(src, dst, mode, dep) {
-  // 출발점이 신호 교차로 안이면 그 신호부터 기다린다(simulate와 같게)
-  const s0 = G.node.get(src).s, w0 = mode === "jjuk" && s0 && known(s0) ? sigWait(s0, BASE + dep) : 0;
-  const cost = new Map([[src, w0]]), time = new Map([[src, w0]]), prev = new Map(), done = new Set(), h = new Heap();
-  h.push(w0, src);
+  // 출발점이 신호 교차로 안이면 그 신호는 세지 않는다(어느 쪽으로 건널지 아직 정하지 않은 자리라서). buildRoute도 같다
+  const cost = new Map([[src, 0]]), time = new Map([[src, 0]]), prev = new Map(), done = new Set(), h = new Heap();
+  h.push(0, src);
   while (h.size) {
     const [c, u] = h.pop();
     if (done.has(u)) continue;
@@ -601,7 +601,6 @@ function buildRoute(steps, src, fromLL, toLL) {
   const add = (ll, u) => { const d = cum[cum.length - 1] + distLL(coords[coords.length - 1], ll); coords.push(ll); cum.push(d); if (u) under.push(coords.length - 1); };
   const s0 = G.node.get(src);
   add(fromQ(s0.x, s0.y));
-  if (s0.s) x.push({ s: s0.s, d: cum[cum.length - 1], at: coords[coords.length - 1] });
   for (const [u, v, e] of steps) {
     const pts = edgePts(e, u);
     for (let i = 1; i < pts.length; i++) add(fromQ(...pts[i]), e.cls === 4);
@@ -649,8 +648,16 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 // ---------- 지도 ----------
 async function tileBundle(i) {
   if (!tileBundle.c) tileBundle.c = new Map();
-  if (!tileBundle.c.has(i)) tileBundle.c.set(i, fetch(DATA + "tiles/" + IDX.bundles[i]).then(r => { if (!r.ok) throw new Error("tile " + r.status); return r.arrayBuffer(); }));
+  if (!tileBundle.c.has(i)) tileBundle.c.set(i, fetchB64("tiles/" + IDX.bundles[i]));
   return tileBundle.c.get(i);
+}
+// 웹앱 호스팅이 바이너리 파일을 받지 않아 타일·글자 파일은 base64 글자로 올려 두었다
+async function fetchB64(p) {
+  const r = await fetch(DATA + p);
+  if (!r.ok) throw new Error(p + " " + r.status);
+  const s = atob(await r.text()), a = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+  return a.buffer;
 }
 const gunzip = buf => new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
 const GLYPH_RANGES = new Set(["0-255", "256-511", "8192-8447"]);
@@ -659,8 +666,7 @@ maplibregl.addProtocol("jj", async params => {
   if (u.startsWith("glyphs/")) {
     const range = u.split("/").pop();
     if (!GLYPH_RANGES.has(range)) return { data: new ArrayBuffer(0) };
-    const r = await fetch(DATA + "glyphs/" + range + ".pbf");
-    return { data: await r.arrayBuffer() };
+    return { data: await fetchB64("glyphs/" + range + ".txt") };
   }
   const ent = IDX.tiles[u.slice(6)];
   if (!ent) return { data: new ArrayBuffer(0) };
@@ -748,7 +754,7 @@ function mapStyle() {
         ["match", ["get", "kind"], ["city", "borough"], 15, ["suburb", "town"], 13.5, 12], "#3D3A35", { paint: { "text-halo-width": 2 } }),
       { id: "station", type: "circle", source: "osm", "source-layer": "public_transport", minzoom: 12.5, filter: kinds(["station", "halt"]), paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12.5, 3, 16, 6], "circle-color": "#2FA84F", "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } },
       label("station-label", "public_transport", kinds(["station", "halt"]), 13, ["interpolate", ["linear"], ["zoom"], 13, 11, 16, 13], "#23863D",
-        { layout: { "text-anchor": "top", "text-offset": [0, .7], "text-field": ["case", ["in", "역", ["get", "name"]], ["get", "name"], ["concat", ["get", "name"], "역"]] }, paint: { "text-halo-width": 2 } }),
+        { layout: { "text-anchor": "top", "text-offset": [0, .7], "text-padding": 40, "text-field": ["case", ["in", "역", ["get", "name"]], ["get", "name"], ["concat", ["get", "name"], "역"]] }, paint: { "text-halo-width": 2 } }),
     ],
   };
 }
