@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: data-branch
+  group: data-maint
   cancel-in-progress: false
 
 jobs:

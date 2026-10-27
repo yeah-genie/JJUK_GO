@@ -2,6 +2,15 @@
 
 쭉고의 신호 대기시간 학습 데이터는 **사람이 내려받지 않는다.** GitHub Actions가 15분마다 서울시 C-ITS 실시간 API를 호출해 스냅샷을 쌓는다.
 
+## 현재 수집 방식 (2026-10-28 갱신)
+
+- **5분마다 1회**: API가 키 전체에 300초 1회로 제한하므로 하루 최대 288회. `collect` 워크플로가 한 번 시작되면 50분 동안 5분 간격으로 수집하고, 끝날 때 스스로 다음 실행을 띄운다(`loop`). GitHub 예약 실행(cron)은 처음 2시간 동안 한 번도 돌지 않아서, 한 시간에 한 번 사슬이 끊겼을 때 다시 잇는 보조로만 둔다.
+- **교차로 순환**: 대상 교차로를 차례로 돌며, 지난 수집 이후 쌓인 만큼만 받는다(최소 300건, 최대 2,200건 ≈ 35분치). 마지막 수집 시각은 `meta/last_fetch.json`.
+- **저장은 상태 구간으로 압축**: `segments/YYYY/MM/DD/HHMMSS.csv.gz` 한 줄 = 한 신호의 한 상태 구간
+  (`itst_id, direction, movement, state, start_utc, end_utc, rem_start_ds, rem_end_ds, samples`).
+  잔여시간은 구간 안에서 일정하게 줄어드니 시작·끝 값만으로 다시 그릴 수 있다. 1초 원본(`signals/`)은 `[store] raw = true`일 때만 저장한다.
+- **처음 시작**: Actions → collect → Run workflow → command `loop`. 한 번 누르면 계속 이어진다. 멈추려면 Actions 화면에서 실행 중인 collect를 취소하고, 다시 시작하려면 같은 버튼을 누른다.
+
 ## 왜 CSV 다운로드가 아니라 API 수집인가
 
 2026-10-27 기준, 서울교통빅데이터플랫폼에서 확인되는 C-ITS 신호 데이터는 다음 두 가지다.

@@ -8,6 +8,8 @@ from jjukgo.store import read_day
 from jjukgo.tdata_client import FixtureClient, QuotaExceeded, RateLimited
 
 CFG = load_config(ROOT / "config" / "collector.toml")
+# 기존 테스트는 1초 원본(signals/)을 읽어 검증하므로 원본 저장을 켠다.
+CFG = {**CFG, "store": {**CFG["store"], "raw": True}}
 BULK_CFG = {**CFG, "api": {**CFG["api"], "bulk_min_intersections": 2}}
 NOW = datetime(2026, 10, 27, 23, 50, tzinfo=KST)  # 마지막 슬롯 → 남은 예산 전부 사용 가능
 
@@ -50,7 +52,7 @@ def test_bulk_mode_filters_to_targets(tmp_path):
 def test_per_intersection_round_robin(tmp_path):
     (tmp_path / "meta").mkdir()
     (tmp_path / "meta" / "api_probe.json").write_text(json.dumps({"version": 2, "mode": "per_intersection"}), encoding="utf-8")
-    cfg = {**CFG, "targets": {"itst_ids": ["1537", "23665", "1600"]}}
+    cfg = {**CFG, "budget": {**CFG["budget"], "calls_per_run": 3, "run_interval_min": 15}, "targets": {"itst_ids": ["1537", "23665", "1600"]}}
     budget, client = make(tmp_path)
     budget.usage.calls = 698  # 남은 예산 2회
     summary = collect_once(cfg, tmp_path, client, budget, NOW)
@@ -158,3 +160,34 @@ def test_discovered_ids_used_when_no_targets(tmp_path):
     budget, client = make(tmp_path)
     summary = collect_once(CFG, tmp_path, client, budget, NOW)
     assert summary["targets"] == 1 and summary["rows"] == 2
+
+
+def test_segments_written_and_raw_off_by_default(tmp_path):
+    from jjukgo.store import read_segments_day
+
+    cfg = {**BULK_CFG, "store": {**BULK_CFG["store"], "raw": False}}
+    budget, client = make(tmp_path)
+    summary = collect_once(cfg, tmp_path, client, budget, NOW)
+    assert summary["raw_file"] is None and summary["segments"] > 0
+    assert not (tmp_path / "signals").exists()
+    segs = list(read_segments_day(tmp_path, date(2026, 10, 27)))
+    assert {s["itst_id"] for s in segs} == {"1537", "23665"}  # 1600은 trsm 시각이 없어 구간을 만들 수 없다
+
+
+def test_adaptive_rows_and_last_fetch(tmp_path):
+    (tmp_path / "meta").mkdir()
+    (tmp_path / "meta" / "api_probe.json").write_text(json.dumps({"version": 2, "mode": "per_intersection"}), encoding="utf-8")
+    asked = []
+
+    class RecordingClient(FixtureClient):
+        def fetch(self, page_no=1, num_of_rows=1000, itst_id=None, max_wait_s=None):
+            asked.append(num_of_rows)
+            return super().fetch(page_no, num_of_rows, itst_id, max_wait_s)
+
+    cfg = {**CFG, "targets": {"itst_ids": ["1537"]}}
+    budget = Budget(tmp_path, NOW, 1000, 0.7)
+    collect_once(cfg, tmp_path, RecordingClient(FIXTURE, on_call=budget.record_call), budget, NOW)
+    later = NOW.replace(minute=55)  # 5분 뒤
+    budget = Budget(tmp_path, later, 1000, 0.7)
+    collect_once(cfg, tmp_path, RecordingClient(FIXTURE, on_call=budget.record_call), budget, later)
+    assert asked == [2200, 360]  # 처음엔 최대치, 5분 뒤엔 300초 + 여유 60건

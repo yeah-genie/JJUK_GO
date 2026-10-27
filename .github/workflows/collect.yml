@@ -1,31 +1,35 @@
 name: collect
 
-# 15분마다 C-ITS 신호 스냅샷을 수집해 data 브랜치에 쌓는다.
-# 실행 간격을 바꾸면 config/collector.toml 의 run_interval_min 도 같이 바꾼다.
+# 서울 C-ITS 보행신호를 5분마다 수집해 data 브랜치에 쌓는다.
+# 한 번 실행되면 50분 동안 5분 간격으로 수집하고, 끝날 때 스스로 다음 실행(loop)을 띄운다.
+# GitHub 예약 실행(cron)은 제때 안 돌 때가 있어 보조로만 둔다(한 시간에 한 번, 사슬이 끊겼을 때 다시 시작).
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7 * * * *"
   workflow_dispatch:
     inputs:
       command:
-        description: "once=수집 / discover=API 응답 구조 탐색(호출 ~6회) / probe=일괄 조회 재판정"
+        description: "loop=50분 연속 수집 후 다음 실행 예약 / once=한 번 / discover=API 응답 구조 탐색 / probe=일괄 조회 재판정"
         type: choice
-        options: [once, discover, probe]
-        default: once
+        options: [loop, once, discover, probe]
+        default: loop
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
-  group: data-branch
+  group: collect
   cancel-in-progress: false
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 70
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SEOUL_TDATA_API_KEY: ${{ secrets.SEOUL_TDATA_API_KEY }}
+      CMD: ${{ github.event.inputs.command || 'loop' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,9 +38,17 @@ jobs:
       - run: bash scripts/data_branch.sh checkout
       - name: Collect
         run: |
-          PYTHONPATH=src python -m jjukgo.collect "${{ github.event.inputs.command || 'once' }}" --data-dir datastore | tee -a "$GITHUB_STEP_SUMMARY"
-        env:
-          SEOUL_TDATA_API_KEY: ${{ secrets.SEOUL_TDATA_API_KEY }}
+          if [ "$CMD" = "loop" ]; then
+            bash scripts/collect_loop.sh 50
+          else
+            PYTHONPATH=src python -m jjukgo.collect "$CMD" --data-dir datastore | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Save
         if: always()
         run: bash scripts/data_branch.sh push "collect $(date -u +%Y-%m-%dT%H:%MZ)"
+      - name: Start next run
+        # GITHUB_TOKEN으로 띄운 workflow_dispatch는 새 실행을 만든다(다른 이벤트와 달리 허용됨).
+        if: always() && env.CMD == 'loop' && env.SEOUL_TDATA_API_KEY != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run collect.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.ref_name }}" -f command=loop

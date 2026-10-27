@@ -92,3 +92,24 @@ def load_discovered(data_dir: Path) -> list[str]:
     if path.exists():
         return [str(x) for x in json.loads(path.read_text(encoding="utf-8"))]
     return []
+
+
+def load_last_fetch(data_dir: Path) -> dict[str, float]:
+    path = Path(data_dir) / "meta" / "last_fetch.json"
+    if path.exists():
+        return {str(k): float(v) for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
+    return {}
+
+
+def save_last_fetch(data_dir: Path, last: dict[str, float]) -> None:
+    path = Path(data_dir) / "meta" / "last_fetch.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(last, sort_keys=True), encoding="utf-8")
+
+
+def rows_to_fetch(last: float | None, now_ts: float, cap: int, floor: int, msgs_per_s: float = 1.0) -> int:
+    """지난 수집 이후 쌓인 만큼만 받는다. 메시지는 교차로당 약 1초에 1건이고, 서버는 약 35분치까지 보관한다."""
+    if last is None:
+        return cap
+    need = int((now_ts - last) * msgs_per_s) + 60
+    return max(floor, min(cap, need))

@@ -26,8 +26,10 @@ from pathlib import Path
 from . import KST
 from .budget import Budget, run_allowance
 from .normalize import normalize
-from .store import read_day, write_part
-from .targets import load_cursor, load_discovered, load_targets, round_robin, save_cursor
+from .segments import to_segments
+from .store import read_day, read_segments_day, write_part, write_segments
+from .targets import (load_cursor, load_discovered, load_last_fetch, load_targets, round_robin, rows_to_fetch,
+                      save_cursor, save_last_fetch)
 from .tdata_client import ApiError, FixtureClient, QuotaExceeded, RateLimited, TDataClient
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -188,9 +190,14 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
                 summary["skipped"] = "교차로별 호출 모드인데 대상 교차로가 없음 (config/collector.toml [targets] 확인)"
             else:
                 picked, next_cursor = round_robin(targets, load_cursor(data_dir), min(allowance, budget_cfg.get("calls_per_run", allowance)))
+                last_fetch = load_last_fetch(data_dir)
                 for itst_id in picked:
-                    page, _ = client.fetch(1, api_cfg.get("rows_per_intersection", 300), itst_id)
+                    n = rows_to_fetch(last_fetch.get(itst_id), now.timestamp(),
+                                      api_cfg.get("rows_per_intersection", 2200), api_cfg.get("min_rows", 300))
+                    page, _ = client.fetch(1, n, itst_id)
                     records.extend(page)
+                    last_fetch[itst_id] = now.timestamp()
+                    save_last_fetch(data_dir, last_fetch)
                 save_cursor(data_dir, next_cursor)
     except RateLimited as e:
         summary["rate_limited"] = str(e)  # 기다리면 풀리는 제한: 오늘 수집을 멈추지 않는다
@@ -201,9 +208,13 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
         summary["error"] = str(e)
     finally:
         rows = normalize(records, now, store_cfg.get("movements"))
-        path = write_part(data_dir, rows, now)
+        segments = to_segments(rows)
+        seg_path = write_segments(data_dir, segments, now)
+        path = write_part(data_dir, rows, now) if store_cfg.get("raw", False) else None
         budget.save()
-        summary.update(records=len(records), rows=len(rows), file=str(path) if path else None, calls_today=budget.usage.calls)
+        summary.update(records=len(records), rows=len(rows), segments=len(segments),
+                       file=str(seg_path) if seg_path else None, raw_file=str(path) if path else None,
+                       calls_today=budget.usage.calls)
     return summary
 
 
@@ -220,6 +231,15 @@ def daily_report(data_dir: Path, day: date) -> Path:
         if r["remaining_ds"] == "":
             missing_remaining += 1
 
+    segs = list(read_segments_day(data_dir, day))
+    covered_s = 0.0
+    seg_itst = set()
+    for sg in segs:
+        seg_itst.add(sg["itst_id"])
+        t0 = datetime.fromisoformat(sg["start_utc"].replace("Z", "+00:00"))
+        t1 = datetime.fromisoformat(sg["end_utc"].replace("Z", "+00:00"))
+        covered_s += (t1 - t0).total_seconds()
+
     usage_path = Path(data_dir) / "meta" / "usage" / f"{day.isoformat()}.json"
     usage = json.loads(usage_path.read_text(encoding="utf-8")) if usage_path.exists() else {}
 
@@ -230,6 +250,7 @@ def daily_report(data_dir: Path, day: date) -> Path:
         f"- 교차로 수: {len(intersections):,}",
         f"- 잔여시간 결측: {missing_remaining:,}",
         f"- API 호출: {usage.get('calls', 0):,}" + (" (한도 도달)" if usage.get("quota_hit") else ""),
+        f"- 상태 구간: {len(segs):,}개 · 교차로 {len(seg_itst):,}곳 · 구간 길이 합 {covered_s / 3600:.1f}시간",
         "",
         "## 시간대별 행 수",
         "",

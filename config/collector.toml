@@ -12,8 +12,10 @@ max_pages = 10
 # 교차로 ID 없이 호출했을 때 서로 다른 교차로가 이 수 이상 오면 "전체 일괄 조회"로 본다.
 # (실제 응답은 최근 메시지 1,000건에 교차로가 2곳뿐이어서 일괄 조회가 아니었다.)
 bulk_min_intersections = 20
-# 교차로별 호출 한 번에 받을 메시지 수. 메시지는 약 1초 간격이라 300건 ≈ 5분 = 신호 여러 주기.
-rows_per_intersection = 300
+# 교차로별 호출 한 번에 받을 최대 메시지 수. 메시지는 교차로당 약 1초에 1건, 서버는 약 35분치를 보관한다(2026-10-28 실측).
+# 실제로는 지난 수집 이후 쌓인 만큼만(최소 min_rows) 받는다.
+rows_per_intersection = 2200
+min_rows = 300
 # 호출 간격 제한(300초에 1회)에 걸렸을 때 이 시간(초) 이내면 기다렸다가 다시 부른다.
 rate_limit_wait_max_s = 330
 
@@ -22,10 +24,10 @@ rate_limit_wait_max_s = 330
 daily_limit = 1000
 # 수집기가 쓸 비율. 나머지는 서비스 실시간 조회용으로 남겨둔다.
 collect_share = 0.7
-# GitHub Actions 실행 간격(분). collect.yml의 cron과 맞춘다.
-run_interval_min = 15
-# 한 번 실행에서 부를 횟수. 호출 간격 제한 때문에 실행 1번이 약 10분 걸린다. (3회 × 96실행 = 하루 288회)
-calls_per_run = 3
+# 수집 간격(분). API가 키 전체에 300초 1회로 제한하므로 5분. (하루 최대 288회)
+# collect.yml의 loop가 이 간격으로 once를 반복한다.
+run_interval_min = 5
+calls_per_run = 1
 # 출퇴근·점심 시간대(KST)에 호출을 더 배정한다.
 peak_hours = [7, 8, 9, 12, 13, 18, 19]
 peak_weight = 2.0
@@ -41,6 +43,8 @@ bbox = [127.020, 37.493, 127.055, 37.512]
 [store]
 # 저장할 신호 종류. Pd=보행, St=직진, Lt=좌회전, Ut=유턴, Bs=버스, Bc=자전거
 movements = ["Pd"]
+# 1초 단위 원본도 저장할지. 끄면 상태 구간(segments/)만 저장해 저장소가 작게 유지된다.
+raw = false
 
 [static]
 # 주 1회 내려받을 정적 파일. url에 {apiKey}를 넣으면 API 키로 치환된다.
