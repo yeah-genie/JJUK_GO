@@ -10,6 +10,8 @@ from jjukgo.tdata_client import FixtureClient, QuotaExceeded, RateLimited
 CFG = load_config(ROOT / "config" / "collector.toml")
 # 기존 테스트는 1초 원본(signals/)을 읽어 검증하므로 원본 저장을 켠다.
 CFG = {**CFG, "store": {**CFG["store"], "raw": True}}
+# 실제 설정의 대상 교차로(테헤란로)와 무관하게, 대상이 필요한 테스트는 직접 지정한다.
+CFG = {**CFG, "targets": {**CFG["targets"], "itst_ids": []}}
 BULK_CFG = {**CFG, "api": {**CFG["api"], "bulk_min_intersections": 2}}
 NOW = datetime(2026, 10, 27, 23, 50, tzinfo=KST)  # 마지막 슬롯 → 남은 예산 전부 사용 가능
 
