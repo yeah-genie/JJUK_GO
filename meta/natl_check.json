@@ -1,0 +1,136 @@
+{
+  "checked_at_utc": "2026-10-27T18:31:19.380559+00:00",
+  "steps": [
+    {
+      "op": "crsrd_map_info",
+      "params": {
+        "stdgCd": "1100000000",
+        "pageNo": 1,
+        "numOfRows": 1000
+      },
+      "http": 200,
+      "elapsed_s": 1.44,
+      "result_code": "K0",
+      "result_msg": "NORMAL_SERVICE",
+      "total_count": 2779,
+      "rows": 1000
+    },
+    {
+      "op": "crsrd_map_info",
+      "params": {
+        "stdgCd": "1100000000",
+        "pageNo": 2,
+        "numOfRows": 1000
+      },
+      "http": 200,
+      "elapsed_s": 1.16,
+      "result_code": "K0",
+      "result_msg": "NORMAL_SERVICE",
+      "total_count": 2779,
+      "rows": 1000
+    },
+    {
+      "op": "crsrd_map_info",
+      "params": {
+        "stdgCd": "1100000000",
+        "pageNo": 3,
+        "numOfRows": 1000
+      },
+      "http": 200,
+      "elapsed_s": 0.92,
+      "result_code": "K0",
+      "result_msg": "NORMAL_SERVICE",
+      "total_count": 2779,
+      "rows": 779
+    },
+    {
+      "op": "tl_drct_info",
+      "params": {
+        "stdgCd": "1100000000",
+        "pageNo": 1,
+        "numOfRows": 1000
+      },
+      "http": 200,
+      "elapsed_s": 0.55,
+      "result_code": "K3",
+      "result_msg": "NODATA_ERROR",
+      "total_count": 0,
+      "rows": 0
+    },
+    {
+      "op": "tl_drct_info",
+      "params": {
+        "stdgCd": "1100000000",
+        "pageNo": 1,
+        "numOfRows": 1000
+      },
+      "http": 200,
+      "elapsed_s": 0.42,
+      "result_code": "K3",
+      "result_msg": "NODATA_ERROR",
+      "total_count": 0,
+      "rows": 0
+    },
+    {
+      "op": "tl_drct_info",
+      "params": {
+        "stdgCd": "1100000000",
+        "pageNo": 1,
+        "numOfRows": 1000
+      },
+      "http": 200,
+      "elapsed_s": 0.67,
+      "result_code": "K3",
+      "result_msg": "NODATA_ERROR",
+      "total_count": 0,
+      "rows": 0
+    }
+  ],
+  "key_variant": "as_given",
+  "crossings": {
+    "seoul_total": 2779,
+    "reported_total": 2779,
+    "in_teheran_bbox": 103,
+    "teheran_examples": [
+      "109 서초삼성스위트아파트",
+      "1183 서초푸르지오써밋",
+      "1375 서초롯데캐슬아파트",
+      "1424 교보타워사거리",
+      "1460 개나리아파트정문",
+      "173 영동전화국",
+      "176 우리은행역삼",
+      "20109 서초삼성스위트아파트(연등)",
+      "20160 삼성힐스테이트2단지앞(연등)",
+      "21183 서초푸르지오써밋(연등)1",
+      "21375 서초롯데캐슬아파트(연등)",
+      "2203 논현역",
+      "2207 국기원입구",
+      "2212 선릉역",
+      "2217 역삼역"
+    ],
+    "watched_ids_found": {
+      "2691": true,
+      "1619": true,
+      "1537": true
+    },
+    "saved": "datastore/static/seoul_crossings.csv"
+  },
+  "signals_first_call": {
+    "rows": 0,
+    "distinct_intersections": 0,
+    "ped_values_filled": 0,
+    "ped_states": {},
+    "age_s_min": null,
+    "age_s_median": null,
+    "age_s_max": null,
+    "watched_present": [],
+    "sample": null
+  },
+  "repeat_calls": {
+    "immediate_rows": 0,
+    "immediate_blocked": true,
+    "after_10s_rows": 0,
+    "changed_after_10s": 0,
+    "compared": 0
+  }
+}
