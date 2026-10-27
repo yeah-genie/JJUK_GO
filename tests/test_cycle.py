@@ -60,3 +60,15 @@ def test_samples_from_segments():
     ]
     t, g = samples_from_segments(segs)
     assert len(t) == 20 and g[:10].sum() == 10 and g[10:].sum() == 0
+
+
+def test_green_windows_two_per_cycle():
+    from jjukgo.signal.cycle import green_windows
+
+    t = 1_793_000_000.0 + np.arange(1400, dtype=float)
+    ph = np.mod(t - t[0], 139.0)
+    g = (((ph >= 10) & (ph < 37)) | ((ph >= 67) & (ph < 94))).astype(float)
+    wins = green_windows(fit_cycle(t, g))
+    assert len(wins) == 2
+    assert [round(b - a) for a, b in sorted(wins)] == [27, 27]
+    assert abs(sorted(wins)[0][0] - 10) <= 1

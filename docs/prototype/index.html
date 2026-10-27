@@ -178,7 +178,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 </style>
 
 <div class="phone" id="phone">
-  <div class="badge">예시 화면 · 대기시간은 예시 값</div>
+  <div class="badge" id="badge">예시 화면 · 대기시간은 예시 값</div>
 
   <!-- ① 홈 -->
   <section class="screen" id="s-home" hidden>
@@ -307,6 +307,23 @@ const ROUTES = {
     x: [{ at:[289,-14], s:"2975" }, { at:[554,-14], s:"2219" }, { at:[836,-14], s:"2974" }, { at:[1135,0], s:"2212" }] },
 };
 const START = [15, -14], DEST = [1150, 95];
+// 수집 데이터로 찾은 실제 신호 패턴(scripts/export_signal_plans.py가 채운다). 있는 횡단보도는 예시 대신 이걸 쓴다.
+const REAL = /*REAL_SIGNALS*/{"day0":null,"date":null,"signals":{}}/*END_REAL*/;
+function sigWait(id, t) {
+  const r = REAL.signals[id];
+  if (r && REAL.day0) {
+    const ph = (((REAL.day0 + t - r.ref) % r.c) + r.c) % r.c;
+    let best = Infinity;
+    for (const [a, b] of r.win) {
+      for (const shift of [0, r.c]) { if (ph + shift >= a && ph + shift < b) return 0; }
+      best = Math.min(best, ((a - ph) % r.c + r.c) % r.c);
+    }
+    return best === Infinity ? 0 : best;
+  }
+  const g = SIG[id]; const ph = ((t - g.o) % g.c + g.c) % g.c;
+  return ph >= g.g ? g.c - ph : 0;
+}
+const realCount = () => Object.keys(SIG).filter(id => REAL.signals[id]).length;
 
 function polyLen(p) { let s = 0; for (let i = 0; i < p.length - 1; i++) s += Math.hypot(p[i+1][0]-p[i][0], p[i+1][1]-p[i][1]); return s; }
 function along(pts, p) {
@@ -340,7 +357,7 @@ function simulate(key, dep) {
     const walk = (x.d - prev) * MPX / SPEED;
     segs.push({ type: "walk", s: walk }); t += walk; prev = x.d;
     let w = 0;
-    if (x.s) { const g = SIG[x.s]; const ph = ((t - g.o) % g.c + g.c) % g.c; if (ph >= g.g) w = g.c - ph; }
+    if (x.s) w = sigWait(x.s, t);
     xings.push({ name: x.s ? SIG[x.s].name : x.name, sig: !!x.s, arrive: t, wait: Math.round(w), d: x.d });
     if (w > 0) segs.push({ type: "wait", s: w });
     t += w;
@@ -515,5 +532,7 @@ document.addEventListener("click", e => {
 });
 $("q").addEventListener("keydown", e => { if (e.key === "Enter") go("result"); });
 addEventListener("hashchange", () => show(location.hash.slice(1)));
+{ const n = realCount(), total = Object.keys(SIG).length;
+  if (n) $("badge").textContent = n === total ? `실제 신호 패턴 · ${REAL.date} 수집` : `실제 신호 ${n}/${total}곳 · 나머지는 예시`; }
 show(location.hash.slice(1) || "result");
 </script>

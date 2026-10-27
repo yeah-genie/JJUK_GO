@@ -163,3 +163,23 @@ def evaluate(t: np.ndarray, g: np.ndarray, train_frac: float = 0.6, step: float 
         "stop_or_not_accuracy": round(float(np.mean(hits)), 3),
         "wait_mae_s": round(float(errs.mean()), 2), "wait_p90_s": round(float(np.percentile(errs, 90)), 2),
     }
+
+
+def green_windows(fit: CycleFit) -> list[list[float]]:
+    """주기 안에서 초록인 구간들 [[시작, 끝), ...] (위상 초, t_ref 기준). 한 주기에 여러 번일 수 있다."""
+    on = np.nan_to_num(fit.profile, nan=0.0) >= 0.5
+    nb = len(on)
+    if on.all():
+        return [[0.0, fit.cycle_s]]
+    if not on.any():
+        return []
+    start = int(np.argmin(on))  # 빨강인 칸에서 시작해 한 바퀴 돈다
+    wins, cur = [], None
+    for k in range(1, nb + 1):
+        b = (start + k) % nb
+        if on[b] and cur is None:
+            cur = b
+        elif not on[b] and cur is not None:
+            wins.append([float(cur), float(b if b > cur else b + nb)])
+            cur = None
+    return [[a % fit.cycle_s, (a % fit.cycle_s) + (e - a)] for a, e in wins]
