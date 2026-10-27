@@ -5,7 +5,7 @@ from jjukgo import KST
 from jjukgo.budget import Budget
 from jjukgo.collect import FIXTURE, collect_once, daily_report, load_config, ROOT
 from jjukgo.store import read_day
-from jjukgo.tdata_client import FixtureClient, QuotaExceeded
+from jjukgo.tdata_client import FixtureClient, QuotaExceeded, RateLimited
 
 CFG = load_config(ROOT / "config" / "collector.toml")
 BULK_CFG = {**CFG, "api": {**CFG["api"], "bulk_min_intersections": 2}}
@@ -91,10 +91,64 @@ def test_discover_records_ids_and_filter(tmp_path):
 
     budget, client = make(tmp_path)
     out = discover(client, CFG["api"], tmp_path, NOW)
-    assert out["pages"][0]["distinct_itst"] == 3
-    assert {p["itst_id"] for p in out["per_intersection"]} == {"1537", "23665", "1600"}
-    assert all(p["distinct_itst"] == 1 for p in out["per_intersection"])
+    names = [st["name"] for st in out["steps"]]
+    assert names == ["unfiltered_5000", "filtered_immediately", "filtered_after_wait"]
+    assert out["steps"][0]["distinct_itst"] == 3
+    assert out["limit_is_global"] is False and out["filter_works"] is True
+    assert budget.usage.calls == 3
     assert set(json.loads((tmp_path / "meta" / "discovered_ids.json").read_text())) == {"1537", "23665", "1600"}
+
+
+def test_discover_detects_global_rate_limit(tmp_path):
+    from jjukgo.collect import discover
+
+    class LimitedClient(FixtureClient):
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            self.calls = 0
+
+        def fetch(self, page_no=1, num_of_rows=1000, itst_id=None, max_wait_s=None):
+            self.calls += 1
+            if self.calls == 2 and max_wait_s == 0:
+                raise RateLimited("429", retry_after_s=101, limit_s=300)
+            return super().fetch(page_no, num_of_rows, itst_id, max_wait_s)
+
+    out = discover(LimitedClient(FIXTURE), CFG["api"], tmp_path, NOW)
+    assert out["limit_is_global"] is True
+    assert out["steps"][1]["rate_limited"] == {"retry_after_s": 101, "limit_s": 300}
+    assert out["filter_works"] is True
+
+
+def test_rate_limit_does_not_stop_the_day(tmp_path):
+    class LimitedClient:
+        def fetch(self, *a, **k):
+            raise RateLimited("429", retry_after_s=101, limit_s=300)
+
+    budget, _ = make(tmp_path)
+    summary = collect_once(CFG, tmp_path, LimitedClient(), budget, NOW)
+    assert "rate_limited" in summary and "quota_hit" not in summary
+    assert Budget(tmp_path, NOW, 1000, 0.7).remaining == 700
+    assert not (tmp_path / "meta" / "api_probe.json").exists()
+
+
+def test_parse_rate_limit_from_real_body():
+    from jjukgo.tdata_client import parse_rate_limit
+
+    body = {"timestamp": "2026-10-28 01:19:33", "status": 429, "error": "Too Many Requests",
+            "code": "V2X_REPEAT_CALL_LIMIT", "api": "v2xSignalPhaseTimingFusionInformation",
+            "limitSeconds": 300, "retryAfterSeconds": 101}
+    err = parse_rate_limit(body)
+    assert err.retry_after_s == 101 and err.limit_s == 300
+    assert parse_rate_limit({"responseCode": 404}) is None
+
+
+def test_calls_per_run_caps_per_intersection_calls(tmp_path):
+    (tmp_path / "meta").mkdir()
+    (tmp_path / "meta" / "api_probe.json").write_text(json.dumps({"version": 2, "mode": "per_intersection"}), encoding="utf-8")
+    cfg = {**CFG, "budget": {**CFG["budget"], "calls_per_run": 2}, "targets": {"itst_ids": ["1537", "23665", "1600"]}}
+    budget, client = make(tmp_path)
+    summary = collect_once(cfg, tmp_path, client, budget, NOW)
+    assert budget.usage.calls == 2 and summary["rows"] > 0
 
 
 def test_discovered_ids_used_when_no_targets(tmp_path):

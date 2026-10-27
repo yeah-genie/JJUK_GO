@@ -14,6 +14,8 @@ max_pages = 10
 bulk_min_intersections = 20
 # 교차로별 호출 한 번에 받을 메시지 수. 메시지는 약 1초 간격이라 300건 ≈ 5분 = 신호 여러 주기.
 rows_per_intersection = 300
+# 호출 간격 제한(300초에 1회)에 걸렸을 때 이 시간(초) 이내면 기다렸다가 다시 부른다.
+rate_limit_wait_max_s = 330
 
 [budget]
 # 하루 호출 한도 (KST 자정 기준). 공식 한도가 확인되면 수정.
@@ -22,6 +24,8 @@ daily_limit = 1000
 collect_share = 0.7
 # GitHub Actions 실행 간격(분). collect.yml의 cron과 맞춘다.
 run_interval_min = 15
+# 한 번 실행에서 부를 횟수. 호출 간격 제한 때문에 실행 1번이 약 10분 걸린다. (3회 × 96실행 = 하루 288회)
+calls_per_run = 3
 # 출퇴근·점심 시간대(KST)에 호출을 더 배정한다.
 peak_hours = [7, 8, 9, 12, 13, 18, 19]
 peak_weight = 2.0

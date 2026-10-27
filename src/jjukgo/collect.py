@@ -1,7 +1,7 @@
 """신호 수집기 CLI.
 
   python -m jjukgo.collect probe   # API가 일괄 조회를 지원하는지 확인
-  python -m jjukgo.collect discover  # 응답 구조 탐색 (교차로 수, 시간 범위, itstId 필터 동작) — 호출 ~6회
+  python -m jjukgo.collect discover  # 응답 구조·호출 제한 탐색 — 호출 3회, 약 5분
   python -m jjukgo.collect once    # 예산 안에서 한 번 수집 (GitHub Actions가 15분마다 실행)
   python -m jjukgo.collect report  # 전날 수집 결과 점검 리포트
   python -m jjukgo.collect static  # 정적 MAP 파일 내려받기
@@ -16,6 +16,7 @@ import json
 import math
 import os
 import sys
+import time
 import tomllib
 import urllib.request
 from collections import Counter
@@ -27,7 +28,7 @@ from .budget import Budget, run_allowance
 from .normalize import normalize
 from .store import read_day, write_part
 from .targets import load_cursor, load_discovered, load_targets, round_robin, save_cursor
-from .tdata_client import ApiError, FixtureClient, QuotaExceeded, TDataClient
+from .tdata_client import ApiError, FixtureClient, QuotaExceeded, RateLimited, TDataClient
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests" / "fixtures" / "fusion_sample.json"
@@ -49,8 +50,8 @@ def probe(client, api_cfg: dict, now: datetime) -> tuple[dict, list[dict]]:
     result: dict = {"version": PROBE_VERSION, "probed_at_utc": now.astimezone(timezone.utc).isoformat()}
     try:
         records, total = client.fetch(1, api_cfg["num_of_rows"], None)
-    except QuotaExceeded:
-        raise
+    except (QuotaExceeded, RateLimited):
+        raise  # 판정이 아니라 일시적 거절이므로 probe 결과로 남기지 않는다
     except ApiError as e:
         result.update(mode="per_intersection", reason=f"itstId 없는 호출 실패: {e}")
         return result, []
@@ -81,43 +82,56 @@ def _span_s(records: list[dict]) -> float | None:
     return round((max(times) - min(times)) / 1000, 1) if times else None
 
 
+def _describe(records: list[dict]) -> dict:
+    ids = [str(r.get("itstId")) for r in records]
+    return {"records": len(records), "distinct_itst": len(set(ids)), "span_s": _span_s(records)}
+
+
 def discover(client, api_cfg: dict, data_dir: Path, now: datetime) -> dict:
-    """API가 실제로 어떻게 응답하는지 적은 호출(~6회)로 알아본다.
+    """호출 간격 제한(300초/회)을 고려해 API 동작을 알아본다. 호출 3회, 약 5분.
 
-    - 교차로 ID 없이 1~3페이지: 서로 다른 교차로 수, 페이지마다 같은 데이터인지
-    - 본 교차로 몇 곳에 itstId를 걸어 호출: 필터가 되는지, 한 번에 몇 초치가 오는지
+    1. 교차로 ID 없이 numOfRows=5000: 한 번에 얼마나 오는지(최대 행 수), 교차로가 몇 곳인지
+    2. 본 교차로 하나로 itstId 필터를 *기다리지 않고* 바로 호출: 429면 제한이 키 전체에 걸린 것
+    3. 같은 필터 호출을 (필요하면 기다렸다가) 재시도: 필터 동작과 한 번에 오는 시간 범위
     """
-    n = api_cfg["num_of_rows"]
-    out: dict = {"discovered_at_utc": now.astimezone(timezone.utc).isoformat(), "pages": [], "per_intersection": []}
+    out: dict = {"discovered_at_utc": now.astimezone(timezone.utc).isoformat(), "steps": []}
     seen: list[str] = []
-    for page_no in (1, 2, 3):
-        try:
-            records, total = client.fetch(page_no, n, None)
-        except ApiError as e:
-            out["pages"].append({"page_no": page_no, "error": str(e)})
-            break
-        ids = [str(r.get("itstId")) for r in records]
-        out["pages"].append({
-            "page_no": page_no, "records": len(records), "total_count": total,
-            "distinct_itst": len(set(ids)), "itst_ids": sorted(set(ids))[:30], "span_s": _span_s(records),
-            "first_trsm": records[0].get("trsmUtcTime") if records else None,
-        })
-        for i in ids:
-            if i not in seen:
-                seen.append(i)
-        if not records:
-            break
 
-    for itst_id in seen[:3]:
+    def step(name: str, rows: int, itst_id: str | None, max_wait_s: float | None) -> list[dict]:
+        entry: dict = {"name": name, "itst_id": itst_id, "num_of_rows": rows}
+        records: list[dict] = []
+        t0 = time.monotonic()
         try:
-            records, total = client.fetch(1, api_cfg.get("rows_per_intersection", 300), itst_id)
+            records, total = client.fetch(1, rows, itst_id, max_wait_s=max_wait_s)
+            entry.update(_describe(records), total_count=total)
+        except RateLimited as e:
+            entry["rate_limited"] = {"retry_after_s": e.retry_after_s, "limit_s": e.limit_s}
         except ApiError as e:
-            out["per_intersection"].append({"itst_id": itst_id, "error": str(e)})
-            continue
-        out["per_intersection"].append({
-            "itst_id": itst_id, "records": len(records), "total_count": total,
-            "distinct_itst": len({str(r.get("itstId")) for r in records}), "span_s": _span_s(records),
-        })
+            entry["error"] = str(e)[:300]
+        entry["elapsed_s"] = round(time.monotonic() - t0, 1)
+        out["steps"].append(entry)
+        return records
+
+    records = step("unfiltered_5000", 5000, None, None)
+    if not records and "error" in out["steps"][-1]:
+        records = step("unfiltered_1000", 1000, None, None)  # 5000이 거절되면 1000으로
+    counts: dict[str, int] = {}
+    for r in records:
+        counts[str(r.get("itstId"))] = counts.get(str(r.get("itstId")), 0) + 1
+    seen = list(counts)
+    out["max_rows_ok"] = len(records) > 1000
+
+    if seen:
+        target = seen[0]
+        immediate = step("filtered_immediately", 1000, target, 0)
+        out["limit_is_global"] = "rate_limited" in out["steps"][-1]
+        step("filtered_after_wait", 1000, target, None)
+        out["filter_works"] = (
+            out["steps"][-1].get("distinct_itst") == 1 if "distinct_itst" in out["steps"][-1] else None
+        )
+    else:
+        out["limit_is_global"] = None
+        out["filter_works"] = None
 
     ids_path = Path(data_dir) / "meta" / "discovered_ids.json"
     known = json.loads(ids_path.read_text(encoding="utf-8")) if ids_path.exists() else []
@@ -173,11 +187,13 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
             if not targets:
                 summary["skipped"] = "교차로별 호출 모드인데 대상 교차로가 없음 (config/collector.toml [targets] 확인)"
             else:
-                picked, next_cursor = round_robin(targets, load_cursor(data_dir), allowance)
+                picked, next_cursor = round_robin(targets, load_cursor(data_dir), min(allowance, budget_cfg.get("calls_per_run", allowance)))
                 for itst_id in picked:
                     page, _ = client.fetch(1, api_cfg.get("rows_per_intersection", 300), itst_id)
                     records.extend(page)
                 save_cursor(data_dir, next_cursor)
+    except RateLimited as e:
+        summary["rate_limited"] = str(e)  # 기다리면 풀리는 제한: 오늘 수집을 멈추지 않는다
     except QuotaExceeded as e:
         budget.mark_quota_hit()
         summary["quota_hit"] = str(e)
@@ -281,7 +297,10 @@ def main(argv: list[str] | None = None) -> int:
         client = FixtureClient(FIXTURE, on_call=budget.record_call)
     else:
         api = cfg["api"]
-        client = TDataClient(api["base_url"], api_key, api["timeout_s"], api["max_retries"], on_call=budget.record_call)
+        client = TDataClient(
+            api["base_url"], api_key, api["timeout_s"], api["max_retries"], on_call=budget.record_call,
+            rate_limit_wait_max_s=api.get("rate_limit_wait_max_s", 330),
+        )
 
     if args.command == "discover":
         try:
