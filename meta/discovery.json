@@ -1,0 +1,11 @@
+{
+  "discovered_at_utc": "2026-10-27T16:19:32.506966+00:00",
+  "pages": [
+    {
+      "page_no": 1,
+      "error": "HTTP 429: {\"timestamp\":\"2026-10-28 01:19:33\",\"status\":429,\"error\":\"Too Many Requests\",\"code\":\"V2X_REPEAT_CALL_LIMIT\",\"api\":\"v2xSignalPhaseTimingFusionInformation\",\"limitSeconds\":300,\"retryAfterSeconds\":101,\"nex"
+    }
+  ],
+  "per_intersection": [],
+  "discovered_ids_total": 0
+}
