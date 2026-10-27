@@ -155,20 +155,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .progress span { color: var(--muted); font-size: 12px; }
 .progress strong { font-family: var(--display); font-size: 24px; font-weight: 400; }
 /* 도착 공유 카드 */
-.done { background: #1E2430; color: var(--zebra); align-items: center; justify-content: safe center; gap: clamp(8px, 2vh, 18px); padding: 48px 26px 20px; overflow-y: auto; }
+.done { background: #1E2430; color: var(--zebra); align-items: stretch; justify-content: center; gap: clamp(8px, 1.6vh, 16px); padding: 48px 22px 18px; overflow: hidden; }
 .card {
   width: 100%; border-radius: 26px; padding: 26px 22px 22px; position: relative; overflow: hidden;
   background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 26px, transparent 26px 52px), #262D3B;
-  display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none;
+  display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1vh, 8px); flex: 0 1 auto; min-height: 0;
 }
 .card .logo { position: absolute; top: 16px; left: 20px; font-family: var(--display); font-size: 18px; color: var(--lane); }
 .card .date { position: absolute; top: 19px; right: 20px; font-size: 12px; color: #A7B0C0; }
-.card svg { width: clamp(110px, 24vh, 220px); height: clamp(110px, 24vh, 220px); margin-top: 22px; }
+.card #card-shape { flex: 0 1 auto; min-height: 0; display: flex; justify-content: center; }
+.card svg { width: clamp(90px, 30vh, 240px); height: clamp(90px, 30vh, 240px); margin-top: 22px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 4px; }
 .card .kind { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
 .stat-big { display: flex; flex-direction: column; align-items: center; }
-.stat-big strong { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 4.2vh, 34px); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-big strong { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 3.6vh, 30px); line-height: 1.15; font-variant-numeric: tabular-nums; }
 .stat-big span { font-size: 12px; color: #A7B0C0; }
-.compare { margin: 12px 0 0; font-size: 14px; color: var(--lane); font-weight: 600; text-align: center; }
+.compare { margin: clamp(4px, 1vh, 12px) 0 0; font-size: 14px; color: var(--lane); font-weight: 600; text-align: center; }
 .done .hint { font-size: 12.5px; color: #A7B0C0; margin: 0; text-align: center; }
 .done .actions { width: 100%; }
 .done .btn-ghost { background: #333B4B; color: var(--zebra); flex: 1; }
@@ -267,9 +269,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <span class="date" id="card-date"></span>
       <div id="card-shape"></div>
       <div class="kind">걷기 · 역삼역 → 선릉</div>
-      <div class="stat-big"><strong id="c-stops"></strong><span>멈춘 횟수</span></div>
-      <div class="stat-big"><strong id="c-wait"></strong><span>신호 기다림</span></div>
-      <div class="stat-big"><strong id="c-time"></strong><span>걸은 시간</span></div>
+      <div class="stats">
+        <div class="stat-big"><strong id="c-stops"></strong><span>멈춘 횟수</span></div>
+        <div class="stat-big"><strong id="c-wait"></strong><span>신호 기다림</span></div>
+        <div class="stat-big"><strong id="c-time"></strong><span>걸은 시간</span></div>
+      </div>
       <p class="compare" id="c-compare"></p>
     </div>
     <p class="hint">스크린샷을 찍어 공유해 보세요</p>
