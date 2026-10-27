@@ -6,6 +6,10 @@
 이 API에는 호출 간격 제한이 있다 (2026-10-28 실측):
   HTTP 429 {"code":"V2X_REPEAT_CALL_LIMIT","limitSeconds":300,"retryAfterSeconds":101}
 하루 한도(QuotaExceeded)와 달리 기다리면 풀리므로 RateLimited로 따로 다룬다.
+
+거절된 호출도 300초 창을 다시 시작한다 (2026-10-28 실측: retryAfter만큼 기다렸다 다시 부르면
+매번 "retry after 278s"가 나오며 2시간 동안 한 건도 못 받았다). 그래서 성공이든 거절이든
+마지막 호출 시각을 파일에 남기고, 다음 호출은 그로부터 SPACING_S 뒤에만 한다.
 """
 
 from __future__ import annotations
@@ -19,6 +23,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 QUOTA_HINTS = ("한도", "초과", "limit", "quota", "exceed")
+SPACING_S = 305  # 호출 간격 제한 300초 + 여유
 
 
 class ApiError(Exception):
@@ -111,6 +116,8 @@ class TDataClient:
         on_call: Callable[[], None] | None = None,
         sleep: Callable[[float], None] = time.sleep,
         rate_limit_wait_max_s: float = 330,
+        last_call_path: Path | None = None,
+        clock: Callable[[], float] = time.time,
     ):
         self.base_url = base_url
         self.api_key = api_key
@@ -119,12 +126,39 @@ class TDataClient:
         self.on_call = on_call or (lambda: None)
         self.sleep = sleep
         self.rate_limit_wait_max_s = rate_limit_wait_max_s
+        self.last_call_path = last_call_path
+        self.clock = clock
+
+    def _last_call(self) -> float | None:
+        if self.last_call_path is None or not self.last_call_path.exists():
+            return None
+        try:
+            return float(json.loads(self.last_call_path.read_text(encoding="utf-8"))["at"])
+        except (ValueError, KeyError, json.JSONDecodeError):
+            return None
+
+    def _space_out(self, wait_cap: float) -> None:
+        """마지막 호출(거절 포함)에서 SPACING_S가 지나지 않았으면 기다린다. wait_cap보다 오래면 부르지 않는다."""
+        last = self._last_call()
+        if last is None:
+            return
+        wait = last + SPACING_S - self.clock()
+        if wait > wait_cap:
+            raise RateLimited(f"마지막 호출 뒤 {SPACING_S}초가 안 지남 ({wait:.0f}초 남음)", retry_after_s=wait, limit_s=300)
+        if wait > 0:
+            self.sleep(wait)
+
+    def _mark_call(self) -> None:
+        if self.last_call_path is not None:
+            self.last_call_path.parent.mkdir(parents=True, exist_ok=True)
+            self.last_call_path.write_text(json.dumps({"at": self.clock()}), encoding="utf-8")
 
     def _get(self, params: dict) -> Any:
         url = f"{self.base_url}?{urllib.parse.urlencode(params)}"
         last_error: Exception | None = None
         for attempt in range(self.max_retries):
             self.on_call()  # 재시도도 호출 횟수에 포함된다
+            self._mark_call()
             try:
                 with urllib.request.urlopen(url, timeout=self.timeout_s) as resp:
                     return json.loads(resp.read().decode("utf-8"))
@@ -160,13 +194,15 @@ class TDataClient:
         if itst_id is not None:
             params["itstId"] = itst_id
         wait_cap = self.rate_limit_wait_max_s if max_wait_s is None else max_wait_s
+        self._space_out(wait_cap)
         try:
             payload = self._get(params)
             check_error(payload)
-        except RateLimited as e:
-            if e.retry_after_s is None or e.retry_after_s > wait_cap:
+        except RateLimited:
+            # 거절된 이 호출이 창을 다시 시작했으므로 retryAfter가 아니라 창 전체를 기다린다
+            if SPACING_S > wait_cap:
                 raise
-            self.sleep(e.retry_after_s + 2)
+            self.sleep(SPACING_S)
             payload = self._get(params)
             check_error(payload)
         return extract_records(payload), extract_total_count(payload)

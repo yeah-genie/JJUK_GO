@@ -193,3 +193,54 @@ def test_adaptive_rows_and_last_fetch(tmp_path):
     budget = Budget(tmp_path, later, 1000, 0.7)
     collect_once(cfg, tmp_path, RecordingClient(FIXTURE, on_call=budget.record_call), budget, later)
     assert asked == [2200, 360]  # 처음엔 최대치, 5분 뒤엔 300초 + 여유 60건
+
+
+def test_client_waits_full_window_after_rejected_call(tmp_path, monkeypatch):
+    """거절된 호출도 300초 창을 다시 시작하므로, retryAfter가 아니라 창 전체를 기다렸다 다시 부른다."""
+    import io, urllib.error
+    from jjukgo import tdata_client as tc
+
+    now = [1000.0]
+    slept = []
+    calls = []
+    body = json.dumps({"status": 429, "code": "V2X_REPEAT_CALL_LIMIT", "limitSeconds": 300, "retryAfterSeconds": 20}).encode()
+    ok = json.dumps({"body": {"items": [{"itstId": "2217", "trsmUtcTime": 1}]}}).encode()
+
+    def fake_urlopen(url, timeout):
+        calls.append(now[0])
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, io.BytesIO(body))
+        return io.BytesIO(ok)
+
+    def sleep(s):
+        slept.append(s)
+        now[0] += s
+
+    monkeypatch.setattr(tc.urllib.request, "urlopen", fake_urlopen)
+    path = tmp_path / "last_call.json"
+    client = tc.TDataClient("http://x", "k", sleep=sleep, last_call_path=path, clock=lambda: now[0])
+    records, _ = client.fetch(1, 300, "2217")
+    assert records and slept == [tc.SPACING_S]
+    assert calls[1] - calls[0] >= 300
+
+
+def test_client_spaces_calls_across_runs(tmp_path, monkeypatch):
+    """다른 실행이 방금 불렀으면(파일에 남은 시각) 그만큼 기다렸다 부른다."""
+    import io
+    from jjukgo import tdata_client as tc
+
+    now = [5000.0]
+    slept = []
+    path = tmp_path / "last_call.json"
+    path.write_text(json.dumps({"at": 4900.0}), encoding="utf-8")
+    monkeypatch.setattr(tc.urllib.request, "urlopen", lambda url, timeout: io.BytesIO(b'{"items": []}'))
+    client = tc.TDataClient("http://x", "k", sleep=lambda s: (slept.append(s), now.__setitem__(0, now[0] + s)),
+                            last_call_path=path, clock=lambda: now[0])
+    client.fetch(1, 300, "2217")
+    assert slept == [205.0]
+    assert json.loads(path.read_text())["at"] == 5205.0
+    # 기다릴 수 있는 시간보다 오래 남았으면 부르지 않는다
+    path.write_text(json.dumps({"at": now[0]}), encoding="utf-8")
+    import pytest
+    with pytest.raises(tc.RateLimited):
+        client.fetch(1, 300, "2217", max_wait_s=0)
