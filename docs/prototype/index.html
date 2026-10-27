@@ -513,7 +513,8 @@ function sigWait(id, t) {
   const g = SIG[id]; const ph = ((t - g.o) % g.c + g.c) % g.c;
   return ph >= g.g ? g.c - ph : 0;
 }
-const sigName = id => { const m = SIGMETA.get(id); return m && m.name ? m.name + " 횡단보도" : "신호 횡단보도"; };
+const DIR_KO = { n: "북쪽", e: "동쪽", s: "남쪽", w: "서쪽" };
+const sigName = (id, dir) => { const m = SIGMETA.get(id); return (m && m.name ? m.name + " " : "") + (dir ? DIR_KO[dir] + " " : "") + "횡단보도"; };
 const realCount = () => Object.keys(SIG).filter(id => REAL.signals[id]).length;
 
 // ---------- 보행 그래프 (필요한 칸만 받는다) ----------
@@ -530,11 +531,12 @@ function cellsFor(a, b, margin = 700) {
 function loadCell(k) {
   if (!G.cells.has(k)) G.cells.set(k, getJSON(`graph/c${k}.json`).then(c => {
     for (const [id, x, y, s] of c.n) G.node.set(id, { x, y, s: s ?? null });
-    for (const [a, b, len, cls, geom] of c.e) {
+    for (const [a, b, len, cls, geom, sig, dir, half] of c.e) {
       const key = a + ":" + b + ":" + len;
       if (G.seen.has(key)) continue;
       G.seen.add(key);
-      const e = { a, b, len, cls, geom };
+      // sig: 이 횡단보도의 신호(큰길을 건널 때만), dir: 건너는 다리 방향, half: 일방통행 차로 하나만 건넘
+      const e = { a, b, len, cls, geom: geom || null, sig: sig || null, dir: dir || null, half: !!half };
       if (!G.adj.has(a)) G.adj.set(a, []);
       if (!G.adj.has(b)) G.adj.set(b, []);
       G.adj.get(a).push(e); G.adj.get(b).push(e);
@@ -576,9 +578,13 @@ function search(src, dst, mode, dep) {
       const v = e.a === u ? e.b : e.a, nv = G.node.get(v);
       if (!nv || done.has(v)) continue;
       let tv = tu + e.len / SPEED, cv = c + (mode === "short" ? e.len : e.len / SPEED);
-      if (mode === "jjuk" && nv.s && nv.s !== nu.s) {
-        if (known(nv.s)) { const w = sigWait(nv.s, BASE + dep + tv); tv += w; cv += w + (w > 2 ? STOP_COST : 0); }
-        else cv += UNKNOWN_SIG_COST;
+      if (mode === "jjuk") {
+        // 횡단보도 신호는 건너기 전에 기다린다. 골목 교차로 신호(노드)는 예전처럼 들어설 때 센다
+        const s = e.sig || (nv.s && nv.s !== nu.s ? nv.s : null), share = e.sig && e.half ? 0.5 : 1;
+        if (s) {
+          if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv)); tv += w; cv += w + (w > 2 ? STOP_COST * share : 0); }
+          else cv += UNKNOWN_SIG_COST * share;
+        }
       }
       if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); time.set(v, tv); prev.set(v, [u, e]); h.push(cv, v); }
     }
@@ -601,11 +607,15 @@ function buildRoute(steps, src, fromLL, toLL) {
   const add = (ll, u) => { const d = cum[cum.length - 1] + distLL(coords[coords.length - 1], ll); coords.push(ll); cum.push(d); if (u) under.push(coords.length - 1); };
   const s0 = G.node.get(src);
   add(fromQ(s0.x, s0.y));
+  // 같은 신호를 60m 안에서 또 건너면(왕복 도로를 두 번에 나눠 건너기) 한 번으로 센다
+  const push = (s, dir, d, at) => { if (!x.some(z => z.s === s && d - z.d < 60)) x.push({ s, dir, d, at }); };
   for (const [u, v, e] of steps) {
+    const start = cum[cum.length - 1], startAt = coords[coords.length - 1];
     const pts = edgePts(e, u);
     for (let i = 1; i < pts.length; i++) add(fromQ(...pts[i]), e.cls === 4);
     const nu = G.node.get(u), nv = G.node.get(v);
-    if (nv.s && nv.s !== nu.s && !x.some(z => z.s === nv.s && cum[cum.length - 1] - z.d < 60)) x.push({ s: nv.s, d: cum[cum.length - 1], at: coords[coords.length - 1] });
+    if (e.sig) push(e.sig, e.dir, start, startAt);
+    else if (nv.s && nv.s !== nu.s) push(nv.s, null, cum[cum.length - 1], coords[coords.length - 1]);
   }
   add(toLL);
   return { coords, cum, length: cum[cum.length - 1], x, under, key: steps.map(s => s[2].a + "-" + s[2].b).join(",") };
@@ -624,11 +634,11 @@ function simulate(route, dep) {
     segs.push({ type: "walk", s: walk }); t += walk; prev = x.d;
     if (known(x.s)) {
       const w = Math.round(sigWait(x.s, t));
-      xings.push({ id: x.s, name: sigName(x.s), known: true, arrive: t, wait: w, d: x.d, at: x.at });
+      xings.push({ id: x.s, name: sigName(x.s, x.dir), known: true, arrive: t, wait: w, d: x.d, at: x.at });
       if (w > 0) segs.push({ type: "wait", s: w });
       t += w;
     } else {
-      xings.push({ id: x.s, name: sigName(x.s), known: false, arrive: t, wait: null, d: x.d, at: x.at });
+      xings.push({ id: x.s, name: sigName(x.s, x.dir), known: false, arrive: t, wait: null, d: x.d, at: x.at });
       segs.push({ type: "unk", s: 0 });
     }
   }
@@ -924,8 +934,12 @@ function refreshSims() {
   // 출발 시각이 바뀌면 신호 위상이 달라지므로 쭉고 길을 다시 찾는다
   if (state.routes.dep !== state.dep) { state.routes.jjuk = routeFor("jjuk", state.dep); state.routes.dep = state.dep; }
   const R = state.routes;
+  let sj = simulate(R.jjuk, state.dep), ss = simulate(R.short, state.dep);
+  // 쭉고 길이 보이는 숫자로 나아진 게 없으면(덜 멈추지도, 덜 기다리지도, 신호를 덜 지나지도 않으면) 최단을 그대로 쓴다
+  const better = sj.stops < ss.stops || sj.wait < ss.wait - 5 || sj.unknownN + sj.knownN < ss.unknownN + ss.knownN;
+  if (!better && R.jjuk.key !== R.short.key) { R.jjuk = R.short; sj = ss; }
   state.same = R.jjuk.key === R.short.key;
-  state.sims = { jjuk: simulate(R.jjuk, state.dep), short: simulate(R.short, state.dep) };
+  state.sims = { jjuk: sj, short: ss };
   if (state.same) state.focus = "jjuk";
 }
 const tripLabel = p => p.me ? `${p.name}` : p.name;

@@ -7,7 +7,8 @@
 출력 (OUT 아래, 웹앱 옆에 함께 올린다):
   tiles/index.json, tiles/b*.txt  타일 묶음(base64 글자). 파일 수 제한 때문에 타일을 묶고, 위치는 index에 둔다.
                                   웹앱 호스팅이 바이너리 파일을 받지 않아 글자로 바꿔 둔다.
-  graph/index.json, graph/c*.json 보행 그래프 조각(약 1.8km 칸). 길찾기는 브라우저에서 필요한 칸만 받아 한다.
+  graph/index.json, graph/c*.json 보행 그래프 조각(약 2.2km 칸). 길찾기는 브라우저에서 필요한 칸만 받아 한다.
+                                  큰길은 보도와 횡단보도로 바꿔 둔다(scripts/sidewalks.py).
   search.json                     장소 검색 목록(역·동네·주요 시설)
   signals.json                    신호 교차로 위치(C-ITS + OSM 신호 표시)
   glyphs/*.txt                    지도 글자(base64)(라틴·숫자·문장부호). 한글은 기기 글꼴로 그린다.
@@ -28,6 +29,9 @@ from collections import defaultdict
 from pathlib import Path
 
 import osmium
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sidewalks  # noqa: E402
 
 LON0, LAT0 = 126.58, 37.35          # 추출 범위 남서쪽 (좌표 정수화 기준)
 # 길찾기·검색 범위: 서울시를 감싸는 사각형. 추출본은 경기 일부까지 담고 있다.
@@ -93,15 +97,19 @@ def cell_of(lon, lat):
 class Ways(osmium.SimpleHandler):
     def __init__(self):
         super().__init__()
-        self.ways = []          # (refs, cls)
+        self.ways = []          # (refs, cls, info)
         self.loc = {}
+        self.cross = {}         # 횡단보도 노드: "sig"(신호) | "mark"(표시만)
         self.signals = []       # OSM 신호 노드 위치
         self.places = []        # 검색 후보 (name, lon, lat, kind, rank)
 
     def node(self, n):
         t = n.tags
-        if t.get("highway") == "traffic_signals" or t.get("crossing") == "traffic_signals" or t.get("crossing:signals") == "yes":
+        signal = t.get("highway") == "traffic_signals" or "traffic_signals" in t.get("crossing", "") or t.get("crossing:signals") == "yes"
+        if signal:
             self.signals.append((n.location.lon, n.location.lat))
+        if signal or t.get("highway") == "crossing":
+            self.cross[n.id] = "sig" if signal else "mark"
         name = t.get("name")
         if not name:
             return
@@ -133,7 +141,12 @@ class Ways(osmium.SimpleHandler):
             refs.append(nd.ref)
             self.loc[nd.ref] = (nd.location.lon, nd.location.lat)
         if len(refs) >= 2:
-            self.ways.append((refs, edge_class(t)))
+            if t.get("oneway") == "-1":
+                refs.reverse()
+            cls = edge_class(t)
+            info = {"hw": t.get("highway"), "oneway": t.get("oneway") in ("yes", "true", "1", "-1"),
+                    "lanes": t.get("lanes"), "name": t.get("name"), "wid": w.id, "cls": cls}
+            self.ways.append((refs, cls, info))
 
     def area(self, a):
         # 공원·궁·대학처럼 면으로 그린 장소(닫힌 길, 멀티폴리곤). 바깥 테두리 점들의 평균을 위치로 쓴다
@@ -178,19 +191,22 @@ def place_kind(t):
 
 def build_graph(h):
     use = defaultdict(int)
-    for refs, _ in h.ways:
+    for refs, _, _ in h.ways:
         use[refs[0]] += 2
         use[refs[-1]] += 2
         for r in refs:
             use[r] += 1
+    for r in h.cross:  # 횡단보도 지점에서도 끊는다(길 중간 횡단보도)
+        if r in use:
+            use[r] += 2
     # 그래프 노드: 길 끝점, 여러 길이 만나는 점
     nid = {}
     def node_id(ref):
         if ref not in nid:
             nid[ref] = len(nid)
         return nid[ref]
-    edges = []  # (a, b, length_m, [중간 좌표], cls)
-    for refs, cls in h.ways:
+    edges = []  # {"a", "b", "pts", "cls", "info"}
+    for refs, cls, info in h.ways:
         if not any(in_bbox(*h.loc[r]) for r in refs):
             continue
         start = 0
@@ -200,12 +216,13 @@ def build_graph(h):
                 pts = [h.loc[r] for r in seg]
                 length = sum(dist_m(p, q) for p, q in zip(pts, pts[1:]))
                 if seg[0] != seg[-1] or length > 1:
-                    edges.append((node_id(seg[0]), node_id(seg[-1]), length, pts[1:-1], cls))
+                    edges.append({"a": node_id(seg[0]), "b": node_id(seg[-1]), "pts": pts, "cls": cls, "info": info})
                 start = i
     coords = [None] * len(nid)
     for ref, i in nid.items():
         coords[i] = h.loc[ref]
-    return coords, edges
+    cross = {nid[r]: k for r, k in h.cross.items() if r in nid}
+    return coords, edges, cross
 
 
 def load_crossings(path):
@@ -256,41 +273,48 @@ def signal_groups(crossings, osm_signals):
     return groups, grid, near
 
 
-def write_graph(coords, edges, groups, near, out: Path):
+def write_graph(coords, edges, cross, near, out: Path):
     # 노드마다 35m 안의 가장 가까운 신호 묶음. 지하도·육교로만 이어진 노드는 신호를 지나지 않는다.
     surface = set()
-    for a, b, _, _, cls in edges:
-        if cls != 4:
-            surface.add(a)
-            surface.add(b)
-    sig_of = {}
-    for i, (lon, lat) in enumerate(coords):
+    for e in edges:
+        if e["cls"] != 4:
+            surface.add(e["a"])
+            surface.add(e["b"])
+
+    def node_sig(i):
         if i not in surface:
-            continue
+            return None
+        lon, lat = coords[i]
         best = None
         for g in near(lon, lat, 35):
             d = dist_m((lon, lat), (g["lon"], g["lat"]))
             if best is None or d < best[0]:
                 best = (d, g["id"])
-        if best:
-            sig_of[i] = best[1]
+        return best[1] if best else None
+
+    nodes, sw_edges = sidewalks.build(coords, edges, node_sig, cross)
     chunks = defaultdict(lambda: {"n": [], "e": []})
-    for i, (lon, lat) in enumerate(coords):
-        c = chunks[cell_of(lon, lat)]
+    for i, (lon, lat, s) in enumerate(nodes):
         row = [i, qx(lon), qy(lat)]
-        if i in sig_of:
-            row.append(sig_of[i])
-        c["n"].append(row)
-    for a, b, length, mid, cls in edges:
+        if s:
+            row.append(s)
+        chunks[cell_of(lon, lat)]["n"].append(row)
+    n_cross = n_sig = 0
+    for a, b, length, cls, mid, sig, d, half in sw_edges:
         # 간선은 양 끝 노드가 속한 칸 모두에 넣는다 (칸 경계를 넘는 길)
-        ca, cb = cell_of(*coords[a]), cell_of(*coords[b])
-        x0, y0 = qx(coords[a][0]), qy(coords[a][1])
+        ca, cb = cell_of(*nodes[a][:2]), cell_of(*nodes[b][:2])
+        x0, y0 = qx(nodes[a][0]), qy(nodes[a][1])
         geom = []
         for lon, lat in mid:
             x, y = qx(lon), qy(lat)
             geom += [x - x0, y - y0]
             x0, y0 = x, y
-        row = [a, b, round(length, 1), cls] + ([geom] if geom else [])
+        row = [a, b, length, cls, geom or 0]
+        if cls == 5:
+            n_cross += 1
+        if sig:
+            n_sig += 1
+            row += [sig, d, half]
         chunks[ca]["e"].append(row)
         if cb != ca:
             chunks[cb]["e"].append(row)
@@ -302,7 +326,7 @@ def write_graph(coords, edges, groups, near, out: Path):
         index[f"{cx}_{cy}"] = len(c["n"])
     meta = {"lon0": LON0, "lat0": LAT0, "cell_lon": CELL_LON, "cell_lat": CELL_LAT, "q": Q, "cells": index}
     (out / "graph" / "index.json").write_text(json.dumps(meta, separators=(",", ":")), encoding="utf-8")
-    return len(chunks), sum(len(c["n"]) for c in chunks.values()), len(edges)
+    return {"chunks": len(chunks), "nodes": len(nodes), "edges": len(sw_edges), "crossings": n_cross, "signal_crossings": n_sig}
 
 
 def write_signals(groups, collected, out: Path):
@@ -375,14 +399,14 @@ def main():
     print("tiles", write_tiles(Path(mbtiles), out))
     h = Ways()
     h.apply_file(pbf, locations=True)
-    coords, edges = build_graph(h)
+    coords, edges, cross = build_graph(h)
     crossings = load_crossings(crossings_csv)
     groups, _, near = signal_groups(crossings, h.signals)
     import tomllib
     cfg = tomllib.loads((Path(__file__).resolve().parents[1] / "config" / "collector.toml").read_text(encoding="utf-8"))
     collected = set(cfg["targets"]["itst_ids"])
     print("signals", write_signals(groups, collected, out), "osm signal nodes", len(h.signals))
-    print("graph chunks/nodes/edges", write_graph(coords, edges, groups, near, out))
+    print("graph", write_graph(coords, edges, cross, near, out))
     print("search", write_search(h.places, out))
     if len(sys.argv) > 5:
         (out / "glyphs").mkdir(exist_ok=True)
