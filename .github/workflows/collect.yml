@@ -6,6 +6,12 @@ on:
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
+    inputs:
+      command:
+        description: "once=수집 / discover=API 응답 구조 탐색(호출 ~6회) / probe=일괄 조회 재판정"
+        type: choice
+        options: [once, discover, probe]
+        default: once
 
 permissions:
   contents: write
@@ -27,7 +33,8 @@ jobs:
           python-version: "3.12"
       - run: bash scripts/data_branch.sh checkout
       - name: Collect
-        run: PYTHONPATH=src python -m jjukgo.collect once --data-dir datastore
+        run: |
+          PYTHONPATH=src python -m jjukgo.collect "${{ github.event.inputs.command || 'once' }}" --data-dir datastore | tee -a "$GITHUB_STEP_SUMMARY"
         env:
           SEOUL_TDATA_API_KEY: ${{ secrets.SEOUL_TDATA_API_KEY }}
       - name: Save

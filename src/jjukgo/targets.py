@@ -85,3 +85,10 @@ def save_cursor(data_dir: Path, cursor: int) -> None:
     path = Path(data_dir) / "meta" / "cursor.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"next_index": cursor}), encoding="utf-8")
+
+
+def load_discovered(data_dir: Path) -> list[str]:
+    path = Path(data_dir) / "meta" / "discovered_ids.json"
+    if path.exists():
+        return [str(x) for x in json.loads(path.read_text(encoding="utf-8"))]
+    return []

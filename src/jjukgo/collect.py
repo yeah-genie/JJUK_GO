@@ -1,6 +1,7 @@
 """신호 수집기 CLI.
 
   python -m jjukgo.collect probe   # API가 일괄 조회를 지원하는지 확인
+  python -m jjukgo.collect discover  # 응답 구조 탐색 (교차로 수, 시간 범위, itstId 필터 동작) — 호출 ~6회
   python -m jjukgo.collect once    # 예산 안에서 한 번 수집 (GitHub Actions가 15분마다 실행)
   python -m jjukgo.collect report  # 전날 수집 결과 점검 리포트
   python -m jjukgo.collect static  # 정적 MAP 파일 내려받기
@@ -25,12 +26,13 @@ from . import KST
 from .budget import Budget, run_allowance
 from .normalize import normalize
 from .store import read_day, write_part
-from .targets import load_cursor, load_targets, round_robin, save_cursor
+from .targets import load_cursor, load_discovered, load_targets, round_robin, save_cursor
 from .tdata_client import ApiError, FixtureClient, QuotaExceeded, TDataClient
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests" / "fixtures" / "fusion_sample.json"
 API_KEY_ENV = "SEOUL_TDATA_API_KEY"
+PROBE_VERSION = 2
 
 
 def load_config(path: Path) -> dict:
@@ -44,7 +46,7 @@ def _probe_path(data_dir: Path) -> Path:
 
 def probe(client, api_cfg: dict, now: datetime) -> tuple[dict, list[dict]]:
     """itstId 없이 한 번 호출해서 일괄 조회가 되는지, 한 페이지에 몇 건 오는지 본다."""
-    result: dict = {"probed_at_utc": now.astimezone(timezone.utc).isoformat()}
+    result: dict = {"version": PROBE_VERSION, "probed_at_utc": now.astimezone(timezone.utc).isoformat()}
     try:
         records, total = client.fetch(1, api_cfg["num_of_rows"], None)
     except QuotaExceeded:
@@ -54,7 +56,7 @@ def probe(client, api_cfg: dict, now: datetime) -> tuple[dict, list[dict]]:
         return result, []
 
     ids = {str(r.get("itstId")) for r in records}
-    if len(ids) >= 2:
+    if len(ids) >= api_cfg.get("bulk_min_intersections", 20):
         page_size = len(records)
         result.update(
             mode="bulk",
@@ -63,24 +65,83 @@ def probe(client, api_cfg: dict, now: datetime) -> tuple[dict, list[dict]]:
             pages=math.ceil(total / page_size) if total else None,
         )
     else:
-        result.update(mode="per_intersection", reason=f"itstId 없이 호출 시 교차로 {len(ids)}개만 반환")
+        result.update(mode="per_intersection", reason=f"itstId 없이 호출 시 교차로 {len(ids)}개만 반환 (일괄 조회 아님)")
     result["sample_keys"] = sorted(records[0].keys()) if records else []
     result["sample_record"] = records[0] if records else None
     return result, records
 
 
+def _span_s(records: list[dict]) -> float | None:
+    times = []
+    for r in records:
+        try:
+            times.append(float(r["trsmUtcTime"]))
+        except (KeyError, TypeError, ValueError):
+            pass
+    return round((max(times) - min(times)) / 1000, 1) if times else None
+
+
+def discover(client, api_cfg: dict, data_dir: Path, now: datetime) -> dict:
+    """API가 실제로 어떻게 응답하는지 적은 호출(~6회)로 알아본다.
+
+    - 교차로 ID 없이 1~3페이지: 서로 다른 교차로 수, 페이지마다 같은 데이터인지
+    - 본 교차로 몇 곳에 itstId를 걸어 호출: 필터가 되는지, 한 번에 몇 초치가 오는지
+    """
+    n = api_cfg["num_of_rows"]
+    out: dict = {"discovered_at_utc": now.astimezone(timezone.utc).isoformat(), "pages": [], "per_intersection": []}
+    seen: list[str] = []
+    for page_no in (1, 2, 3):
+        try:
+            records, total = client.fetch(page_no, n, None)
+        except ApiError as e:
+            out["pages"].append({"page_no": page_no, "error": str(e)})
+            break
+        ids = [str(r.get("itstId")) for r in records]
+        out["pages"].append({
+            "page_no": page_no, "records": len(records), "total_count": total,
+            "distinct_itst": len(set(ids)), "itst_ids": sorted(set(ids))[:30], "span_s": _span_s(records),
+            "first_trsm": records[0].get("trsmUtcTime") if records else None,
+        })
+        for i in ids:
+            if i not in seen:
+                seen.append(i)
+        if not records:
+            break
+
+    for itst_id in seen[:3]:
+        try:
+            records, total = client.fetch(1, api_cfg.get("rows_per_intersection", 300), itst_id)
+        except ApiError as e:
+            out["per_intersection"].append({"itst_id": itst_id, "error": str(e)})
+            continue
+        out["per_intersection"].append({
+            "itst_id": itst_id, "records": len(records), "total_count": total,
+            "distinct_itst": len({str(r.get("itstId")) for r in records}), "span_s": _span_s(records),
+        })
+
+    ids_path = Path(data_dir) / "meta" / "discovered_ids.json"
+    known = json.loads(ids_path.read_text(encoding="utf-8")) if ids_path.exists() else []
+    merged = list(dict.fromkeys([*map(str, known), *seen]))
+    ids_path.parent.mkdir(parents=True, exist_ok=True)
+    ids_path.write_text(json.dumps(merged), encoding="utf-8")
+    out["discovered_ids_total"] = len(merged)
+    (Path(data_dir) / "meta" / "discovery.json").write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+    return out
+
+
 def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetime) -> dict:
     data_dir = Path(data_dir)
     api_cfg, budget_cfg, store_cfg = cfg["api"], cfg["budget"], cfg["store"]
-    targets = load_targets(cfg["targets"], ROOT)
+    targets = load_targets(cfg["targets"], ROOT) or load_discovered(data_dir)
     summary: dict = {"date": budget.date, "targets": len(targets)}
     records: list[dict] = []
 
     try:
         probe_path = _probe_path(data_dir)
-        if probe_path.exists():
-            probe_info = json.loads(probe_path.read_text(encoding="utf-8"))
-        else:
+        probe_info = json.loads(probe_path.read_text(encoding="utf-8")) if probe_path.exists() else None
+        if probe_info is not None and probe_info.get("version") != PROBE_VERSION:
+            probe_info = None  # 판정 기준이 바뀌었으니 다시 판정
+        if probe_info is None:
             probe_info, records = probe(client, api_cfg, now)
             probe_path.parent.mkdir(parents=True, exist_ok=True)
             probe_path.write_text(json.dumps(probe_info, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -114,7 +175,7 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
             else:
                 picked, next_cursor = round_robin(targets, load_cursor(data_dir), allowance)
                 for itst_id in picked:
-                    page, _ = client.fetch(1, 10, itst_id)
+                    page, _ = client.fetch(1, api_cfg.get("rows_per_intersection", 300), itst_id)
                     records.extend(page)
                 save_cursor(data_dir, next_cursor)
     except QuotaExceeded as e:
@@ -187,7 +248,7 @@ def download_static(cfg: dict, data_dir: Path, api_key: str) -> list[Path]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="jjukgo.collect", description="쭉고 신호 수집기")
-    parser.add_argument("command", choices=["probe", "once", "report", "static"])
+    parser.add_argument("command", choices=["probe", "discover", "once", "report", "static"])
     parser.add_argument("--config", type=Path, default=ROOT / "config" / "collector.toml")
     parser.add_argument("--data-dir", type=Path, default=ROOT / "datastore")
     parser.add_argument("--dry-run", action="store_true", help="API 대신 tests/fixtures 가짜 응답 사용")
@@ -221,6 +282,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         api = cfg["api"]
         client = TDataClient(api["base_url"], api_key, api["timeout_s"], api["max_retries"], on_call=budget.record_call)
+
+    if args.command == "discover":
+        try:
+            info = discover(client, cfg["api"], args.data_dir, now)
+        finally:
+            budget.save()
+        print(json.dumps(info, ensure_ascii=False, indent=2))
+        return 0
 
     if args.command == "probe":
         try:
