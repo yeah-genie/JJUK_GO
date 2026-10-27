@@ -185,11 +185,30 @@ def run(key: str, data_dir: Path) -> dict:
     report["steps"].append({**{x: y for x, y in sig1.items() if x != "items"}, "rows": len(sig1.get("items", []))})
     report["signals_first_call"] = summarize_signals(sig1.get("items", []), now())
 
+    # 2-1) 서울이 비어 있으면(K3 NODATA) 어느 지역 신호가 나오는지 확인
+    if not sig1.get("items"):
+        regions = {}
+        r = call("tl_drct_info", key, pageNo=1, numOfRows=1000)
+        report["steps"].append({**{x: y for x, y in r.items() if x != "items"}, "rows": len(r.get("items", []))})
+        for i in r.get("items", []):
+            name = f'{i.get("lclgvNm")} ({i.get("stdgCd")})'
+            regions[name] = regions.get(name, 0) + 1
+        report["signals_without_region"] = {
+            "total_count": r.get("total_count"), "rows": len(r.get("items", [])), "regions_on_page1": regions,
+            "summary": summarize_signals(r.get("items", []), now()) if r.get("items") else None,
+        }
+        for code, name in [("1168000000", "서울 강남구"), ("11", "서울(앞 2자리)"), ("2800000000", "인천"), ("3000000000", "대전")]:
+            r = call("tl_drct_info", key, stdgCd=code, pageNo=1, numOfRows=100)
+            report["steps"].append({**{x: y for x, y in r.items() if x != "items"}, "rows": len(r.get("items", [])), "label": name})
+        if r.get("items") and not sig1.get("items"):
+            sig1 = r
+
     # 3) 바로 다시 호출: 막히는지, 값이 바뀌는지
-    sig2 = call("tl_drct_info", key, stdgCd=SEOUL, pageNo=1, numOfRows=1000)
+    params = sig1.get("params", {"stdgCd": SEOUL, "pageNo": 1, "numOfRows": 1000})
+    sig2 = call("tl_drct_info", key, **params)
     report["steps"].append({**{x: y for x, y in sig2.items() if x != "items"}, "rows": len(sig2.get("items", []))})
     time.sleep(10)
-    sig3 = call("tl_drct_info", key, stdgCd=SEOUL, pageNo=1, numOfRows=1000)
+    sig3 = call("tl_drct_info", key, **params)
     report["steps"].append({**{x: y for x, y in sig3.items() if x != "items"}, "rows": len(sig3.get("items", []))})
 
     def snap(r):
