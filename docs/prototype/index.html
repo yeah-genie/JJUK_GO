@@ -465,7 +465,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 const $ = id => document.getElementById(id);
 const DATA = new URL("seoul/", document.baseURI).href;
 const SPEED = 1.2, BASE = 8 * 3600 + 40 * 60;      // 걷는 속도 m/s, 기준 출발 08:40
-const MAX_WALK = 4500;                              // 직선거리가 이보다 멀면 걷기 길찾기를 하지 않는다
 const UNKNOWN_SIG_COST = 45;                        // 패턴을 모르는 신호를 지날 때 쭉고가 치는 비용(초): 평균 대기 근사
 const STOP_COST = 15;                               // 멈춤 한 번에 더하는 비용(초): 같은 대기라도 덜 멈추는 길을 고른다
 const ME = { name: "내 위치", sub: "예시: 역삼역", ll: [127.0369311, 37.500825], me: true };
@@ -566,10 +565,12 @@ class Heap {
 // mode "short": 거리만. mode "jjuk": 걷는 시간 + 신호 비용(패턴 있으면 도착 시각의 예상 대기 + 멈춤 비용, 없으면 평균 비용).
 function search(src, dst, mode, dep) {
   // 출발점이 신호 교차로 안이면 그 신호는 세지 않는다(어느 쪽으로 건널지 아직 정하지 않은 자리라서). buildRoute도 같다
+  const D = G.node.get(dst), unit = mode === "short" ? 1 : 1 / SPEED;
+  const hEst = n => Math.hypot((n.x - D.x) * KXQ, (n.y - D.y) * KYQ) * unit * 0.999;
   const cost = new Map([[src, 0]]), time = new Map([[src, 0]]), prev = new Map(), done = new Set(), h = new Heap();
-  h.push(0, src);
+  h.push(hEst(G.node.get(src)), src);
   while (h.size) {
-    const [c, u] = h.pop();
+    const u = h.pop()[1], c = cost.get(u);
     if (done.has(u)) continue;
     done.add(u);
     if (u === dst) break;
@@ -586,7 +587,7 @@ function search(src, dst, mode, dep) {
           else cv += UNKNOWN_SIG_COST * share;
         }
       }
-      if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); time.set(v, tv); prev.set(v, [u, e]); h.push(cv, v); }
+      if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); time.set(v, tv); prev.set(v, [u, e]); h.push(cv + hEst(nv), v); }
     }
   }
   if (!done.has(dst)) return null;
@@ -651,7 +652,7 @@ function simulate(route, dep) {
 
 const clock = s => { s = Math.round(s); const h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60; return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0"); };
 const mmss = s => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
-const mins = s => Math.max(1, Math.round(s / 60)) + "분";
+const mins = s => { const m = Math.max(1, Math.round(s / 60)); return m < 60 ? m + "분" : Math.floor(m / 60) + "시간" + (m % 60 ? " " + (m % 60) + "분" : ""); };
 function phrase(s) { s = Math.round(Math.abs(s)); const m = Math.floor(s / 60), r = s % 60; return (m ? m + "분 " : "") + (r ? r + "초" : (m ? "" : "0초")); }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -849,7 +850,7 @@ function showPlace(p) {
   $("home-intro").hidden = true; $("home-place").hidden = false;
   $("hp-name").textContent = p.name;
   const d = distLL(ME.ll, p.ll);
-  $("hp-sub").textContent = (p.sub ? p.sub + " · " : "") + `내 위치(역삼역 예시)에서 직선 ${km(d)}` + (d > MAX_WALK ? " · 걷기엔 멀어요" : "");
+  $("hp-sub").textContent = (p.sub ? p.sub + " · " : "") + `내 위치(역삼역 예시)에서 직선 ${km(d)}`;
   $("home-actions").innerHTML = `<button class="btn btn-ghost" id="hp-from">여기서 출발</button><button class="btn btn-primary" id="hp-to">여기까지 길찾기</button>`;
   setSheet("home", "mid");
 }
@@ -910,15 +911,17 @@ function initSheet(name) {
 // ---------- 상태 ----------
 const state = { from: ME, to: DEMO_TO, dep: 0, focus: "jjuk", routes: null, sims: null, src: null, dst: null, pick: "to", tripKey: null, error: null };
 let current = null;
+const setStatus = (title, text) => { if (current === "result") { $("result-status").hidden = false; $("result-status").innerHTML = `<b>${esc(title)}</b>${esc(text)}`; } };
 const tripKeyNow = () => state.from.ll.join() + "|" + state.to.ll.join();
 async function computeTrip() {
   const key = tripKeyNow();
   if (state.tripKey === key && (state.routes || state.error)) { refreshSims(); return; }
   state.tripKey = key; state.routes = null; state.error = null;
   const d = distLL(state.from.ll, state.to.ll);
-  if (d > MAX_WALK) { state.error = { far: true, title: "걷기엔 멀어요", text: `직선으로 ${km(d)}예요. 쭉고는 걸어서 갈 만한 거리(직선 ${MAX_WALK / 1000}km 안)만 찾아요. 가까운 역까지 지하철로 가서 걷는 길을 볼까요?` }; return; }
   if (d < 30) { state.error = { title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
-  await Promise.all(cellsFor(state.from.ll, state.to.ll).map(loadCell));
+  const cells = cellsFor(state.from.ll, state.to.ll, Math.max(700, d * 0.25));
+  if (cells.some(k => !G.cells.has(k))) setStatus("길 찾는 중…", `지도 조각 ${cells.length}개를 받고 있어요${d > 5000 ? " (먼 길이라 조금 걸려요)" : ""}.`);
+  await Promise.all(cells.map(loadCell));
   const a = snap(state.from.ll), b = snap(state.to.ll);
   if (a.d > 300 || b.d > 300) { state.error = { title: "근처에 걸을 수 있는 길 정보가 없어요", text: "서울 안의 다른 곳을 골라 주세요." }; return; }
   state.src = a.id; state.dst = b.id;
@@ -982,11 +985,6 @@ async function renderResult() {
   } else refreshSims();
   if (state.error) {
     st.hidden = false; st.innerHTML = `<b>${esc(state.error.title)}</b>${esc(state.error.text)}`; cards.hidden = true; waitUI(false);
-    if (state.error.far && !state.to.me) {
-      const stn = await nearestStation(state.to.ll);
-      if (current !== "result") return;
-      st.innerHTML += `<div class="actions" style="margin-top:10px">${stn ? `<button class="btn btn-primary" data-from-station='${esc(JSON.stringify({ name: stn.name, ll: stn.ll }))}'>${esc(stn.name)}에서 걷기 (${km(stn.d)})</button>` : ""}<button class="btn btn-ghost" data-search="from">출발지 바꾸기</button></div>`;
-    }
     $("cov-note").hidden = true; setRoutes(null, null); markTrip(null);
     setSheet("result", "mid"); fit([[state.from.ll, state.to.ll]]);
     return;
@@ -1221,7 +1219,7 @@ async function renderSearchList() {
   $("search-list").results = res;
   $("search-list").innerHTML = res.length ? res.map((p, i) => {
     const d = distLL(p.ll, origin);
-    return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}${d > MAX_WALK ? " · 걷기엔 멀어요" : ""}</small><span class="km">${km(d)}</span></button>`;
+    return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small><span class="km">${km(d)}</span></button>`;
   }).join("") : `<p class="note">"${esc(q)}"에 맞는 곳이 없어요. 역 이름이나 동네 이름으로 찾아보거나, 지도를 눌러 골라 주세요.</p>`;
 }
 function choosePlace(p) {
@@ -1245,13 +1243,6 @@ async function exampleTrip(ex) {
   state.to = { name: b.name, sub: b.kind === "역" ? "" : b.kind, ll: b.ll, kind: b.kind };
   state.dep = 0; state.focus = "jjuk";
   go("result");
-}
-// 목적지가 멀면: 목적지에서 가장 가까운 역에서 내려 걷는 길을 제안한다
-async function nearestStation(ll) {
-  const list = await ensureSearch();
-  let best = null, bd = Infinity;
-  for (const p of list) if (p.kind === "역") { const d = distLL(p.ll, ll); if (d > 120 && d < bd) { bd = d; best = p; } }
-  return best && bd < 2500 ? { ...best, d: bd } : null;
 }
 
 // ---------- 화면 전환 ----------
@@ -1303,8 +1294,6 @@ document.addEventListener("click", e => {
   if (t.closest("#hp-from")) { state.pick = "from"; choosePlace({ ...state.picked }); return; }
   if (t.closest("[data-trip='demo']")) { state.from = ME; state.to = DEMO_TO; state.dep = 0; go("result"); return; }
   if (t.closest("#swap")) { [state.from, state.to] = [state.to, state.from]; state.dep = 0; renderResult(); return; }
-  const fs = t.closest("[data-from-station]");
-  if (fs) { const s = JSON.parse(fs.dataset.fromStation); state.from = { name: s.name, sub: "", ll: s.ll, kind: "역" }; state.dep = 0; renderResult(); return; }
   if (t.closest("#sq-clear")) { $("sq").value = ""; renderSearchList(); $("sq").focus(); return; }
   if (t.closest("#cov-req")) { $("cov-text").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   if (t.closest("#sig-req")) { $("sig-note").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
