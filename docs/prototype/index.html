@@ -191,13 +191,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     <div class="home-chips chips">
       <button class="chip" data-go="result">회사</button>
       <button class="chip" data-go="result">집</button>
-      <button class="chip" data-go="result">최근 · 선릉 오피스</button>
+      <button class="chip" data-go="result">최근 · 선릉역 북쪽</button>
     </div>
     <div class="sheet">
       <div class="grip"></div>
       <div class="row-label"><h2>지금 여기는 신호 패턴을 알고 있어요</h2></div>
       <p class="safety" style="font-size:13px">테헤란로 역삼역–선릉역 구간의 횡단보도는 신호 주기를 반영해 길을 찾아요. 다른 곳은 신호 개수만 따져요.</p>
-      <button class="btn btn-primary" data-go="result">선릉 오피스까지 길 찾기</button>
+      <button class="btn btn-primary" data-go="result">선릉역 북쪽까지 길 찾기</button>
     </div>
   </section>
 
@@ -206,7 +206,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     <div class="map" id="map-result"></div>
     <div class="topbar">
       <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
-      <div class="trip"><b>역삼역 3번 출구 → 선릉 오피스</b><span id="depart-label">08:40 출발 · 걷는 속도 1.2m/s</span></div>
+      <div class="trip"><b>역삼역 → 선릉역 북쪽</b><span id="depart-label">08:40 출발 · 걷는 속도 1.2m/s</span></div>
     </div>
     <div class="sheet">
       <div class="grip"></div>
@@ -268,7 +268,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <span class="logo">쭉고</span>
       <span class="date" id="card-date"></span>
       <div id="card-shape"></div>
-      <div class="kind">걷기 · 역삼역 → 선릉</div>
+      <div class="kind">걷기 · 역삼역 → 선릉역</div>
       <div class="stats">
         <div class="stat-big"><strong id="c-stops"></strong><span>멈춘 횟수</span></div>
         <div class="stat-big"><strong id="c-wait"></strong><span>신호 기다림</span></div>
@@ -284,25 +284,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 </div>
 
 <script>
-// 예시 데이터. 좌표는 지도 SVG(390×430) 기준, 1px ≈ 2m. 신호 계획(주기·초록·시작 오프셋)은 예시 값.
-const SPEED = 1.2, MPX = 2, BASE = 8 * 3600 + 40 * 60;
+// 경로 좌표는 미터 단위 (a = 테헤란로를 따라 역삼역에서 선릉역 쪽으로, p = 테헤란로에서 북쪽으로).
+// 교차로 위치는 전국 교차로 목록(행정안전부 한국지역정보개발원, 2026-10-28 수집)의 실제 좌표에서 계산했다.
+// 신호 계획(주기·초록 시간·시작 오프셋)은 아직 예시 값이다. 수집한 실제 주기로 바꿀 예정.
+const SPEED = 1.2, MPX = 1, BASE = 8 * 3600 + 40 * 60;
+const ANG = 20.8 * Math.PI / 180, UX = Math.cos(ANG), UY = Math.sin(ANG);
+const SCALE = 0.29, X0 = 34, Y0 = 345;   // 지도: 1px ≈ 3.4m, 북쪽이 위
+const P = (a, p) => { const e = a * UX - p * UY, n = a * UY + p * UX; return [+(X0 + e * SCALE).toFixed(1), +(Y0 - n * SCALE).toFixed(1)]; };
 const SIG = {
-  a: { c: 140, g: 30, o: 42, name: "테헤란로 횡단보도" },
-  b: { c: 140, g: 35, o: 9, name: "언주로 횡단보도 (북쪽)" },
-  c: { c: 150, g: 35, o: 95, name: "선릉로 횡단보도 (북쪽)" },
-  d: { c: 150, g: 25, o: 138, name: "언주로 횡단보도 (남쪽)" },
-  e: { c: 120, g: 35, o: 89, name: "역삼 골목 앞 횡단보도" },
-  f: { c: 140, g: 25, o: 17, name: "선릉로 횡단보도 (남쪽)" },
-  g: { c: 150, g: 25, o: 75, name: "선릉역 앞 테헤란로 횡단보도" },
+  "2217": { c: 150, g: 30, o: 53,  name: "역삼역 테헤란로 횡단보도" },
+  "2975": { c: 150, g: 25, o: 124, name: "고등교육재단 앞 횡단보도" },
+  "2219": { c: 150, g: 30, o: 124, name: "르네상스호텔 앞 횡단보도" },
+  "2974": { c: 150, g: 40, o: 117, name: "국민은행테헤란로 앞 횡단보도" },
+  "2212": { c: 150, g: 35, o: 12,  name: "선릉역 테헤란로 횡단보도" },
+  "4500": { c: 150, g: 40, o: 42,  name: "KT강남지사 앞 횡단보도" },
 };
 const ROUTES = {
-  jjuk: { label: "쭉고", pts: [[65,268],[75,268],[75,150],[200,150],[345,150],[365,150],[365,132]],
-    x: [{ at:[75,259], s:"a" }, { at:[125,150], s:null, name:"골목 (신호 없음)" }, { at:[200,150], s:"b" },
-        { at:[275,150], s:null, name:"골목 (신호 없음)" }, { at:[345,150], s:"c" }] },
-  short: { label: "최단", pts: [[65,268],[358,268],[358,132],[365,132]],
-    x: [{ at:[125,268], s:null, name:"골목 (신호 없음)" }, { at:[200,268], s:"d" }, { at:[275,268], s:"e" },
-        { at:[345,268], s:"f" }, { at:[358,250], s:"g" }, { at:[358,150], s:null, name:"이면도로 (신호 없음)" }] },
+  jjuk: { label: "쭉고", pts: [[15,-14],[8,-14],[8,175],[1135,175],[1135,95],[1150,95]],
+    x: [{ at:[8,0], s:"2217" }, { at:[289,175], s:null, name:"이면도로 골목 (신호 없음)" }, { at:[554,175], s:"4500" },
+        { at:[836,175], s:null, name:"이면도로 골목 (신호 없음)" }] },
+  short: { label: "최단", pts: [[15,-14],[1135,-14],[1135,95],[1150,95]],
+    x: [{ at:[289,-14], s:"2975" }, { at:[554,-14], s:"2219" }, { at:[836,-14], s:"2974" }, { at:[1135,0], s:"2212" }] },
 };
+const START = [15, -14], DEST = [1150, 95];
 
 function polyLen(p) { let s = 0; for (let i = 0; i < p.length - 1; i++) s += Math.hypot(p[i+1][0]-p[i][0], p[i+1][1]-p[i][1]); return s; }
 function along(pts, p) {
@@ -355,52 +359,52 @@ function phrase(s) { s = Math.round(Math.abs(s)); const m = Math.floor(s/60), r 
 
 // ---------- 지도 ----------
 function mapSVG(opts) {
-  const roads = [
-    // [x1,y1,x2,y2,width,name]
-    [-200,250,600,250,24,"테헤란로"], [40,150,375,150,9,""], [40,345,375,345,9,""],
-    [50,-400,50,640,20,"논현로"], [200,-400,200,640,16,"언주로"], [345,-400,345,640,20,"선릉로"],
-    [125,60,125,420,7,""], [275,60,275,420,7,""],
-  ];
+  const line = (pts, w, color, extra = "") => `<polyline points="${pts.map(q => P(...q).join(",")).join(" ")}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
   const pad = opts.pad || 0;
-  let s = `<svg viewBox="0 ${-pad} 390 ${430 + pad}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="역삼역에서 선릉역까지 지도">`;
+  let s = `<svg viewBox="0 ${-pad} 390 ${430 + pad}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="역삼역에서 선릉역까지 테헤란로 지도">`;
   s += `<rect x="-200" y="${-pad - 200}" width="790" height="${830 + pad}" fill="var(--block)"/>`;
-  for (const [x1,y1,x2,y2,w] of roads) s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--road)" stroke-width="${w}"/>`;
-  // 테헤란로 중앙선
-  s += `<line x1="-200" y1="250" x2="600" y2="250" stroke="#F2D27A" stroke-width="1.5"/>`;
-  // 길 이름
-  s += `<text x="150" y="243" font-size="10" fill="#8A93A3" font-family="var(--body)">테헤란로</text>`;
-  for (const [x, n] of [[50,"논현로"],[200,"언주로"],[345,"선릉로"]]) s += `<text x="${x+13}" y="395" font-size="10" fill="#8A93A3">${n}</text>`;
+  // 길: 테헤란로, 북쪽 이면도로, 남쪽 이면도로, 교차로마다 가로지르는 길
+  const cross = [[0,18],[289,8],[554,12],[836,8],[1142,18]];
+  for (const [a, w] of cross) s += line([[a,-330],[a,360]], w, "var(--road)");
+  s += line([[-160,175],[1310,175]], 9, "var(--road)");
+  s += line([[-160,-180],[1310,-180]], 9, "var(--road)");
+  s += line([[-260,0],[1400,0]], 24, "var(--road)");
+  s += line([[-260,0],[1400,0]], 1.5, "#F2D27A");
+  const [lx, ly] = P(700, -11);
+  s += `<text x="${lx}" y="${ly}" font-size="10" fill="#8A93A3" transform="rotate(${-20.8} ${lx} ${ly})">테헤란로</text>`;
+  const [bx, by] = P(330, 182);
+  s += `<text x="${bx}" y="${by}" font-size="9" fill="#8A93A3" transform="rotate(${-20.8} ${bx} ${by})">이면도로</text>`;
   // 역
-  for (const [x, y, n, lx] of [[50,250,"역삼역",6],[345,250,"선릉역",292]]) {
+  for (const [a, n, dx, dy] of [[0,"역삼역",-30,24],[1142,"선릉역",-6,26]]) {
+    const [x, y] = P(a, 0);
     s += `<circle cx="${x}" cy="${y}" r="9" fill="#fff" stroke="var(--asphalt)" stroke-width="3"/>`;
-    s += `<text x="${lx}" y="${y-18}" font-size="11" font-weight="700" fill="var(--asphalt)">${n}</text>`;
+    s += `<text x="${x+dx}" y="${y+dy}" font-size="11" font-weight="700" fill="var(--asphalt)">${n}</text>`;
   }
   if (opts.routes) {
     const order = opts.focus === "short" ? ["jjuk","short"] : ["short","jjuk"];
     for (const k of order) {
-      const r = ROUTES[k], d = r.pts.map(p => p.join(",")).join(" ");
       const on = opts.focus === k;
-      if (k === "short") s += `<polyline points="${d}" fill="none" stroke="#7E8899" stroke-width="${on?6:4}" stroke-dasharray="2 7" stroke-linecap="round" stroke-linejoin="round" opacity="${on?1:.85}"/>`;
-      else s += `<polyline points="${d}" fill="none" stroke="var(--asphalt)" stroke-width="${on?11:9}" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/><polyline points="${d}" fill="none" stroke="var(--lane)" stroke-width="${on?7:5}" stroke-linecap="round" stroke-linejoin="round" opacity="${on?1:.7}"/>`;
+      if (k === "short") s += line(ROUTES[k].pts, on ? 6 : 4, "#7E8899", `stroke-dasharray="2 7" opacity="${on ? 1 : .85}"`);
+      else s += line(ROUTES[k].pts, on ? 11 : 9, "var(--asphalt)", `opacity=".18"`) + line(ROUTES[k].pts, on ? 7 : 5, "var(--lane)", `opacity="${on ? 1 : .7}"`);
     }
     for (const k of ["short","jjuk"]) {
-      const sim = opts.sims[k];
-      sim.xings.forEach(x => {
+      opts.sims[k].xings.forEach(x => {
         if (!x.sig) return;
-        const [px, py] = ROUTES[k].x.find(z => z.s && SIG[z.s].name === x.name).at;
+        const [px, py] = P(...ROUTES[k].x.find(z => z.s && SIG[z.s].name === x.name).at);
         const stop = x.wait > 2;
         s += `<g><circle cx="${px}" cy="${py}" r="9" fill="${stop ? "var(--stop)" : "var(--go)"}" stroke="#fff" stroke-width="2"/>`;
         s += `<text x="${px}" y="${py+3.5}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">${stop ? "Ⅱ" : "✓"}</text></g>`;
-        if (stop && opts.focus === k) s += `<text x="${px+12}" y="${py-10}" font-size="11" font-weight="700" fill="var(--stop)">${x.wait}초</text>`;
+        if (stop && opts.focus === k) s += `<text x="${px+11}" y="${py+18}" font-size="11" font-weight="700" fill="var(--stop)">${x.wait}초</text>`;
       });
     }
   }
   // 출발·도착
-  s += `<circle cx="65" cy="268" r="7" fill="var(--asphalt)" stroke="#fff" stroke-width="3"/>`;
-  s += `<g><circle cx="365" cy="132" r="10" fill="var(--asphalt)"/><circle cx="365" cy="132" r="4" fill="var(--lane)"/></g>`;
-  s += `<text x="300" y="118" font-size="11" font-weight="600" fill="var(--asphalt)">선릉 오피스</text>`;
-  if (opts.walker) s += `<circle id="walker" cx="65" cy="268" r="9" fill="#2E7BF6" stroke="#fff" stroke-width="3"/>`;
-  if (opts.me) s += `<circle cx="65" cy="268" r="16" fill="#2E7BF6" opacity=".18"/><circle cx="65" cy="268" r="8" fill="#2E7BF6" stroke="#fff" stroke-width="3"/>`;
+  const [sx, sy] = P(...START), [ex, ey] = P(...DEST);
+  s += `<circle cx="${sx}" cy="${sy}" r="7" fill="var(--asphalt)" stroke="#fff" stroke-width="3"/>`;
+  s += `<g><circle cx="${ex}" cy="${ey}" r="10" fill="var(--asphalt)"/><circle cx="${ex}" cy="${ey}" r="4" fill="var(--lane)"/></g>`;
+  s += `<text x="${ex-58}" y="${ey-14}" font-size="11" font-weight="600" fill="var(--asphalt)">선릉역 북쪽</text>`;
+  if (opts.walker) s += `<circle id="walker" cx="${sx}" cy="${sy}" r="9" fill="#2E7BF6" stroke="#fff" stroke-width="3"/>`;
+  if (opts.me) s += `<circle cx="${sx}" cy="${sy}" r="16" fill="#2E7BF6" opacity=".18"/><circle cx="${sx}" cy="${sy}" r="8" fill="#2E7BF6" stroke="#fff" stroke-width="3"/>`;
   return s + "</svg>";
 }
 
@@ -452,7 +456,7 @@ function renderWalk() {
   cancelAnimationFrame(walkTimer);
   const step = now => {
     const f = reduce ? 0.32 : Math.min(1, (now - start) / DUR), dist = f * L;
-    const [x, y] = pointAt(pts, dist), w = $("walker");
+    const [x, y] = P(...pointAt(pts, dist)), w = $("walker");
     if (w) { w.setAttribute("cx", x); w.setAttribute("cy", y); }
     const elapsed = f * sim.total;
     const next = sim.xings.find(z => z.sig && z.d > dist + 1);
@@ -477,7 +481,7 @@ function renderDone() {
   $("c-compare").textContent = `최단으로 갔다면 ${other.stops}번 멈추고 ${mmss(other.wait)} 기다렸을 거예요`;
   $("card-date").textContent = `10월 28일 ${clock(BASE + state.dep)}`;
   // 경로 실루엣: 쭉고 경로를 정사각형 안에 맞춰 그리고 멈춘 곳만 빨간 점
-  const pts = ROUTES.jjuk.pts, xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const pts = ROUTES.jjuk.pts.map(q => P(...q)), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
   const k = 150 / Math.max(maxX - minX, maxY - minY), ox = (190 - (maxX - minX) * k) / 2, oy = (190 - (maxY - minY) * k) / 2;
   const tx = p => [(p[0] - minX) * k + ox, (p[1] - minY) * k + oy];
@@ -485,7 +489,7 @@ function renderDone() {
   s += `<polyline points="${pts.map(p => tx(p).join(",")).join(" ")}" fill="none" stroke="var(--lane)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
   const [sx, sy] = tx(pts[0]), [ex, ey] = tx(pts[pts.length - 1]);
   s += `<circle cx="${sx}" cy="${sy}" r="6" fill="#262D3B" stroke="var(--lane)" stroke-width="3"/><circle cx="${ex}" cy="${ey}" r="7" fill="var(--lane)"/>`;
-  sim.xings.filter(x => x.wait > 2).forEach(x => { const [px, py] = tx(pointAt(pts, x.d)); s += `<circle cx="${px}" cy="${py}" r="7" fill="var(--stop)" stroke="#262D3B" stroke-width="2.5"/>`; });
+  sim.xings.filter(x => x.wait > 2).forEach(x => { const [px, py] = tx(P(...pointAt(ROUTES.jjuk.pts, x.d))); s += `<circle cx="${px}" cy="${py}" r="7" fill="var(--stop)" stroke="#262D3B" stroke-width="2.5"/>`; });
   $("card-shape").innerHTML = s + "</svg>";
 }
 
