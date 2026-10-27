@@ -1,0 +1,33 @@
+name: static-data
+
+# 주 1회 정적 MAP 파일(교차로 MAP, 신호연결 MAP 등)을 다시 받는다.
+# 받을 파일 목록은 config/collector.toml [static] sources 에 적는다.
+on:
+  schedule:
+    - cron: "17 18 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: bash scripts/data_branch.sh checkout
+      - name: Download
+        run: PYTHONPATH=src python -m jjukgo.collect static --data-dir datastore
+        env:
+          SEOUL_TDATA_API_KEY: ${{ secrets.SEOUL_TDATA_API_KEY }}
+      - run: bash scripts/data_branch.sh push "static data $(date -u +%Y-%m-%d)"

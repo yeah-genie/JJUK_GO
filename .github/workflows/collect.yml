@@ -1,0 +1,35 @@
+name: collect
+
+# 15분마다 C-ITS 신호 스냅샷을 수집해 data 브랜치에 쌓는다.
+# 실행 간격을 바꾸면 config/collector.toml 의 run_interval_min 도 같이 바꾼다.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: bash scripts/data_branch.sh checkout
+      - name: Collect
+        run: PYTHONPATH=src python -m jjukgo.collect once --data-dir datastore
+        env:
+          SEOUL_TDATA_API_KEY: ${{ secrets.SEOUL_TDATA_API_KEY }}
+      - name: Save
+        if: always()
+        run: bash scripts/data_branch.sh push "collect $(date -u +%Y-%m-%dT%H:%MZ)"

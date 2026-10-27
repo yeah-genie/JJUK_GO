@@ -1,0 +1,38 @@
+name: daily-report
+
+# 매일 00:30 KST(15:30 UTC)에 전날 수집 결과를 점검해 data 브랜치 meta/daily_report/ 에 남긴다.
+on:
+  schedule:
+    - cron: "30 15 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "대상 날짜 YYYY-MM-DD (비우면 어제)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: bash scripts/data_branch.sh checkout
+      - name: Report
+        run: |
+          ARGS=()
+          if [ -n "${{ github.event.inputs.date }}" ]; then ARGS=(--date "${{ github.event.inputs.date }}"); fi
+          PYTHONPATH=src python -m jjukgo.collect report --data-dir datastore "${ARGS[@]}"
+          cat "$(ls -t datastore/meta/daily_report/*.md | head -n 1)" >> "$GITHUB_STEP_SUMMARY"
+      - run: bash scripts/data_branch.sh push "daily report $(date -u +%Y-%m-%d)"

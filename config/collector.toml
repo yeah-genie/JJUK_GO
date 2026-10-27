@@ -1,0 +1,39 @@
+# 쭉고 신호 수집기 설정
+# 자세한 설명은 docs/DATA_COLLECTION.md 참고
+
+[api]
+# C-ITS 신호 현시 + 잔여시간 결합 정보 (서울교통빅데이터플랫폼)
+base_url = "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionInformation/1.0"
+num_of_rows = 1000
+timeout_s = 20
+max_retries = 3
+# 일괄 조회 모드에서 한 번 실행에 넘기지 않을 최대 페이지 수 (총 건수를 모를 때의 안전장치)
+max_pages = 10
+
+[budget]
+# 하루 호출 한도 (KST 자정 기준). 공식 한도가 확인되면 수정.
+daily_limit = 1000
+# 수집기가 쓸 비율. 나머지는 서비스 실시간 조회용으로 남겨둔다.
+collect_share = 0.7
+# GitHub Actions 실행 간격(분). collect.yml의 cron과 맞춘다.
+run_interval_min = 15
+# 출퇴근·점심 시간대(KST)에 호출을 더 배정한다.
+peak_hours = [7, 8, 9, 12, 13, 18, 19]
+peak_weight = 2.0
+
+[targets]
+# 직접 지정한 교차로 ID. 비어 있으면 targets_csv + bbox로 고른다.
+itst_ids = []
+# 교차로 목록 CSV (교차로 ID, 위도, 경도 열을 자동 인식). 없으면 무시.
+targets_csv = "config/targets.csv"
+# 강남역–역삼–선릉 일대: [경도_min, 위도_min, 경도_max, 위도_max]
+bbox = [127.020, 37.493, 127.055, 37.512]
+
+[store]
+# 저장할 신호 종류. Pd=보행, St=직진, Lt=좌회전, Ut=유턴, Bs=버스, Bc=자전거
+movements = ["Pd"]
+
+[static]
+# 주 1회 내려받을 정적 파일. url에 {apiKey}를 넣으면 API 키로 치환된다.
+# 예: { name = "itst_map", url = "https://..." }
+sources = []

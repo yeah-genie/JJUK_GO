@@ -1,0 +1,22 @@
+[
+  {
+    "dataId": "SPaT", "itstId": "1537", "eqmnId": "E1537", "trsmUtcTime": "1793086200000",
+    "trsmYear": "2026", "trsmMt": "10", "trsmDy": "27", "trsmTm": "203000", "trsmMs": "0",
+    "ntPdsgRmdrCs": 312, "ntPdsgStatNm": "stop-And-Remain",
+    "etPdsgRmdrCs": 145, "etPdsgStatNm": "protected-Movement-Allowed",
+    "stPdsgRmdrCs": null, "stPdsgStatNm": null,
+    "ntStsgRmdrCs": 145, "ntStsgStatNm": "protected-Movement-Allowed",
+    "regDt": "2026-10-27 20:30:00"
+  },
+  {
+    "dataId": "SPaT", "itstId": "23665", "eqmnId": "E23665", "trsmUtcTime": "1793086200500",
+    "nePdsgRmdrCs": 58, "nePdsgStatNm": "protected-Movement-Allowed",
+    "swPdsgRmdrCs": 402, "swPdsgStatNm": "stop-And-Remain",
+    "wtLtsgRmdrCs": 220, "wtLtsgStatNm": "stop-And-Remain"
+  },
+  {
+    "dataId": "SPaT", "itstId": "1600", "eqmnId": "E1600", "trsmUtcTime": "",
+    "wtPdsgRmdrCs": "", "wtPdsgStatNm": "stop-And-Remain",
+    "nwPdsgRmdrCs": 77, "nwPdsgStatNm": "protected-Movement-Allowed"
+  }
+]
