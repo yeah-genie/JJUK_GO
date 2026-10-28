@@ -4,7 +4,7 @@
 
 ## 다음 작업자가 먼저 알아야 할 사항
 
-- **현재 공개 배포:** 화면 정보량을 줄인eeb4f90, Vercel `dpl_7CtbXq3UAxHKRPS2neXAN63zHmrq` READY 및 공개 HTTPS 브라우저 검사 통과. https://jjukgo.vercel.app/#result . 로컬59개 테스트 통과. 개발 CI는 의존성 후 한글폰트 누락도 발견하여 설치 단계 정정, 새 실행 결과 확인 필요.
+- **현재 공개 배포:** 화면 정보량을 줄인eeb4f90, Vercel `dpl_7CtbXq3UAxHKRPS2neXAN63zHmrq` READY 및 공개 HTTPS 브라우저 검사 통과. https://jjukgo.vercel.app/#result . 로컬59개 테스트 통과. 개발 CI는 의존성 후 한글폰트 누락도 발견하여 설치 단계 정정. dd4da43의 GitHub CI40725353929 전체 성공 확인.
 - **GitHub 에이전트 요청:** 사용자가 Claude처럼 GitHub 에이전트로 들어가라고 요청. 의미 확인 질문 중이며 공식 code-review 설정은 로그인 화면. https://chatgpt.com/settings/code-review 사용자 로그인 이후 저장소 연결/리뷰 설정 확인 필요. 아직 연결 완료 아님. 문서 기준 PR @codex review/수정 요청과 현재 GitHub 플러그인을 구분.
 
 
