@@ -28,6 +28,10 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* 스크롤바는 어디에도 보이지 않게(스크롤 자체는 된다) */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
+html, body { overflow: hidden; }
 html, body { height: 100%; }
 body {
   margin: 0; background: var(--page); color: var(--asphalt); font-family: var(--body); font-size: 15px; word-break: keep-all;
@@ -86,7 +90,7 @@ body {
 .route[aria-pressed="true"] { border-color: var(--asphalt); box-shadow: inset 0 0 0 1px var(--asphalt); }
 .route .name { font-weight: 700; font-size: 14.5px; }
 .route .mins { font-family: var(--display); font-size: 21px; font-variant-numeric: tabular-nums; }
-.route .stat { justify-self: end; font-size: 12.5px; color: var(--muted); text-align: right; }
+.route .stat { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
 .route .stat strong { color: var(--asphalt); font-weight: 700; }
 .ex { margin-left: 5px; font-size: 10.5px; font-weight: 700; color: #7A5C00; background: #FFF1C2; padding: 1px 5px; border-radius: 5px; vertical-align: 1px; }
 .route .sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
@@ -120,14 +124,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .pt-from { border: 3px solid var(--asphalt); background: #fff; }
 .pt-to { background: var(--asphalt); box-shadow: 0 0 0 2px var(--lane); }
 /* 출발 시각 카드 (쭉고의 중심) */
-.gocard { background: var(--asphalt); color: var(--zebra); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
-.gocard .now { font-size: 12.5px; color: #C9D0DA; }
-.gocard .big { font-family: var(--display); font-size: 22px; color: var(--lane); line-height: 1.2; }
-.gocard .why { font-size: 13px; color: #E3E7EC; }
-.gocard .dl { font-size: 12.5px; color: #C9D0DA; margin-top: 2px; }
-.gocard .dl b { color: #fff; }
-.gocard .late { color: #FFB4B4; }
-.gocard .use { align-self: flex-start; margin-top: 6px; border: 0; border-radius: 10px; background: var(--lane); color: var(--asphalt); font: inherit; font-weight: 700; font-size: 13px; padding: 6px 12px; cursor: pointer; }
+.gocard { background: var(--asphalt); color: var(--zebra); border-radius: 16px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
+.gc-head { font-size: 13px; color: #B9C1CF; }
+.gc-big { font-family: var(--display); font-size: 26px; color: var(--lane); line-height: 1.15; }
+.gc-big small { font-family: var(--body); font-size: 14px; font-weight: 600; color: #E3E7EC; margin-left: 6px; }
+.gc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.gc-stats div { background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px 8px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gc-stats span { font-size: 11px; color: #A9B2C1; white-space: nowrap; }
+.gc-stats b { font-size: 15px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gc-stats .bad b { color: #FFB4B4; }
+.gc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gc-row .use { border: 0; border-radius: 10px; background: var(--lane); color: var(--asphalt); font: inherit; font-weight: 700; font-size: 13.5px; padding: 8px 14px; cursor: pointer; }
+.gc-row .on { font-size: 12.5px; color: var(--lane); font-weight: 600; }
+.gc-row .note2 { font-size: 12px; color: #A9B2C1; }
+.gc-foot { margin: 6px 2px 0; font-size: 12px; color: var(--muted); }
+.peek-sum { display: none; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; font-size: 15px; font-weight: 700; }
+.peek-sum small { font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.sheet.peek .peek-sum { display: flex; }
+.sheet.peek .sheet-body > :not(.peek-sum) { display: none !important; }
 .deadline-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; }
 .deadline-row label { font-weight: 600; }
 .deadline-row input { font: inherit; font-size: 15px; border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 8px; background: #fff; color: var(--asphalt); }
@@ -317,6 +331,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     <div class="sheet" id="sheet-home">
       <div class="grip-area"><div class="grip"></div></div>
       <div class="sheet-body">
+        <div class="peek-sum" data-peek></div>
         <div id="home-intro">
           <div class="row-label"><h2>언제 나가면 안 멈출까요?</h2></div>
           <p class="safety" style="font-size:13px;margin-top:4px">노란 테두리 안(광화문 일대)은 신호 패턴을 알아서 <b>몇 초 뒤에 나가면 덜 멈추는지</b>, <b>이번 신호를 놓쳐도 괜찮은지</b>까지 알려줘요. 다른 곳은 지나는 신호 개수만 따져요.</p>
@@ -363,8 +378,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     <div class="sheet" id="sheet-result">
       <div class="grip-area"><div class="grip"></div></div>
       <div class="sheet-body">
+        <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div class="gocard" id="go-card" hidden></div>
+        <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
         <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
           <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
           <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
@@ -409,6 +425,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     <div class="sheet" id="sheet-walk">
       <div class="grip-area"><div class="grip"></div></div>
       <div class="sheet-body">
+        <div class="peek-sum" data-peek></div>
         <div class="progress">
           <div><span>멈춘 횟수</span><strong id="w-stops">0</strong></div>
           <div><span>남은 시간</span><strong id="w-left">—</strong></div>

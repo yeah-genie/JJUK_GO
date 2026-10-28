@@ -32,13 +32,14 @@ const km = m => m < 1000 ? Math.round(m / 10) * 10 + "m" : (m / 1000).toFixed(1)
 
 // ---------- 신호 ----------
 // 수집 데이터로 찾은 실제 신호 패턴(scripts/export_signal_plans.py가 확신 기준을 넘은 곳만 채운다). 여기 없는 신호는 '모름'이다(예시 값을 쓰지 않는다).
-const REAL = /*REAL_SIGNALS*/{"day0": 1793113200.0, "date": "2026-10-28", "signals": {"1537": {"dir": "nw", "c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "impurity": 0.0011, "observed_min": 36.6, "from": "10/28 03:00", "to": "10/28 03:36"}, "2691": {"dir": "wt", "c": 140.01, "ref": 1793116819.232, "win": [[56.0, 89.0], [138.0, 140.0], [0.0, 31.0]], "impurity": 0.0006, "observed_min": 156.3, "from": "10/28 01:00", "to": "10/28 03:36"}, "1619": {"dir": "nw", "c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "impurity": 0.0008, "observed_min": 156.4, "from": "10/28 01:00", "to": "10/28 03:36"}}}/*END_REAL*/;
+const REAL = /*REAL_SIGNALS*/{"day0": 1793113200.0, "date": "2026-10-28", "signals": {"2691": {"dir": "wt", "c": 140.01, "ref": 1793116819.232, "win": [[56.0, 89.0], [138.0, 140.0], [0.0, 31.0]], "day0": 1793113200.0, "impurity": 0.0006, "observed_min": 156.3, "from": "10/28 01:00", "to": "10/28 03:36", "legs": {"e": {"c": 140.01, "ref": 1793116819.232, "win": [[56.0, 84.0], [138.0, 140.0], [0.0, 26.0]], "code": "et"}, "w": {"c": 140.01, "ref": 1793116819.232, "win": [[56.0, 89.0], [138.0, 140.0], [0.0, 31.0]], "code": "wt"}}}, "1619": {"dir": "nw", "c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "day0": 1793113200.0, "impurity": 0.0008, "observed_min": 156.4, "from": "10/28 01:00", "to": "10/28 03:36", "legs": {"n": {"c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "code": "nw"}, "w": {"c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "code": "nw"}}}, "1537": {"dir": "nw", "c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "day0": 1793113200.0, "impurity": 0.0011, "observed_min": 36.6, "from": "10/28 03:00", "to": "10/28 03:36", "legs": {"n": {"c": 140.03, "ref": 1793124000.648, "win": [[10.0, 46.0], [102.0, 138.0]], "code": "ne"}, "e": {"c": 140.03, "ref": 1793124000.648, "win": [[10.0, 46.0], [102.0, 138.0]], "code": "ne"}, "w": {"c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "code": "nw"}, "s": {"c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "code": "se"}}}, "2910": {"dir": "st", "c": 130.045, "ref": 1793160022.657, "win": [[34.0, 66.0]], "day0": 1793113200.0, "impurity": 0.0006, "observed_min": 24.3, "from": "10/28 13:00", "to": "10/28 13:24", "legs": {"e": {"c": 130.035, "ref": 1793160022.657, "win": [[106.0, 130.0], [0.0, 6.0]], "code": "et"}, "s": {"c": 130.045, "ref": 1793160022.657, "win": [[34.0, 66.0]], "code": "st"}}}}}/*END_REAL*/;
 const known = id => !!REAL.signals[id];
 const MIN_GREEN = 8;  // 초록이 이보다 적게 남았으면 건너기 시작하지 않고 다음 초록을 기다리는 것으로 본다(서두르게 하지 않는다)
 // 도착 시각 t(자정 기준 초)의 신호 상태: 초록이면 {g: true, rem: 남은 초}, 빨강이면 {g: false, wait: 다음 초록까지 초}
-function sigState(id, t) {
-  const r = REAL.signals[id];
-  const ph = (((REAL.day0 + t - r.ref) % r.c) + r.c) % r.c;
+// dir: 건너는 다리(n/e/s/w). 그 다리의 보행신호 패턴이 있으면 쓰고, 없으면 교차로 기본 패턴을 쓴다.
+function sigState(id, t, dir) {
+  const base = REAL.signals[id], r = (dir && base.legs && base.legs[dir]) || base;
+  const ph = ((((base.day0 ?? REAL.day0) + t - r.ref) % r.c) + r.c) % r.c;
   let wait = Infinity;
   for (const [a, b] of r.win) {
     for (const shift of [0, r.c]) { if (ph + shift >= a && ph + shift < b) return { g: true, rem: b - ph - shift }; }
@@ -47,11 +48,11 @@ function sigState(id, t) {
   return { g: false, wait: wait === Infinity ? 0 : wait };
 }
 // 건너기 전에 기다려야 하는 초. 초록이 곧 끝날 때(MIN_GREEN 미만)는 놓친 것으로 보고 다음 초록까지 센다.
-function sigWait(id, t) {
-  const s = sigState(id, t);
+function sigWait(id, t, dir) {
+  const s = sigState(id, t, dir);
   if (!s.g) return s.wait;
   if (s.rem >= MIN_GREEN) return 0;
-  return s.rem + sigState(id, t + s.rem + 0.5).wait;
+  return s.rem + sigState(id, t + s.rem + 0.5, dir).wait;
 }
 const DIR_KO = { n: "북쪽", e: "동쪽", s: "남쪽", w: "서쪽" };
 const sigName = (id, dir) => { const m = SIGMETA.get(id); return (m && m.name ? m.name + " " : "") + (dir ? DIR_KO[dir] + " " : "") + "횡단보도"; };
@@ -126,7 +127,7 @@ function search(src, dst, mode, dep) {
         const s = e.sig || (nv.s && nv.s !== nu.s ? nv.s : null), share = e.sig && e.half ? 0.5 : 1;
         const stop = mode === "jjuk" ? STOP_COST * share : 0;
         if (s) {
-          if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv)); tv += w; cv += w + (w > 2 ? stop : 0); }
+          if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv), e.sig ? e.dir : null); tv += w; cv += w + (w > 2 ? stop : 0); }
           else { tv += UNKNOWN_SIG_COST * share; cv += UNKNOWN_SIG_COST * share + stop * 0.8; }
         }
       }
@@ -177,10 +178,10 @@ function simulate(route, dep) {
     const walk = (x.d - prev) / SPEED;
     segs.push({ type: "walk", s: walk }); t += walk; prev = x.d;
     if (known(x.s)) {
-      const w = Math.round(sigWait(x.s, t)), st = sigState(x.s, t);
+      const w = Math.round(sigWait(x.s, t, x.dir)), st = sigState(x.s, t, x.dir);
       // 놓치면: 초록일 때 이번 초록을 보내고 다음 초록까지 기다리는 시간
-      const miss = st.g ? Math.round(st.rem + sigState(x.s, t + st.rem + 0.5).wait) : 0;
-      xings.push({ id: x.s, name: sigName(x.s, x.dir), known: true, arrive: t, wait: w, green: st.g, rem: st.g ? Math.round(st.rem) : 0, miss, d: x.d, at: x.at });
+      const miss = st.g ? Math.round(st.rem + sigState(x.s, t + st.rem + 0.5, x.dir).wait) : 0;
+      xings.push({ id: x.s, dir: x.dir, name: sigName(x.s, x.dir), known: true, arrive: t, wait: w, green: st.g, rem: st.g ? Math.round(st.rem) : 0, miss, d: x.d, at: x.at });
       if (w > 0) segs.push({ type: "wait", s: w });
       t += w;
     } else {
@@ -413,13 +414,15 @@ const phoneH = () => $("phone").clientHeight;
 function sheetH() { const s = sheets[current]; return s ? s.h : 0; }
 function snaps(name) {
   const sh = $("sheet-" + name), H = $("phone").clientHeight, body = sh.querySelector(".sheet-body");
+  const wasPeek = sh.classList.contains("peek");
+  sh.classList.remove("peek");  // 펼친 내용 높이로 재야 한다
   const grip = sh.querySelector(".grip-area").offsetHeight;
   const vis = c => !c.hidden && c.offsetHeight > 0;
   const mark = [...sh.querySelectorAll("[data-mid-end]")].find(vis) || [...body.children].filter(vis).pop() || body;
-  const firstVisible = [...body.children].find(c => !c.hidden && c.offsetHeight);
   const mid = Math.min(grip + mark.offsetTop + mark.offsetHeight - body.offsetTop + 12, Math.round(H * (H < 700 ? .5 : .6)));
-  const peek = Math.min(grip + (firstVisible ? firstVisible.offsetTop - body.offsetTop + Math.min(firstVisible.offsetHeight, 70) : 60) + 6, mid);
+  const peek = Math.min(grip + 54, mid);
   const full = Math.max(mid, Math.min(H - 100, grip + body.scrollHeight + 4));
+  if (wasPeek) sh.classList.add("peek");
   return { peek, mid, full };
 }
 function setSheet(name, pos, px) {
@@ -430,8 +433,10 @@ function setSheet(name, pos, px) {
   s.h = px ?? sn[s.pos];
   sh.style.setProperty("--h", s.h + "px");
   sh.classList.toggle("full", s.pos === "full");
+  sh.classList.toggle("peek", s.pos === "peek");
   if (name === current) $("phone").style.setProperty("--sheet-h", s.h + "px");
 }
+function setPeek(name, html) { const el = $("sheet-" + name).querySelector("[data-peek]"); if (el) el.innerHTML = html; }
 function initSheet(name) {
   const sh = $("sheet-" + name), grip = sh.querySelector(".grip-area");
   let y0 = 0, h0 = 0, moved = false;
@@ -441,6 +446,7 @@ function initSheet(name) {
     const dy = y0 - e.clientY; if (Math.abs(dy) > 4) moved = true;
     const sn = snaps(name), h = Math.max(sn.peek - 20, Math.min(sn.full + 20, h0 + dy));
     sheets[name].h = h; sh.style.setProperty("--h", h + "px"); $("phone").style.setProperty("--sheet-h", h + "px");
+    sh.classList.toggle("peek", h < sn.peek + 40);
   });
   const end = () => {
     if (!sh.classList.contains("dragging")) return;
@@ -513,26 +519,25 @@ function planDeparture() {
 }
 const fmtSlack = s => s >= 60 ? `${Math.floor(s / 60)}분` + (s % 60 >= 30 ? " 30초" : "") : `${Math.max(0, Math.round(s))}초`;
 function renderGoCard() {
-  const el = $("go-card"), S = state.sims;
-  if (!S || S.jjuk.knownN + S.short.knownN === 0) { el.hidden = true; return; }
+  const wrap = $("go-wrap"), el = $("go-card"), S = state.sims;
+  if (!S || S.jjuk.knownN + S.short.knownN === 0) { wrap.hidden = true; return null; }
   const p = planDeparture();
-  if (!p) { el.hidden = true; return; }
+  if (!p) { wrap.hidden = true; return null; }
   const { now, best, latest } = p, dl = state.deadline;
-  let h = `<span class="now">지금(${clock(BASE)}) 나가면 멈춤 ${now.s.stops}번 · 기다림 ${mmss(now.s.wait)} · ${clock(now.arr)} 도착</span>`;
-  if (best.d > 0 && (best.s.stops < now.s.stops || best.arr < now.arr - 5)) {
-    const gain = now.arr - best.arr;
-    h += `<span class="big">${best.d < 60 ? best.d + "초" : phrase(best.d)} 뒤 출발 → 멈춤 ${best.s.stops}번</span>
-      <span class="why">${clock(best.arr)} 도착 · ${gain > 5 ? `지금보다 ${phrase(gain)} 빨라요` : gain < -5 ? `지금보다 ${phrase(-gain)} 늦어요` : "도착은 지금과 같아요"}</span>
-      ${state.dep === best.d ? `<span class="why">↑ 이 시각으로 보고 있어요</span>` : `<button class="use" data-dep-use="${best.d}">이 시각으로 보기</button>`}`;
-  } else {
-    h += `<span class="big">지금 나가는 게 좋아요</span><span class="why">5분 안에 더 덜 멈추는 출발 시각이 없어요.</span>`;
-  }
-  if (now.s.unknownN) h += `<span class="dl">패턴 모르는 신호 ${now.s.unknownN}곳은 빼고 셌어요 (출발 시각과 상관없이 같게 봄)</span>`;
-  if (dl != null) {
-    if (latest) h += `<span class="dl">${clock(dl)} 마감 → <b>${clock(BASE + latest.d)}</b>까지 나가면 돼요 (지금부터 ${fmtSlack(latest.d)} 여유)</span>`;
-    else h += `<span class="dl late">지금 나가도 ${clock(dl)} 마감보다 ${phrase(now.arr - dl)} 늦을 수 있어요. 서두르기보다 늦는다고 미리 알리는 게 안전해요.</span>`;
-  }
-  el.innerHTML = h; el.hidden = false;
+  const better = best.d > 0 && (best.s.stops < now.s.stops || best.arr < now.arr - 5);
+  const pick = better ? best : now, when = pick.d === 0 ? "지금" : (pick.d < 60 ? pick.d + "초" : phrase(pick.d)) + " 뒤";
+  const stat = (label, val, bad) => `<div class="${bad ? "bad" : ""}"><span>${label}</span><b>${val}</b></div>`;
+  const dlStat = dl == null ? stat("지금 나가면", clock(now.arr) + " 도착")
+    : latest ? stat(`${clock(dl)} 마감`, `${clock(BASE + latest.d)}까지 출발`) : stat(`${clock(dl)} 마감`, phrase(now.arr - dl).trim() + " 늦음", true);
+  let h = `<div class="gc-head">${when} 출발하면</div>
+    <div class="gc-big">멈춤 ${pick.s.stops}번${better ? `<small>지금 나가면 ${now.s.stops}번</small>` : ""}</div>
+    <div class="gc-stats">${stat("기다림", mmss(pick.s.wait))}${stat("도착", clock(pick.arr))}${dlStat}</div>`;
+  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 이 시각으로 보고 있어요</span>` : `<button class="use" data-dep-use="${best.d}">${when} 출발로 보기</button>`}<span class="note2">${best.arr < now.arr - 5 ? `도착도 ${phrase(now.arr - best.arr)} 빨라요` : "도착은 지금과 같아요"}</span></div>`;
+  else h += `<div class="gc-row"><span class="note2">5분 안에 더 덜 멈추는 출발이 없어요. 지금 나가면 돼요.</span></div>`;
+  el.innerHTML = h;
+  $("go-foot").textContent = `패턴 아는 신호 ${now.s.knownN}곳 기준이에요.` + (now.s.unknownN ? ` 모르는 신호 ${now.s.unknownN}곳은 출발 시각과 상관없이 같게 봤어요.` : "") + (dl != null && !latest ? " 마감이 빠듯하면 서두르기보다 늦는다고 미리 알려 두세요." : "");
+  wrap.hidden = false;
+  return { pick, when };
 }
 // '이번 신호 놓쳐도 괜찮아?' 한 줄. 마감이 있으면 여유와 비교한다. 뛰라고 하지 않는다.
 function missLine(x, sim) {
@@ -559,6 +564,7 @@ function statLine(sim) {
 }
 function renderHome() {
   mountMap("map-home"); clearDyn();
+  setPeek("home", `<span>언제 나가면 안 멈출까요?</span><small>${state.deadline == null ? "마감 없음" : clock(state.deadline) + " 마감"}</small>`);
   setRoutes(null, null);
   addDyn(el("m-me", "<i></i>"), ME.ll);
   if (!state.picked) resetHomeSheet();
@@ -581,7 +587,7 @@ async function renderResult() {
   $("from-name").innerHTML = esc(tripLabel(state.from)) + (state.from.sub ? `<small>${esc(state.from.sub)}</small>` : "");
   $("to-name").innerHTML = esc(state.to.name) + (state.to.sub ? `<small>${esc(state.to.sub)}</small>` : "");
   const st = $("result-status"), cards = $("route-cards");
-  const waitUI = on => { ["tradeoff", "result-actions"].forEach(id => $(id).hidden = !on); if (!on) $("go-card").hidden = true; };
+  const waitUI = on => { ["tradeoff", "result-actions"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
   if (state.tripKey !== tripKeyNow()) { state.routes = null; state.error = null; }
   if (!state.routes && !state.error) {
     st.hidden = false; st.innerHTML = "<b>길 찾는 중…</b>지도 데이터를 받고 있어요."; cards.hidden = true; waitUI(false);
@@ -596,7 +602,7 @@ async function renderResult() {
     return;
   }
   st.hidden = true; cards.hidden = false; waitUI(true);
-  renderGoCard();
+  const go = renderGoCard();
   const S = state.sims, scale = Math.max(S.jjuk.total, S.short.total);
   $("depart-label").textContent = `${clock(BASE + state.dep)} 출발`;
   for (const k of ["jjuk", "short"]) {
@@ -625,12 +631,15 @@ async function renderResult() {
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
-  $("cov-note").hidden = !anyUnknown;
+  $("cov-note").hidden = !anyUnknown || !$("go-wrap").hidden;  // 출발 카드가 있으면 그 각주로 대신
   $("cov-text").textContent = anyKnown ? "일부 신호는 패턴이 없어 개수만 셌어요" : "이 길은 신호 패턴이 없어 신호 개수만 비교했어요";
   $("result-safety").textContent = `예상값이에요. 건널 때는 신호를 꼭 확인하세요. 걷는 속도 1.2m/s 기준.`;
   setRoutes(state.focus === "jjuk" || state.same ? state.routes.jjuk : state.routes.short, state.same ? null : (state.focus === "jjuk" ? state.routes.short : state.routes.jjuk));
   ready(() => { map.setPaintProperty("route-jjuk", "line-color", state.focus === "jjuk" ? "#F6C343" : "#9AA3B2"); });
   markTrip(S, state.focus);
+  const fk = state.same ? "jjuk" : state.focus;
+  setPeek("result", go ? `<span>${go.when} 출발 · 멈춤 ${go.pick.s.stops}번 · ${clock(go.pick.arr)} 도착</span><small>올려서 보기</small>`
+    : `<span>${fk === "jjuk" ? "쭉고" : "최단 시간"} ${mins(S[fk].total)} · ${statLine(S[fk]).replace(/<[^>]+>/g, "")}</span><small>올려서 보기</small>`);
   setSheet("result", sheets.result?.pos === "full" ? "full" : sheets.result?.pos || "mid");
   if (!state.fitted || state.fitted !== state.tripKey) { fit([state.routes.jjuk.coords, state.routes.short.coords]); state.fitted = state.tripKey; }
 }
@@ -643,7 +652,7 @@ function renderDetail() {
     const msg = (!x.known ? "신호 있음 · 패턴을 아직 몰라요" : x.wait > 2 ? `도착하면 ${x.green ? "초록이 곧 끝나서" : "빨간불,"} 약 ${x.wait}초 기다려요` : `도착하면 초록불(약 ${x.rem}초 남음), 그대로 건너요`) + missLine(x, sim);
     return `<button class="xing-btn" data-sig="${esc(x.id)}"><div class="xing"><time>${clock(x.arrive)}</time><span class="mark ${cls}">${!x.known ? "–" : x.wait > 2 ? "Ⅱ" : "✓"}</span><div><b>${esc(x.name)} ›</b><small>${msg}</small></div></div></button>`;
   }).join("") : `<p class="note">이 길에는 신호 횡단보도가 없어요.</p>`) +
-  `<p class="note">경로는 OpenStreetMap 보행 도로망에서 계산했어요. 신호는 서울 C-ITS 신호 교차로와 OSM 신호 표시이고, 교차로 중심 35m 안을 지나면 그 신호를 지나는 것으로 셌어요(지하도·육교는 제외). 신호 패턴은 광화문 3곳만 확인했어요(새벽 관측이라 출근 시간엔 다를 수 있어요). 건널 때는 신호를 꼭 확인하세요.</p>`;
+  `<p class="note">경로는 OpenStreetMap 보행 도로망에서 계산했어요. 신호는 서울 C-ITS 신호 교차로와 OSM 신호 표시이고, 교차로 중심 35m 안을 지나면 그 신호를 지나는 것으로 셌어요(지하도·육교는 제외). 신호 패턴은 실측한 ${realCount()}곳만 써요. 관측한 시간대와 다른 시간엔 신호 계획이 다를 수 있어요. 건널 때는 신호를 꼭 확인하세요.</p>`;
 }
 function pointAt(route, dist) {
   const c = route.coords, cum = route.cum;
@@ -672,6 +681,7 @@ function renderWalk() {
     $("w-stops").textContent = sim.xings.filter(z => z.d <= dist && z.known && z.wait > 2).length;
     $("w-left").textContent = mins(sim.total * (1 - f));
     $("w-eta").textContent = clock(BASE + state.dep + sim.total);
+    setPeek("walk", `<span>멈춘 횟수 ${$("w-stops").textContent} · 남은 ${$("w-left").textContent}</span><small>${clock(BASE + state.dep + sim.total)} 도착</small>`);
     const next = sim.xings.find(z => z.d > dist + 1);
     if (next) {
       $("next-dist").textContent = Math.round(next.d - dist) + "m";
@@ -728,7 +738,7 @@ function renderDepart() {
       <span class="t"><time>${clock(BASE + o.d)}</time>${o.d === 0 ? '<span class="tag now">지금</span>' : ""}${o === best ? '<span class="tag rec">추천</span>' : ""}</span>
       <span class="strip" aria-hidden="true">${stripHTML(o.sim, scale, "walk-j")}</span>
       <span class="res">멈춤 <b>${o.sim.stops}번</b><br>${clock(BASE + o.d + o.sim.total)} 도착</span></button>`).join("");
-  $("depart-note").textContent = `패턴을 아는 신호 ${realCount()}곳(광화문, 새벽 관측)만 시각에 따라 계산했어요. 모르는 신호는 시각과 상관없이 같게 셌어요.`;
+  $("depart-note").textContent = `패턴을 아는 신호 ${realCount()}곳만 시각에 따라 계산했어요. 모르는 신호는 시각과 상관없이 같게 셌어요.`;
 }
 function renderSignal() {
   const id = state.sig, m = SIGMETA.get(id);
@@ -738,12 +748,12 @@ function renderSignal() {
   const arrive = x ? x.arrive : BASE + state.dep;
   $("sig-known").hidden = !known(id); $("sig-req").hidden = known(id);
   if (known(id)) {
-    const w = Math.round(sigWait(id, arrive)), stop = w > 2;
+    const dir = x && x.dir, w = Math.round(sigWait(id, arrive, dir)), stop = w > 2;
     $("sig-hero").innerHTML = `<div class="lamp ${stop ? "stop" : "go"}">${stop ? w : "✓"}</div>
       <div><b>${clock(arrive)} 도착하면 ${stop ? `약 ${w}초 기다려요` : "초록불, 그대로 건너요"}</b><span>${x ? "지금 보는 길 기준" : `${clock(BASE + state.dep)} 기준`}</span>${x && state.sims ? missLine(x, state.sims[state.focus]) : ""}</div>`;
     const t0 = arrive - 60, span = 360; let html = "", runStart = null;
     for (let i = 0; i <= span; i++) {
-      const green = i < span && sigState(id, t0 + i).g;
+      const green = i < span && sigState(id, t0 + i, dir).g;
       if (green && runStart === null) runStart = i;
       if (!green && runStart !== null) { html += `<i style="left:${runStart / span * 100}%;width:${(i - runStart) / span * 100}%"></i>`; runStart = null; }
     }
@@ -752,11 +762,11 @@ function renderSignal() {
     $("sig-tl-me").innerHTML = `<span style="left:calc(${60 / span * 100}% - 6px); transform:none; font-weight:700; color:var(--asphalt)">▼ 내 도착 ${clock(arrive)}</span>`;
     $("sig-tl-labels").innerHTML = `<span style="left:0">${clock(t0)}</span><span style="left:100%">${clock(t0 + span)}</span>`;
   } else {
-    $("sig-hero").innerHTML = `<div class="lamp unk">?</div><div><b>이 신호는 아직 패턴을 몰라요</b><span>지금은 광화문 3곳만 패턴을 확인했어요. 이 신호는 지나는 개수로만 셌어요.</span></div>`;
+    $("sig-hero").innerHTML = `<div class="lamp unk">?</div><div><b>이 신호는 아직 패턴을 몰라요</b><span>서울 신호를 하나씩 모으는 중이에요(지금 ${realCount()}곳 확인). 이 신호는 지나는 개수로만 셌어요.</span></div>`;
   }
   const r = REAL.signals[id];
   const facts = r
-    ? [["주기", `${r.c.toFixed(1)}초`], ["보행 초록", `${Math.round(r.win.reduce((a, w) => a + w[1] - w[0], 0))}초 (한 주기에 ${r.win.length}번)`], ["근거", `실제 수집 ${r.from}–${r.to} · ${r.observed_min}분 관측`], ["교차로", `${id} · ${r.dir} 방향 보행신호`]]
+    ? [["주기", `${r.c.toFixed(1)}초`], ["보행 초록", `${Math.round(r.win.reduce((a, w) => a + w[1] - w[0], 0))}초 (한 주기에 ${r.win.length}번)`], ["근거", `실측 ${r.from}–${r.to} (${r.observed_min}분 관측)`], ["방향", `${Object.keys(r.legs || {}).map(l => DIR_KO[l]).join("·") || "기본"} 횡단보도 (C-ITS 방향 대응은 가정)`], ["교차로", `${id} · ${r.dir} 방향 보행신호`]]
     : [["종류", m.cits ? `C-ITS 신호 교차로 ${id}` : "OSM 신호 표시"], ["패턴", "아직 없음"], ["위치", `${m.ll[1].toFixed(5)}, ${m.ll[0].toFixed(5)}`]];
   $("sig-facts").innerHTML = facts.map(([k2, v]) => `<dt>${k2}</dt><dd>${esc(v)}</dd>`).join("");
 }
