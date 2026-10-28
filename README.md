@@ -45,6 +45,7 @@ python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype
 브라우저에서 <http://127.0.0.1:8766/#home>을 여세요. HTML 파일을 직접 열면 데이터 요청이 막힐 수 있으므로 HTTP 서버로 실행합니다. 지도 라이브러리와 웹폰트 로딩에는 인터넷 연결이 필요합니다.
 
 ## 문서 목록
+- [Walking 1차 데모 구현 계획·GPS 범위](docs/FIRST_DEMO_PLAN.md)
 - [수집 상태·공공 데이터·네이버/카카오 차별화 조사](reports/쭉고%20데이터와%20차별화%20검증.md)
 - [최신 제품 방향: 신호·경사·계단 Walking](docs/PRODUCT_DIRECTION.md)
 - [작업 인수인계와 현재 상태](docs/HANDOFF.md)
