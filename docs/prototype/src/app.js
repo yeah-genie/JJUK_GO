@@ -374,7 +374,7 @@ function fit(coordsList, extra = {}) {
   const pad = { top: current === "result" ? (phoneH() < 700 ? 80 : 120) : 90, bottom: sheetH() + 30, left: 34, right: 64, ...extra };
   ready(() => map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }));
 }
-function markTrip(sims, focus) {
+function markTrip(sims, focus, forecasts = true) {
   clearDyn();
   addDyn(el(state.from.me ? "m-me" : "m-start", state.from.me ? "<i></i>" : ""), state.from.ll);
   addDyn(el("m-dest", `<i></i><span>${esc(state.to.name)}</span>`), state.to.ll, { anchor: "left", offset: [-11, 0] });
@@ -384,8 +384,8 @@ function markTrip(sims, focus) {
     if (!sims[k]) continue;
     for (const x of sims[k].xings) {
       if (seen.has(x.id)) continue; seen.add(x.id);
-      const cls = !x.known ? "unk" : x.wait > 2 ? "stop" : "go", label = x.known && x.wait > 2 && k === focus ? `<b>${x.wait}초</b>` : "";
-      const m = el(`m-sig ${cls}${k === focus ? "" : " dim"}`, `<span>${!x.known ? "" : x.wait > 2 ? "Ⅱ" : "✓"}</span>${label}`);
+      const cls = !forecasts || !x.known ? "unk" : x.wait > 2 ? "stop" : "go", label = forecasts && x.known && x.wait > 2 && k === focus ? `<b>${x.wait}초</b>` : "";
+      const m = el(`m-sig ${cls}${k === focus ? "" : " dim"}`, `<span>${!forecasts || !x.known ? "" : x.wait > 2 ? "Ⅱ" : "✓"}</span>${label}`);
       m.dataset.sig = x.id; m.title = x.name;
       addDyn(m, x.at);
     }
@@ -396,7 +396,12 @@ document.addEventListener("click", e => {
   if (e.target.closest("#ctl-in")) map.zoomIn();
   if (e.target.closest("#ctl-out")) map.zoomOut();
   if (e.target.closest("#ctl-north")) map.resetNorth();
-  if (e.target.closest("#ctl-loc")) locate(false);
+  if (e.target.closest("#ctl-loc")) {
+    if (current === "walk") {
+      if (walker && gpsFix && Date.now() - gpsFix.timestamp < 30000) map.easeTo({ center: walker.getLngLat(), zoom: 16.5 });
+      else renderWalk();
+    } else locate(false);
+  }
 });
 
 // 지도 누르기: 홈에서는 그 위치를 도착지 후보로, 신호 점을 누르면 신호 상세로
@@ -770,7 +775,7 @@ function renderWalk(demo = false) {
   stopGPS(); cancelAnimationFrame(walkTimer);
   const session = ++gpsRequest;
   const k = state.same ? "jjuk" : state.focus, sim = state.sims[k], route = state.routes[k];
-  mountMap("map-walk"); setRoutes(route, null); markTrip({ [k]: sim }, k);
+  mountMap("map-walk"); setRoutes(route, null); markTrip({ [k]: sim }, k, false);
   setSheet("walk", "mid"); fit([route.coords], { top: 170 });
   let markerAdded = false;
   const update = (dist, ll) => {
