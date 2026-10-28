@@ -43,5 +43,8 @@ python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype
 브라우저에서 <http://127.0.0.1:8766/#home>을 여세요. HTML 파일을 직접 열면 데이터 요청이 막힐 수 있으므로 HTTP 서버로 실행합니다. 지도 라이브러리와 웹폰트 로딩에는 인터넷 연결이 필요합니다.
 
 ## 문서 목록
+- [작업 인수인계와 현재 상태](docs/HANDOFF.md)
+- [날짜별 사용자 논의 기록](docs/discussions/2026-10-28.md)
+- [제품 흐름 검토와 개선 우선순위](docs/PRODUCT_REVIEW.md)
 - [기획서](docs/PROPOSAL.md)
 - [데이터 수집](docs/DATA_COLLECTION.md)
