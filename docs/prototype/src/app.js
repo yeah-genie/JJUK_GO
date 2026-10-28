@@ -527,15 +527,13 @@ function renderGoCard() {
   const better = best.d > 0 && (best.s.stops < now.s.stops || best.arr < now.arr - 5);
   const pick = better ? best : now, when = pick.d === 0 ? "지금" : (pick.d < 60 ? pick.d + "초" : phrase(pick.d)) + " 뒤";
   const stat = (label, val, bad) => `<div class="${bad ? "bad" : ""}"><span>${label}</span><b>${val}</b></div>`;
-  const dlStat = dl == null ? stat("지금 나가면", clock(now.arr) + " 도착")
-    : latest ? stat(`${clock(dl)} 마감`, `${clock(BASE + latest.d)}까지 출발`) : stat(`${clock(dl)} 마감`, phrase(now.arr - dl).trim() + " 늦음", true);
-  let h = `<div class="gc-head">${when} 출발하면</div>
-    <div class="gc-big">멈춤 ${pick.s.stops}번${better ? `<small>지금 나가면 ${now.s.stops}번</small>` : ""}</div>
-    <div class="gc-stats">${stat("기다림", mmss(pick.s.wait))}${stat("도착", clock(pick.arr))}${dlStat}</div>`;
-  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 이 시각으로 보고 있어요</span>` : `<button class="use" data-dep-use="${best.d}">${when} 출발로 보기</button>`}<span class="note2">${best.arr < now.arr - 5 ? `도착도 ${phrase(now.arr - best.arr)} 빨라요` : "도착은 지금과 같아요"}</span></div>`;
-  else h += `<div class="gc-row"><span class="note2">5분 안에 더 덜 멈추는 출발이 없어요. 지금 나가면 돼요.</span></div>`;
+  let h = `<div class="gc-head">추천 출발</div>
+    <div class="gc-big">${when} 출발</div>
+    <div class="gc-stats">${stat("예상 멈춤", pick.s.stops + "번")}${stat("신호 대기", mmss(pick.s.wait))}${stat("도착 예상", clock(pick.arr), dl != null && pick.arr > dl)}</div>`;
+  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 선택됨</span>` : `<button class="use" data-dep-use="${best.d}">이 시각 선택</button>`}<span class="note2">지금 출발하면 ${now.s.stops}번 멈춤</span></div>`;
+  if (dl != null) h += `<div class="gc-head">${clock(dl)} 마감 · ${latest ? `${clock(BASE + latest.d)}까지 출발` : pick.arr > dl ? `약 ${phrase(pick.arr - dl).trim()} 늦음` : "도착 여유 30초 미만"}</div>`;
   el.innerHTML = h;
-  $("go-foot").textContent = `패턴 아는 신호 ${now.s.knownN}곳 기준이에요.` + (now.s.unknownN ? ` 모르는 신호 ${now.s.unknownN}곳은 출발 시각과 상관없이 같게 봤어요.` : "") + (dl != null && !latest ? " 마감이 빠듯하면 서두르기보다 늦는다고 미리 알려 두세요." : "");
+  $("go-foot").textContent = `신호 ${now.s.knownN}곳 예측` + (now.s.unknownN ? ` · ${now.s.unknownN}곳 대기시간 미반영` : "") + " · 실제 신호를 확인하세요";
   wrap.hidden = false;
   return { pick, when };
 }
@@ -609,7 +607,7 @@ async function renderResult() {
     const sim = S[k], c = $("card-" + k);
     c.hidden = k === "short" && state.same;
     c.setAttribute("aria-pressed", String(state.focus === k));
-    const name = k === "jjuk" ? (state.same ? "쭉고 = 최단 시간" : "쭉고") : "최단 시간";
+    const name = k === "jjuk" ? (state.same ? "쭉고 · 최단 시간" : "쭉고") : "최단 시간";
     c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span><span class="stat">${statLine(sim)}</span>
       <span class="strip" aria-hidden="true">${stripHTML(sim, scale, k === "jjuk" ? "walk-j" : "walk-s")}</span>`;
   }
@@ -627,7 +625,8 @@ async function renderResult() {
     t = dSig > 0 ? `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}신호를 ${dSig}곳 덜 지나요.` : "두 길이 지나는 신호 수가 같아요.";
   }
   $("tradeoff").textContent = t;
-  $("start-walk").textContent = state.focus === "jjuk" ? "쭉고로 걷기 시작" : "최단 시간 길로 걷기 시작";
+  $("tradeoff").hidden = state.same;
+  $("start-walk").textContent = "걷기 시작";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
@@ -913,7 +912,9 @@ document.addEventListener("click", e => {
   const du = t.closest("[data-dep-use]");
   // 같은 길에서 출발 시각만 바꾼다(길을 다시 찾지 않음)
   if (du) { state.dep = +du.dataset.depUse; if (state.routes) state.routes.dep = state.dep; renderResult(); return; }
-  if (t.closest("#no-deadline")) { setDeadline(state.deadline == null ? 9 * 3600 + 600 : null); return; }
+  const timeStep = t.closest("[data-time-step]");
+  if (timeStep) { if (state.deadline != null) setDeadline(Math.max(0, Math.min(86340, state.deadline + Number(timeStep.dataset.timeStep) * 60))); return; }
+  if (t.closest("#no-deadline")) { setDeadline(state.deadline == null ? state.lastDeadline ?? 33000 : null); return; }
   if (t.closest("#cov-req")) { $("cov-text").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   if (t.closest("#sig-req")) { $("sig-note").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   const b = t.closest("[data-go],[data-dep],[data-route]");
@@ -928,13 +929,23 @@ addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
 
 function setDeadline(v) {
+  if (v !== null && (!Number.isInteger(v) || v < 0 || v > 86340 || v % 60 !== 0)) v = 33000;
   state.deadline = v;
+  if (v != null) state.lastDeadline = v;
   store.set(DEADLINE_KEY, v);
   $("no-deadline").setAttribute("aria-pressed", String(v == null));
   $("deadline").disabled = v == null;
-  if (v != null) $("deadline").value = clock(v);
+  if (v != null) {
+    $("deadline-hour").value = String(Math.floor(v / 3600)).padStart(2, "0");
+    $("deadline-minute").value = String(v / 60 % 60).padStart(2, "0");
+  }
 }
-$("deadline").addEventListener("change", e => { const [h, m] = e.target.value.split(":").map(Number); if (!isNaN(h)) setDeadline(h * 3600 + m * 60); });
+for (const id of ["deadline-hour", "deadline-minute"]) $(id).addEventListener("change", () => {
+  if (state.deadline == null) return;
+  const hour = $("deadline-hour"), minute = $("deadline-minute");
+  if (!hour.value || !minute.value || !hour.validity.valid || !minute.validity.valid) { setDeadline(state.deadline); return; }
+  setDeadline(Number(hour.value) * 3600 + Number(minute.value) * 60);
+});
 async function boot() {
   show("splash");
   try {

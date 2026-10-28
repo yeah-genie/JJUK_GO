@@ -5,7 +5,7 @@
 - template.html 안의 /*MAPLIBRE_CSS*/ 자리에 MapLibre 기본 CSS, /*APP_JS*/ 자리에 app.js를 넣는다.
 - 실제 신호 패턴은 app.js 안 /*REAL_SIGNALS*/…/*END_REAL*/ 사이에 있다:
   PYTHONPATH=src python scripts/export_signal_plans.py datastore --write docs/prototype/src/app.js
-- 지도·길찾기 데이터(docs/prototype/seoul/)는 scripts/build_seoul_map.py로 따로 만든다(용량 때문에 git 제외).
+- 지도·길찾기 데이터(docs/prototype/seoul/)는 저장소에 포함되어 있다. 재생성은 scripts/build_seoul_map.py를 쓴다.
 """
 import re
 from pathlib import Path

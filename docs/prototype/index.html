@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>쭉고 프로토타입</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -126,10 +127,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 /* 출발 시각 카드 (쭉고의 중심) */
 .gocard { background: var(--asphalt); color: var(--zebra); border-radius: 16px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
 .gc-head { font-size: 13px; color: #B9C1CF; }
-.gc-big { font-family: var(--display); font-size: 26px; color: var(--lane); line-height: 1.15; }
+.gc-big { font-family: var(--body); font-weight: 600; font-size: 32px; letter-spacing: -1px; color: var(--lane); line-height: 1.2; font-variant-numeric: tabular-nums; }
 .gc-big small { font-family: var(--body); font-size: 14px; font-weight: 600; color: #E3E7EC; margin-left: 6px; }
-.gc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.gc-stats div { background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px 8px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; border-top: 1px solid #505867; padding-top: 12px; }
+.gc-stats div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gc-stats span { font-size: 11px; color: #A9B2C1; white-space: nowrap; }
 .gc-stats b { font-size: 15px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gc-stats .bad b { color: #FFB4B4; }
@@ -142,9 +143,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .peek-sum small { font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 .sheet.peek .peek-sum { display: flex; }
 .sheet.peek .sheet-body > :not(.peek-sum) { display: none !important; }
-.deadline-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; }
-.deadline-row label { font-weight: 600; }
-.deadline-row input { font: inherit; font-size: 15px; border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 8px; background: #fff; color: var(--asphalt); }
+.deadline-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; font-size: 13px; }
+.time-picker { display: flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 16px; padding: 4px; margin: 0; background: #fff; min-width: 0; }
+.time-unit { display: flex; flex-direction: column; align-items: center; }
+.time-unit button { width: 44px; height: 32px; border: 0; border-radius: 8px; background: transparent; font: 20px var(--body); color: var(--muted); cursor: pointer; }
+.time-unit button:hover { background: var(--map); }
+.time-unit input { width: 48px; border: 0; background: transparent; padding: 0; text-align: center; color: var(--asphalt); font: 600 26px var(--body); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.time-unit input::-webkit-inner-spin-button, .time-unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.time-picker:disabled { opacity: .4; }
+.time-unit button:disabled { cursor: default; opacity: .4; }
+.gocard { gap: 12px; padding: 18px; }
+.route .mins { font-family: var(--body); font-weight: 700; font-size: 23px; justify-self: end; }
+.route { grid-template-columns: 1fr auto; padding: 12px; }
 .miss { display: block; margin-top: 2px; color: #3E6B4A; font-size: 12.5px; }
 .miss.warn { color: #9A3B2E; }
 .cov { margin: 3px 0 0; font-size: 12.5px; color: #7A5C00; }
@@ -334,10 +344,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
         <div class="peek-sum" data-peek></div>
         <div id="home-intro">
           <div class="row-label"><h2>언제 나가면 안 멈출까요?</h2></div>
-          <p class="safety" style="font-size:13px;margin-top:4px">노란 테두리 안(광화문 일대)은 신호 패턴을 알아서 <b>몇 초 뒤에 나가면 덜 멈추는지</b>, <b>이번 신호를 놓쳐도 괜찮은지</b>까지 알려줘요. 다른 곳은 지나는 신호 개수만 따져요.</p>
+          <p class="safety" style="font-size:13px;margin-top:4px">광화문 일대, 덜 기다리는 출발 시각을 찾아요.</p>
           <div class="deadline-row">
-            <label for="deadline">도착 마감</label>
-            <input type="time" id="deadline" value="09:10">
+            <span id="deadline-label">도착 마감</span>
+            <fieldset class="time-picker" id="deadline" aria-labelledby="deadline-label">
+              <div class="time-unit">
+                <button type="button" data-time-step="60" aria-label="1시간 늦게">+</button>
+                <input id="deadline-hour" type="number" min="0" max="23" value="09" aria-label="도착 시" inputmode="numeric">
+                <button type="button" data-time-step="-60" aria-label="1시간 일찍">−</button>
+              </div>
+              <span aria-hidden="true">:</span>
+              <div class="time-unit">
+                <button type="button" data-time-step="1" aria-label="1분 늦게">+</button>
+                <input id="deadline-minute" type="number" min="0" max="59" value="10" aria-label="도착 분" inputmode="numeric">
+                <button type="button" data-time-step="-1" aria-label="1분 일찍">−</button>
+              </div>
+            </fieldset>
             <button class="chip" id="no-deadline" aria-pressed="false">마감 없음</button>
           </div>
         </div>
@@ -1026,15 +1048,13 @@ function renderGoCard() {
   const better = best.d > 0 && (best.s.stops < now.s.stops || best.arr < now.arr - 5);
   const pick = better ? best : now, when = pick.d === 0 ? "지금" : (pick.d < 60 ? pick.d + "초" : phrase(pick.d)) + " 뒤";
   const stat = (label, val, bad) => `<div class="${bad ? "bad" : ""}"><span>${label}</span><b>${val}</b></div>`;
-  const dlStat = dl == null ? stat("지금 나가면", clock(now.arr) + " 도착")
-    : latest ? stat(`${clock(dl)} 마감`, `${clock(BASE + latest.d)}까지 출발`) : stat(`${clock(dl)} 마감`, phrase(now.arr - dl).trim() + " 늦음", true);
-  let h = `<div class="gc-head">${when} 출발하면</div>
-    <div class="gc-big">멈춤 ${pick.s.stops}번${better ? `<small>지금 나가면 ${now.s.stops}번</small>` : ""}</div>
-    <div class="gc-stats">${stat("기다림", mmss(pick.s.wait))}${stat("도착", clock(pick.arr))}${dlStat}</div>`;
-  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 이 시각으로 보고 있어요</span>` : `<button class="use" data-dep-use="${best.d}">${when} 출발로 보기</button>`}<span class="note2">${best.arr < now.arr - 5 ? `도착도 ${phrase(now.arr - best.arr)} 빨라요` : "도착은 지금과 같아요"}</span></div>`;
-  else h += `<div class="gc-row"><span class="note2">5분 안에 더 덜 멈추는 출발이 없어요. 지금 나가면 돼요.</span></div>`;
+  let h = `<div class="gc-head">추천 출발</div>
+    <div class="gc-big">${when} 출발</div>
+    <div class="gc-stats">${stat("예상 멈춤", pick.s.stops + "번")}${stat("신호 대기", mmss(pick.s.wait))}${stat("도착 예상", clock(pick.arr), dl != null && pick.arr > dl)}</div>`;
+  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 선택됨</span>` : `<button class="use" data-dep-use="${best.d}">이 시각 선택</button>`}<span class="note2">지금 출발하면 ${now.s.stops}번 멈춤</span></div>`;
+  if (dl != null) h += `<div class="gc-head">${clock(dl)} 마감 · ${latest ? `${clock(BASE + latest.d)}까지 출발` : pick.arr > dl ? `약 ${phrase(pick.arr - dl).trim()} 늦음` : "도착 여유 30초 미만"}</div>`;
   el.innerHTML = h;
-  $("go-foot").textContent = `패턴 아는 신호 ${now.s.knownN}곳 기준이에요.` + (now.s.unknownN ? ` 모르는 신호 ${now.s.unknownN}곳은 출발 시각과 상관없이 같게 봤어요.` : "") + (dl != null && !latest ? " 마감이 빠듯하면 서두르기보다 늦는다고 미리 알려 두세요." : "");
+  $("go-foot").textContent = `신호 ${now.s.knownN}곳 예측` + (now.s.unknownN ? ` · ${now.s.unknownN}곳 대기시간 미반영` : "") + " · 실제 신호를 확인하세요";
   wrap.hidden = false;
   return { pick, when };
 }
@@ -1108,7 +1128,7 @@ async function renderResult() {
     const sim = S[k], c = $("card-" + k);
     c.hidden = k === "short" && state.same;
     c.setAttribute("aria-pressed", String(state.focus === k));
-    const name = k === "jjuk" ? (state.same ? "쭉고 = 최단 시간" : "쭉고") : "최단 시간";
+    const name = k === "jjuk" ? (state.same ? "쭉고 · 최단 시간" : "쭉고") : "최단 시간";
     c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span><span class="stat">${statLine(sim)}</span>
       <span class="strip" aria-hidden="true">${stripHTML(sim, scale, k === "jjuk" ? "walk-j" : "walk-s")}</span>`;
   }
@@ -1126,7 +1146,8 @@ async function renderResult() {
     t = dSig > 0 ? `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}신호를 ${dSig}곳 덜 지나요.` : "두 길이 지나는 신호 수가 같아요.";
   }
   $("tradeoff").textContent = t;
-  $("start-walk").textContent = state.focus === "jjuk" ? "쭉고로 걷기 시작" : "최단 시간 길로 걷기 시작";
+  $("tradeoff").hidden = state.same;
+  $("start-walk").textContent = "걷기 시작";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
@@ -1412,7 +1433,9 @@ document.addEventListener("click", e => {
   const du = t.closest("[data-dep-use]");
   // 같은 길에서 출발 시각만 바꾼다(길을 다시 찾지 않음)
   if (du) { state.dep = +du.dataset.depUse; if (state.routes) state.routes.dep = state.dep; renderResult(); return; }
-  if (t.closest("#no-deadline")) { setDeadline(state.deadline == null ? 9 * 3600 + 600 : null); return; }
+  const timeStep = t.closest("[data-time-step]");
+  if (timeStep) { if (state.deadline != null) setDeadline(Math.max(0, Math.min(86340, state.deadline + Number(timeStep.dataset.timeStep) * 60))); return; }
+  if (t.closest("#no-deadline")) { setDeadline(state.deadline == null ? state.lastDeadline ?? 33000 : null); return; }
   if (t.closest("#cov-req")) { $("cov-text").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   if (t.closest("#sig-req")) { $("sig-note").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   const b = t.closest("[data-go],[data-dep],[data-route]");
@@ -1427,13 +1450,23 @@ addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
 
 function setDeadline(v) {
+  if (v !== null && (!Number.isInteger(v) || v < 0 || v > 86340 || v % 60 !== 0)) v = 33000;
   state.deadline = v;
+  if (v != null) state.lastDeadline = v;
   store.set(DEADLINE_KEY, v);
   $("no-deadline").setAttribute("aria-pressed", String(v == null));
   $("deadline").disabled = v == null;
-  if (v != null) $("deadline").value = clock(v);
+  if (v != null) {
+    $("deadline-hour").value = String(Math.floor(v / 3600)).padStart(2, "0");
+    $("deadline-minute").value = String(v / 60 % 60).padStart(2, "0");
+  }
 }
-$("deadline").addEventListener("change", e => { const [h, m] = e.target.value.split(":").map(Number); if (!isNaN(h)) setDeadline(h * 3600 + m * 60); });
+for (const id of ["deadline-hour", "deadline-minute"]) $(id).addEventListener("change", () => {
+  if (state.deadline == null) return;
+  const hour = $("deadline-hour"), minute = $("deadline-minute");
+  if (!hour.value || !minute.value || !hour.validity.valid || !minute.validity.valid) { setDeadline(state.deadline); return; }
+  setDeadline(Number(hour.value) * 3600 + Number(minute.value) * 60);
+});
 async function boot() {
   show("splash");
   try {

@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>쭉고 프로토타입</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -126,10 +127,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 /* 출발 시각 카드 (쭉고의 중심) */
 .gocard { background: var(--asphalt); color: var(--zebra); border-radius: 16px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
 .gc-head { font-size: 13px; color: #B9C1CF; }
-.gc-big { font-family: var(--display); font-size: 26px; color: var(--lane); line-height: 1.15; }
+.gc-big { font-family: var(--body); font-weight: 600; font-size: 32px; letter-spacing: -1px; color: var(--lane); line-height: 1.2; font-variant-numeric: tabular-nums; }
 .gc-big small { font-family: var(--body); font-size: 14px; font-weight: 600; color: #E3E7EC; margin-left: 6px; }
-.gc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.gc-stats div { background: rgba(255,255,255,.07); border-radius: 10px; padding: 7px 8px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.gc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; border-top: 1px solid #505867; padding-top: 12px; }
+.gc-stats div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gc-stats span { font-size: 11px; color: #A9B2C1; white-space: nowrap; }
 .gc-stats b { font-size: 15px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gc-stats .bad b { color: #FFB4B4; }
@@ -142,9 +143,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .peek-sum small { font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 .sheet.peek .peek-sum { display: flex; }
 .sheet.peek .sheet-body > :not(.peek-sum) { display: none !important; }
-.deadline-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; }
-.deadline-row label { font-weight: 600; }
-.deadline-row input { font: inherit; font-size: 15px; border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 8px; background: #fff; color: var(--asphalt); }
+.deadline-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; font-size: 13px; }
+.time-picker { display: flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 16px; padding: 4px; margin: 0; background: #fff; min-width: 0; }
+.time-unit { display: flex; flex-direction: column; align-items: center; }
+.time-unit button { width: 44px; height: 32px; border: 0; border-radius: 8px; background: transparent; font: 20px var(--body); color: var(--muted); cursor: pointer; }
+.time-unit button:hover { background: var(--map); }
+.time-unit input { width: 48px; border: 0; background: transparent; padding: 0; text-align: center; color: var(--asphalt); font: 600 26px var(--body); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.time-unit input::-webkit-inner-spin-button, .time-unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.time-picker:disabled { opacity: .4; }
+.time-unit button:disabled { cursor: default; opacity: .4; }
+.gocard { gap: 12px; padding: 18px; }
+.route .mins { font-family: var(--body); font-weight: 700; font-size: 23px; justify-self: end; }
+.route { grid-template-columns: 1fr auto; padding: 12px; }
 .miss { display: block; margin-top: 2px; color: #3E6B4A; font-size: 12.5px; }
 .miss.warn { color: #9A3B2E; }
 .cov { margin: 3px 0 0; font-size: 12.5px; color: #7A5C00; }
@@ -334,10 +344,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
         <div class="peek-sum" data-peek></div>
         <div id="home-intro">
           <div class="row-label"><h2>언제 나가면 안 멈출까요?</h2></div>
-          <p class="safety" style="font-size:13px;margin-top:4px">노란 테두리 안(광화문 일대)은 신호 패턴을 알아서 <b>몇 초 뒤에 나가면 덜 멈추는지</b>, <b>이번 신호를 놓쳐도 괜찮은지</b>까지 알려줘요. 다른 곳은 지나는 신호 개수만 따져요.</p>
+          <p class="safety" style="font-size:13px;margin-top:4px">광화문 일대, 덜 기다리는 출발 시각을 찾아요.</p>
           <div class="deadline-row">
-            <label for="deadline">도착 마감</label>
-            <input type="time" id="deadline" value="09:10">
+            <span id="deadline-label">도착 마감</span>
+            <fieldset class="time-picker" id="deadline" aria-labelledby="deadline-label">
+              <div class="time-unit">
+                <button type="button" data-time-step="60" aria-label="1시간 늦게">+</button>
+                <input id="deadline-hour" type="number" min="0" max="23" value="09" aria-label="도착 시" inputmode="numeric">
+                <button type="button" data-time-step="-60" aria-label="1시간 일찍">−</button>
+              </div>
+              <span aria-hidden="true">:</span>
+              <div class="time-unit">
+                <button type="button" data-time-step="1" aria-label="1분 늦게">+</button>
+                <input id="deadline-minute" type="number" min="0" max="59" value="10" aria-label="도착 분" inputmode="numeric">
+                <button type="button" data-time-step="-1" aria-label="1분 일찍">−</button>
+              </div>
+            </fieldset>
             <button class="chip" id="no-deadline" aria-pressed="false">마감 없음</button>
           </div>
         </div>
