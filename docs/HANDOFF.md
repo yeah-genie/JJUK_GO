@@ -4,6 +4,9 @@
 
 ## 다음 작업자가 먼저 알아야 할 사항
 
+- **최신 전체 감사:** 사용자 BMAD 요청에 따라 [32개 발견·우선순위](../reports/BMAD_AUDIT_2026-10-29.md) 작성. party-mode는 session/역할 레지스트리 없음이며 독립 에이전트 팀으로 실행하지 않았다. 실제 내장 브라우저 GPS timeout, 위치 대기 문구 잔류, 미관측 대기/출발 선택 경로 불일치 등 확인.16개 유효 화면과 Node VM 재현 근거. 코드·배포 변경 없이 보고서 작성, 이미지는 로컬 캐시만 보관.
+- **공식 신호 이력 존재·API 종료 정정:** [공개데이터 대안](../reports/PUBLIC_DATA_ALTERNATIVES_2026-10-29.md). T Data10382 전일 신호·잔여시간의10/14~10/27 날짜별 ZIP 목록 확인. 이전 이력 미확인 결론 철회. 내용·용량·범위·자동 취득 미검증. 기존 FusionInformation API는11/15 종료 예정, 새 FusionCurrentInfo 현시 API와 이력 파일로 전환 안내. 새 쿼터·키 권한 미검증, 운영 수집 미변경. GPS/시간 수정은 데이터 수집을 기다릴 필요 없음.
+
 - **현재 공개 배포:** 화면 정보량을 줄인eeb4f90, Vercel `dpl_7CtbXq3UAxHKRPS2neXAN63zHmrq` READY 및 공개 HTTPS 브라우저 검사 통과. https://jjukgo.vercel.app/#result . 로컬59개 테스트 통과. 개발 CI는 의존성 후 한글폰트 누락도 발견하여 설치 단계 정정. dd4da43의 GitHub CI40725353929 전체 성공 확인.
 - **GitHub Codex 연결 확인 완료:** 사용자 로그인/권한 조정 후 코드리뷰 목록에 `yeah-genie/JJUK_GO`가 나타남. 저장소 설정 `https://chatgpt.com/settings/code-review/repositories/github-1360819876`에서 자동 리뷰ON, 리뷰/트리거/철저한검토는 개인설정따르기 확인. 이번 확인에서는 해당 설정·권한을 추가로 변경하지 않았다. PR에서 @codex review 및 수정 요청 사용 가능하다는 공식 안내와 실제 설정을 확인했으며, 유료 작업/멘션 실행 자체를 테스트한 것은 아님. 이슈 댓글의 동일 지원은 미확인. `docs/GITHUB_AGENT.md` 참고.
 
