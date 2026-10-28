@@ -4,6 +4,8 @@
 
 ## 다음 작업자가 먼저 알아야 할 사항
 
+- **최신 방향 정정:** 쭉고는 ‘비슷하게 걸리면, 덜 힘든 길’. 신호+오르막/경사+계단을 함께 고려하는 Walking 서비스로 확장한다. 지하철·버스는 후순위. 사용자 이전 채팅과 Threads에서 확인했다. [현재 제품 방향](PRODUCT_DIRECTION.md)을 먼저 읽고, 신호 출발시각 추천만으로 목표를 좁히지 않는다.
+
 - 저장소: https://github.com/yeah-genie/JJUK_GO
 - 작업 브랜치: `codex/refine-time-results`.
 - 시작 기준 기본 브랜치: `ccr-94bac9df-i81579`.
@@ -56,6 +58,8 @@ python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype
 - 비교 후보로 BMAD, Agency Agents, Oh My Codex, Superpowers를 조사했다. BMAD 외 팀 도구는 설치하지 않았다.
 
 ## 다음 우선순위 — 제안, 구현 승인·완료 아님
+
+제품 확장 작업의 우선순위는 `PRODUCT_DIRECTION.md`의 **계단·경사 데이터 점검→우회시간 예산별 대안 경로 실험→사용자 선택 검증**이다. 아래는 기존 신호 프로토타입의 개선 항목이며 전체 제품 로드맵을 대체하지 않는다.
 
 자세한 근거·스크린샷: `docs/PRODUCT_REVIEW.md`.
 
