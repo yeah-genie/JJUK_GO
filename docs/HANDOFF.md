@@ -5,7 +5,7 @@
 ## 다음 작업자가 먼저 알아야 할 사항
 
 - **현재 공개 배포:** 화면 정보량을 줄인eeb4f90, Vercel `dpl_7CtbXq3UAxHKRPS2neXAN63zHmrq` READY 및 공개 HTTPS 브라우저 검사 통과. https://jjukgo.vercel.app/#result . 로컬59개 테스트 통과. 개발 CI는 의존성 후 한글폰트 누락도 발견하여 설치 단계 정정. dd4da43의 GitHub CI40725353929 전체 성공 확인.
-- **GitHub 에이전트 연결 진행:** 사용자는 ‘이슈·PR에서 @codex로 작업 맡기기’를 선택. ChatGPT 로그인은 완료됐으나 코드리뷰 목록이 비어 있음. 레거시 클라우드의 저장소 선택창에서 @yeah-genie 연결과 ‘이 연결에서 사용할 수 있는 리포지터리가 없습니다’를 확인. ‘액세스 권한 설정’ 공식 링크를 열어 ChatGPT Codex Connector용 GitHub 로그인 화면까지 도달. 사용자 GitHub 로그인 후 JJUK_GO만 허용하는 실제 권한 화면 확인 필요. 아직 연결 완료·환경 생성은 안 됐으며 다른 자동리뷰/크레딧 설정은 변경하지 않았다.
+- **GitHub Codex 연결 확인 완료:** 사용자 로그인/권한 조정 후 코드리뷰 목록에 `yeah-genie/JJUK_GO`가 나타남. 저장소 설정 `https://chatgpt.com/settings/code-review/repositories/github-1360819876`에서 자동 리뷰ON, 리뷰/트리거/철저한검토는 개인설정따르기 확인. 이번 확인에서는 해당 설정·권한을 추가로 변경하지 않았다. PR에서 @codex review 및 수정 요청 사용 가능하다는 공식 안내와 실제 설정을 확인했으며, 유료 작업/멘션 실행 자체를 테스트한 것은 아님. 이슈 댓글의 동일 지원은 미확인. `docs/GITHUB_AGENT.md` 참고.
 
 
 - **결과 화면 정리:** 사용자 ‘복잡하고 정신없다’ 피드백에 따라 큰 신호 추천·조건·근거는 ‘출발 시각·경로 조건’으로 접고, 기본은 경로별 시간/신호/계단/오르막 추정과 걷기 시작만 표시. 동일 경로 반복 설명·작은 막대 제거. `docs/discussions/2026-10-29.md`, 화면 `assets/results-simplified-2026-10-29/` 참고.
