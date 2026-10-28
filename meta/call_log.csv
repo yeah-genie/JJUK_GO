@@ -97,3 +97,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-10-28T09:13:34,2212,2200,429_repeat,279,
 2026-10-28T09:18:59,2212,2200,net_error,,TimeoutError
 2026-10-28T09:19:01,2212,2200,429_repeat,279,
+2026-10-28T09:24:26,2212,2200,net_error,,TimeoutError
+2026-10-28T09:24:27,2212,2200,429_repeat,279,
+2026-10-28T09:29:53,2212,2200,net_error,,TimeoutError
+2026-10-28T09:29:54,2212,2200,429_repeat,279,
