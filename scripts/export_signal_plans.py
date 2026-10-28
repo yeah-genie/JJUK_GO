@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """수집 데이터에서 프로토타입 경로의 횡단보도별 실제 신호 패턴을 뽑아 프로토타입에 넣는다.
 
-  PYTHONPATH=src python scripts/export_signal_plans.py datastore --write docs/prototype/index.html
+  PYTHONPATH=src python scripts/export_signal_plans.py datastore --write docs/prototype/src/app.js && python scripts/build_prototype.py
 
 횡단보도 ↔ 신호 방향 대응은 아직 서울시 방향 규칙으로 확인하지 않은 가정이다:
 테헤란로를 따라 걸으며 옆길을 건너면 남쪽(st) 보행신호, 테헤란로를 건너면 동·서(et/wt) 보행신호로 본다.
@@ -23,6 +23,10 @@ from jjukgo.signal.cycle import fit_cycle, green_windows, samples_from_segments 
 
 KST = timezone(timedelta(hours=9))
 PREFERRED = {
+    # 광화문–시청 (주기 140.0초, 관측 37–156분). 방향 대응은 가정: 큰길을 건너는 보행신호로 본다.
+    "1537": ["nw", "ne", "sw", "se"],
+    "2691": ["wt", "et"],
+    "1619": ["nw"],
     "2217": ["et", "se", "ne"],   # 역삼역에서 테헤란로를 건넘
     "2975": ["st", "sw", "se"],   # 테헤란로 남쪽 보도에서 옆길을 건넘
     "2219": ["st", "sw", "se"],

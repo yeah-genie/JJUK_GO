@@ -1,0 +1,484 @@
+<meta charset="utf-8">
+<title>쭉고 프로토타입</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* MapLibre GL 4.7.1 기본 스타일 (BSD-3-Clause) */
+/*MAPLIBRE_CSS*/
+/* 레이아웃: 데스크톱에선 폰 프레임 안 앱, 폰에선 화면 전체. 지도는 화면 전체, 아래 시트는 끌어서 높이를 바꾼다.
+   색은 도로에서: 차선 노랑(브랜드), 아스팔트(글자), 횡단보도 흰색(시트). 신호 초록/빨강은 신호 마커에만. */
+:root {
+  --lane: #F6C343;
+  --lane-deep: #C99A12;
+  --asphalt: #2A3140;
+  --asphalt-2: #3B4456;
+  --zebra: #F7F8F5;
+  --map: #E3E7EC;
+  --muted: #687082;
+  --line: #CCD3DC;
+  --go: #1FA35B;
+  --stop: #E5484D;
+  --unknown: #8C93A3;
+  --page: #C9D0D9;
+  --display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--asphalt); font-family: var(--body); font-size: 15px; word-break: keep-all;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px;
+  display: grid; place-items: center;
+}
+.phone {
+  --sheet-h: 0px;
+  width: 390px; max-width: 100%; height: 844px; max-height: calc(100dvh - 48px);
+  background: var(--map); border-radius: 44px; border: 10px solid var(--asphalt); overflow: hidden; position: relative;
+}
+@media (max-width: 480px), (max-height: 700px) {
+  body { padding: 0; display: block; }
+  .phone { width: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
+}
+.badge {
+  position: absolute; z-index: 30; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--asphalt); color: var(--zebra); font-size: 11.5px; font-weight: 500; padding: 5px 11px; border-radius: 999px; white-space: nowrap;
+}
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.map { position: absolute; inset: 0; background: #F4F3EF; }
+#mapbox { position: absolute; inset: 0; }
+.topbar {
+  position: absolute; z-index: 10; left: 12px; right: 12px; top: max(14px, calc(env(safe-area-inset-top, 0px) + 8px));
+  background: #fff; border-radius: 14px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(42,49,64,.16);
+  display: flex; align-items: center; gap: 8px;
+}
+.searchbox { cursor: text; border: 0; font: inherit; text-align: left; width: auto; color: var(--muted); font-size: 16px; }
+.icon-btn { border: 0; background: none; font: inherit; font-size: 20px; color: var(--asphalt); width: 32px; height: 32px; border-radius: 10px; cursor: pointer; flex: none; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  border: 1.5px solid var(--line); background: #fff; color: var(--asphalt);
+  font: inherit; font-size: 13.5px; font-weight: 500; padding: 6px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+.chip[aria-pressed="true"] { background: var(--asphalt); color: var(--zebra); border-color: var(--asphalt); }
+.home-chips { position: absolute; z-index: 10; left: 12px; right: 0; top: calc(max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) + 60px); flex-wrap: nowrap; overflow-x: auto; padding-right: 12px; scrollbar-width: none; }
+.home-chips .chip { box-shadow: 0 2px 6px rgba(42,49,64,.12); border-color: #fff; }
+/* 끌 수 있는 아래 시트 */
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 20; height: var(--h, 40%);
+  background: var(--zebra); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 20px rgba(42,49,64,.14);
+  display: flex; flex-direction: column; transition: height .24s cubic-bezier(.2,.7,.2,1);
+}
+.sheet.dragging { transition: none; }
+.grip-area { flex: none; padding: 9px 0 7px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.grip { width: 38px; height: 4px; border-radius: 4px; background: #B9C0CB; }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
+.sheet:not(.full) .sheet-body { overflow: hidden; }
+.row-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.row-label h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.route {
+  border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px; background: #fff;
+  display: grid; grid-template-columns: auto auto 1fr; gap: 2px 8px; align-items: baseline; cursor: pointer;
+  text-align: left; font: inherit; color: inherit; width: 100%;
+}
+.route[aria-pressed="true"] { border-color: var(--asphalt); box-shadow: inset 0 0 0 1px var(--asphalt); }
+.route .name { font-weight: 700; font-size: 14.5px; }
+.route .mins { font-family: var(--display); font-size: 21px; font-variant-numeric: tabular-nums; }
+.route .stat { justify-self: end; font-size: 12.5px; color: var(--muted); text-align: right; }
+.route .stat strong { color: var(--asphalt); font-weight: 700; }
+.ex { margin-left: 5px; font-size: 10.5px; font-weight: 700; color: #7A5C00; background: #FFF1C2; padding: 1px 5px; border-radius: 5px; vertical-align: 1px; }
+.route .sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.strip { grid-column: 1 / -1; height: 8px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 4px; background: var(--map); }
+.strip i { display: block; height: 100%; }
+.strip .walk-j { background: var(--lane); }
+.strip .walk-s { background: #9AA3B2; }
+.strip .wait { background: var(--stop); }
+.strip .unk { background: var(--unknown); width: 3px !important; flex: none; }
+.tradeoff { margin: 0; font-size: 14.5px; font-weight: 600; }
+.actions { display: flex; gap: 10px; }
+.btn { flex: 1; border: 0; border-radius: 14px; padding: 13px; font: inherit; font-weight: 700; font-size: 15.5px; cursor: pointer; }
+.btn-primary { background: var(--lane); color: var(--asphalt); }
+.btn-ghost { background: var(--map); color: var(--asphalt); flex: 0 0 auto; padding-inline: 16px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.safety { margin: 0; font-size: 12px; color: var(--muted); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); outline-offset: 2px; }
+.legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.status { font-size: 14px; color: var(--asphalt); background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.status b { display: block; margin-bottom: 2px; }
+/* 출발·도착 막대 */
+.trip-bar { padding: 6px 8px; }
+.trip { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.trip-pt { border: 0; background: none; font: inherit; color: inherit; text-align: left; display: flex; align-items: center; gap: 8px; padding: 6px 4px; cursor: pointer; min-width: 0; }
+.trip-pt + .trip-pt { border-top: 1px solid #ECEEF1; }
+.trip-pt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 14.5px; }
+.trip-pt small { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.pt-from, .pt-to { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.pt-from { border: 3px solid var(--asphalt); background: #fff; }
+.pt-to { background: var(--asphalt); box-shadow: 0 0 0 2px var(--lane); }
+/* 출발 시각 카드 (쭉고의 중심) */
+.gocard { background: var(--asphalt); color: var(--zebra); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
+.gocard .now { font-size: 12.5px; color: #C9D0DA; }
+.gocard .big { font-family: var(--display); font-size: 22px; color: var(--lane); line-height: 1.2; }
+.gocard .why { font-size: 13px; color: #E3E7EC; }
+.gocard .dl { font-size: 12.5px; color: #C9D0DA; margin-top: 2px; }
+.gocard .dl b { color: #fff; }
+.gocard .late { color: #FFB4B4; }
+.gocard .use { align-self: flex-start; margin-top: 6px; border: 0; border-radius: 10px; background: var(--lane); color: var(--asphalt); font: inherit; font-weight: 700; font-size: 13px; padding: 6px 12px; cursor: pointer; }
+.deadline-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 14px; }
+.deadline-row label { font-weight: 600; }
+.deadline-row input { font: inherit; font-size: 15px; border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 8px; background: #fff; color: var(--asphalt); }
+.miss { display: block; margin-top: 2px; color: #3E6B4A; font-size: 12.5px; }
+.miss.warn { color: #9A3B2E; }
+.cov { margin: 3px 0 0; font-size: 12.5px; color: #7A5C00; }
+.cov .link-btn { font-size: 12.5px; color: #7A5C00; padding: 0; }
+.sheet:not(.full):not(.dragging) .more { visibility: hidden; }
+/* 작은 화면: 출발·도착을 한 줄로, 카드를 더 촘촘하게 */
+@media (max-height: 700px) {
+  .trip { flex-direction: row; align-items: center; gap: 4px; }
+  .trip-pt { flex: 1 1 0; padding: 4px 2px; }
+  .trip-pt + .trip-pt { border-top: 0; }
+  .trip-pt + .trip-pt::before { content: "→"; color: var(--muted); margin-right: 2px; }
+  .trip-pt small, .trip-pt i { display: none; }
+  .route { padding: 6px 11px; }
+  .route .strip { height: 6px; margin-top: 2px; }
+  .tradeoff { font-size: 14px; }
+  .route .mins { font-size: 18px; }
+  .btn { padding: 11px; }
+  .sheet-body { gap: 8px; }
+}
+/* 지도 버튼 (네이버 지도처럼 오른쪽) */
+.mapctl { position: absolute; z-index: 12; right: 12px; bottom: calc(var(--sheet-h) + 16px); display: flex; flex-direction: column; gap: 8px; transition: bottom .24s cubic-bezier(.2,.7,.2,1); }
+.mapctl .grp { display: flex; flex-direction: column; background: #fff; border-radius: 12px; box-shadow: 0 3px 10px rgba(42,49,64,.18); overflow: hidden; }
+.mapctl button { width: 40px; height: 40px; border: 0; background: #fff; font: 600 20px var(--body); color: var(--asphalt); cursor: pointer; display: grid; place-items: center; }
+.mapctl .grp button + button { border-top: 1px solid var(--line); }
+.mapctl .solo { border-radius: 12px; box-shadow: 0 3px 10px rgba(42,49,64,.18); }
+.mapctl svg { width: 20px; height: 20px; }
+.map-attrib { position: absolute; z-index: 11; left: 10px; bottom: calc(var(--sheet-h) + 8px); font-size: 10px; color: #5B6170; background: rgba(255,255,255,.75); padding: 1px 5px; border-radius: 4px; transition: bottom .24s cubic-bezier(.2,.7,.2,1); }
+.maplibregl-ctrl-bottom-left { bottom: calc(var(--sheet-h) + 24px); transition: bottom .24s cubic-bezier(.2,.7,.2,1); }
+.maplibregl-ctrl-scale { background: rgba(255,255,255,.8); border-color: var(--asphalt-2); color: var(--asphalt); font: 500 10.5px var(--body); }
+.loading { position: absolute; z-index: 15; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(42,49,64,.88); color: #fff; font-size: 13px; padding: 8px 14px; border-radius: 999px; }
+/* 지도 위 표시 */
+.m-sig { display: flex; align-items: center; gap: 3px; cursor: pointer; }
+.m-sig span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 11px var(--body); border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.m-sig.go span { background: var(--go); } .m-sig.stop span { background: var(--stop); } .m-sig.unk span { background: var(--unknown); }
+.m-sig b { background: var(--stop); color: #fff; font: 700 11px var(--body); padding: 1px 5px; border-radius: 7px; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.m-sig.dim { opacity: .5; } .m-sig.dim span { width: 16px; height: 16px; font-size: 9px; border-width: 2px; }
+.m-start { pointer-events: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 4px solid var(--asphalt); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.m-dest { display: flex; align-items: center; gap: 6px; pointer-events: none; }
+.m-dest i { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--asphalt); border: 3px solid var(--lane); }
+.m-dest span { background: #fff; font: 600 12px var(--body); color: var(--asphalt); padding: 2px 7px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.2); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.m-pick { pointer-events: none; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--stop); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.m-me { width: 44px; height: 44px; display: grid; place-items: center; pointer-events: none; }
+.m-me::before { content: ""; position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(47,91,255,.18); animation: me-pulse 2s ease-out infinite; }
+.m-me i { width: 16px; height: 16px; border-radius: 50%; background: #2F5BFF; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); position: relative; }
+@keyframes me-pulse { 0% { transform: scale(.4); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; } }
+/* 목록 화면 공통 */
+.detail { background: var(--zebra); }
+.detail header { padding: calc(max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) + 6px) 16px 10px; display: flex; align-items: center; gap: 8px; flex: none; }
+.detail h1 { margin: 0; font-size: 19px; }
+.detail .list { overflow-y: auto; padding: 0 18px 24px; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.xing { display: grid; grid-template-columns: 58px 28px 1fr; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.xing time { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
+.mark { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; }
+.mark.go { background: var(--go); } .mark.stop { background: var(--stop); } .mark.unk { background: var(--unknown); }
+.xing b { font-weight: 600; display: block; }
+.xing small { color: var(--muted); font-size: 12.5px; }
+.note { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); }
+.xing-btn { width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+/* 검색 */
+.search-head { padding: max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) 12px 8px !important; }
+.search-field { flex: 1; display: flex; align-items: center; gap: 6px; background: #fff; border: 1.5px solid var(--asphalt); border-radius: 12px; padding: 0 6px 0 12px; }
+.search-field input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 16px; padding: 11px 0; color: var(--asphalt); }
+.search-field input:focus { outline: none; }
+.search-for { font-size: 12.5px; color: var(--muted); padding: 0 18px 6px; flex: none; }
+.res-item { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; padding: 12px 2px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.res-item b { font-weight: 600; }
+.res-item small { color: var(--muted); font-size: 12.5px; grid-column: 1; }
+.res-item .km { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.res-item mark { background: none; color: #1F5FD1; }
+.sec-title { margin: 14px 0 2px; font-size: 13px; color: var(--muted); font-weight: 600; }
+/* 걷는 중 */
+.next {
+  position: absolute; z-index: 10; left: 12px; right: 12px; top: max(14px, calc(env(safe-area-inset-top, 0px) + 8px)); background: var(--asphalt); color: var(--zebra);
+  border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px;
+}
+.next .dist { font-family: var(--display); font-size: 28px; }
+.next p { margin: 0; }
+.next .say { color: var(--lane); font-weight: 600; }
+.progress { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.progress div { display: flex; flex-direction: column; }
+.progress span { color: var(--muted); font-size: 12px; }
+.progress strong { font-family: var(--display); font-size: 24px; font-weight: 400; }
+/* 도착 공유 카드 */
+.done { background: #1E2430; color: var(--zebra); align-items: stretch; justify-content: center; gap: clamp(8px, 1.6vh, 16px); padding: 24px 22px 18px; overflow: hidden; }
+.card {
+  width: 100%; border-radius: 26px; padding: 26px 22px 22px; position: relative; overflow: hidden;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 26px, transparent 26px 52px), #262D3B;
+  display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1vh, 8px); flex: 0 1 auto; min-height: 0;
+}
+.card .logo { position: absolute; top: 16px; left: 20px; font-family: var(--display); font-size: 18px; color: var(--lane); }
+.card .date { position: absolute; top: 19px; right: 20px; font-size: 12px; color: #A7B0C0; }
+.card #card-shape { flex: 0 1 auto; min-height: 0; display: flex; justify-content: center; }
+.card svg { width: clamp(90px, 30vh, 240px); height: clamp(90px, 30vh, 240px); margin-top: 22px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 4px; }
+.card .kind { font-weight: 600; font-size: 15px; margin-bottom: 8px; text-align: center; }
+.stat-big { display: flex; flex-direction: column; align-items: center; }
+.stat-big strong { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 3.6vh, 30px); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-big span { font-size: 12px; color: #A7B0C0; }
+.compare { margin: clamp(4px, 1vh, 12px) 0 0; font-size: 14px; color: var(--lane); font-weight: 600; text-align: center; }
+.done .hint { font-size: 12.5px; color: #A7B0C0; margin: 0; text-align: center; }
+.done .actions { width: 100%; }
+.done .btn-ghost { background: #333B4B; color: var(--zebra); flex: 1; }
+/* 로고 화면 */
+.splash { background: #1E2430; color: var(--zebra); align-items: center; justify-content: center; gap: 18px; cursor: pointer; }
+.splash-mark { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.logo-svg { width: 116px; height: 116px; }
+.logo-svg .lane { stroke-dasharray: 96; stroke-dashoffset: 96; animation: lane-draw .9s .25s cubic-bezier(.2,.7,.2,1) forwards; }
+@keyframes lane-draw { to { stroke-dashoffset: 0; } }
+.wordmark { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 56px; letter-spacing: 2px; color: var(--lane); }
+.tagline { margin: 0; font-size: 16px; color: #C9D0DA; }
+.splash-foot { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); margin: 0; font-size: 12px; color: #8B95A6; }
+@media (prefers-reduced-motion: reduce) { .logo-svg .lane { stroke-dashoffset: 0; } }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.link-btn { border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--asphalt); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 0; }
+/* 출발 시각 추천 */
+.best { background: var(--asphalt); color: var(--zebra); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.best .when { font-size: 14px; color: #C9D0DA; }
+.best .big { font-family: var(--display); font-size: 34px; color: var(--lane); line-height: 1.1; }
+.best .why { font-size: 13.5px; color: #C9D0DA; }
+.drow { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+  display: grid; grid-template-columns: 62px 1fr auto; gap: 12px; align-items: center; padding: 10px 2px; }
+.drow .t { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.drow time { font-variant-numeric: tabular-nums; font-weight: 600; }
+.drow .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
+.tag.now { background: var(--map); color: var(--asphalt); }
+.tag.rec { background: var(--lane); color: var(--asphalt); }
+.drow .strip { grid-column: auto; margin-top: 0; height: 10px; }
+.drow .res { text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.35; }
+.drow .res b { color: var(--asphalt); font-size: 14px; }
+.drow[aria-current="true"] { background: #EEF1F4; }
+/* 횡단보도 신호 상세 */
+.sig-hero { display: flex; align-items: center; gap: 16px; padding: 6px 0 16px; border-bottom: 1px solid var(--line); }
+.lamp { width: 64px; height: 64px; border-radius: 50%; flex: none; display: grid; place-items: center; color: #fff; font-family: var(--display); font-size: 22px; }
+.lamp.go { background: var(--go); } .lamp.stop { background: var(--stop); } .lamp.unk { background: var(--unknown); }
+.sig-hero b { font-size: 17px; display: block; }
+.sig-hero span { color: var(--muted); font-size: 13.5px; }
+.sub { margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
+.timeline { position: relative; height: 26px; border-radius: 8px; overflow: hidden; background: var(--stop); }
+.timeline i { position: absolute; top: 0; bottom: 0; background: var(--go); }
+.timeline .me { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--asphalt); box-shadow: 0 0 0 2px var(--zebra); }
+.tl-labels { position: relative; height: 18px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.tl-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.tl-labels span:first-child { transform: none; }
+.tl-labels span:last-child { transform: translateX(-100%); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0; font-size: 14px; }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; font-weight: 600; }
+.place h2 { margin: 0; font-size: 17px; }
+.place p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="phone" id="phone">
+  <div class="badge" id="badge">예시 화면 · 대기시간은 예시 값</div>
+  <div class="mapctl" id="mapctl" hidden>
+    <div class="grp"><button id="ctl-in" aria-label="확대">+</button><button id="ctl-out" aria-label="축소">−</button></div>
+    <button class="solo" id="ctl-north" aria-label="북쪽 보기" hidden>N</button>
+    <button class="solo" id="ctl-loc" aria-label="내 위치"><svg viewBox="0 0 24 24" fill="none" stroke="#2F5BFF" stroke-width="2.2"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#2F5BFF"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+  </div>
+  <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap contributors</div>
+
+  <!-- 0 로고 -->
+  <section class="screen splash" id="s-splash" hidden data-go="home">
+    <div class="splash-mark">
+      <svg class="logo-svg" viewBox="0 0 120 120" aria-hidden="true">
+        <rect width="120" height="120" rx="30" fill="#2A3140"/>
+        <g fill="#F7F8F5" opacity=".92">
+          <rect x="22" y="26" width="9" height="68" rx="2"/><rect x="40" y="26" width="9" height="68" rx="2"/>
+          <rect x="58" y="26" width="9" height="68" rx="2"/><rect x="76" y="26" width="9" height="68" rx="2"/>
+          <rect x="94" y="26" width="9" height="68" rx="2"/>
+        </g>
+        <line class="lane" x1="12" y1="60" x2="108" y2="60" stroke="#F6C343" stroke-width="13" stroke-linecap="round"/>
+      </svg>
+      <h1 class="wordmark">쭉고</h1>
+      <p class="tagline">멈추지 말고, 쭉.</p>
+    </div>
+    <p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p>
+  </section>
+
+  <!-- ① 홈 -->
+  <section class="screen" id="s-home" hidden>
+    <div class="map" id="map-home"></div>
+    <button class="topbar searchbox" data-search="to"><span aria-hidden="true">🔍</span><span>어디로 걸어갈까요?</span></button>
+    <div class="home-chips chips" id="home-chips"></div>
+    <div class="sheet" id="sheet-home">
+      <div class="grip-area"><div class="grip"></div></div>
+      <div class="sheet-body">
+        <div id="home-intro">
+          <div class="row-label"><h2>언제 나가면 안 멈출까요?</h2></div>
+          <p class="safety" style="font-size:13px;margin-top:4px">노란 테두리 안(광화문 일대)은 신호 패턴을 알아서 <b>몇 초 뒤에 나가면 덜 멈추는지</b>, <b>이번 신호를 놓쳐도 괜찮은지</b>까지 알려줘요. 다른 곳은 지나는 신호 개수만 따져요.</p>
+          <div class="deadline-row">
+            <label for="deadline">도착 마감</label>
+            <input type="time" id="deadline" value="09:10">
+            <button class="chip" id="no-deadline" aria-pressed="false">마감 없음</button>
+          </div>
+        </div>
+        <div id="home-place" class="place" hidden>
+          <h2 id="hp-name"></h2>
+          <p id="hp-sub"></p>
+        </div>
+        <div class="actions" id="home-actions" data-mid-end></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 검색 -->
+  <section class="screen detail" id="s-search" hidden>
+    <header class="search-head">
+      <button class="icon-btn" data-back aria-label="뒤로">‹</button>
+      <div class="search-field">
+        <label for="sq" style="position:absolute;left:-9999px">장소 검색</label>
+        <input id="sq" placeholder="역, 동네, 장소 이름" autocomplete="off" enterkeyhint="search">
+        <button class="icon-btn" id="sq-clear" aria-label="지우기" hidden>×</button>
+      </div>
+    </header>
+    <div class="search-for" id="search-for"></div>
+    <div class="list" id="search-list"></div>
+  </section>
+
+  <!-- ② 경로 결과 -->
+  <section class="screen" id="s-result" hidden>
+    <div class="map" id="map-result"></div>
+    <div class="topbar trip-bar">
+      <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
+      <div class="trip">
+        <button class="trip-pt" data-search="from"><i class="pt-from"></i><span id="from-name"></span></button>
+        <button class="trip-pt" data-search="to"><i class="pt-to"></i><span id="to-name"></span></button>
+      </div>
+      <button class="icon-btn" id="swap" aria-label="출발과 도착 바꾸기">⇅</button>
+    </div>
+    <div class="sheet" id="sheet-result">
+      <div class="grip-area"><div class="grip"></div></div>
+      <div class="sheet-body">
+        <div class="status" id="result-status" data-mid-end hidden></div>
+        <div class="gocard" id="go-card" hidden></div>
+        <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
+          <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+          <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
+        </div>
+        <div><p class="tradeoff" id="tradeoff"></p><p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p></div>
+        <div class="actions" id="result-actions" data-mid-end>
+          <button class="btn btn-ghost" data-go="detail">횡단보도 보기</button>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">쭉고로 걷기 시작</button>
+        </div>
+        <div class="row-label more">
+          <h2 id="depart-label">08:40 출발</h2>
+          <div class="chips" role="group" aria-label="출발 시각">
+            <button class="chip" data-dep="0" aria-pressed="true">지금</button>
+            <button class="chip" data-dep="60" aria-pressed="false">+1분</button>
+            <button class="chip" data-dep="180" aria-pressed="false">+3분</button>
+          </div>
+        </div>
+        <div class="row-between more"><div class="legend"><span><i class="dot" style="background:var(--lane)"></i>걷기</span><span><i class="dot" style="background:var(--stop)"></i>신호 기다림</span><span><i class="dot" style="background:var(--unknown)"></i>패턴 없는 신호</span></div><button class="link-btn" data-go="depart">언제 나가면 덜 멈출까?</button></div>
+        <p class="safety more" id="result-safety">예상값이에요. 건널 때는 신호를 꼭 확인하세요. 걷는 속도 1.2m/s 기준.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 횡단보도 목록 -->
+  <section class="screen detail" id="s-detail" hidden>
+    <header>
+      <button class="icon-btn" data-go="result" aria-label="뒤로">‹</button>
+      <h1 id="detail-title"></h1>
+    </header>
+    <div class="list" id="detail-list"></div>
+  </section>
+
+  <!-- ④ 걷는 중 -->
+  <section class="screen" id="s-walk" hidden>
+    <div class="map" id="map-walk"></div>
+    <div class="next" aria-live="polite">
+      <p style="font-size:13px;color:#A7B0C0">다음 신호 횡단보도</p>
+      <div class="dist" id="next-dist">—</div>
+      <p id="next-state"></p>
+      <p class="say" id="next-say"></p>
+    </div>
+    <div class="sheet" id="sheet-walk">
+      <div class="grip-area"><div class="grip"></div></div>
+      <div class="sheet-body">
+        <div class="progress">
+          <div><span>멈춘 횟수</span><strong id="w-stops">0</strong></div>
+          <div><span>남은 시간</span><strong id="w-left">—</strong></div>
+          <div><span>도착 예상</span><strong id="w-eta">—</strong></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" data-go="result">그만 걷기</button>
+          <button class="btn btn-primary" data-go="done">도착 화면 보기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 출발 시각 추천 -->
+  <section class="screen detail" id="s-depart" hidden>
+    <header>
+      <button class="icon-btn" data-go="result" aria-label="뒤로">‹</button>
+      <h1>언제 나가면 덜 멈출까요?</h1>
+    </header>
+    <div class="list">
+      <div class="best" id="depart-best"></div>
+      <p class="note" style="margin:0 0 4px" id="depart-head"></p>
+      <div id="depart-list"></div>
+      <p class="note" id="depart-note"></p>
+    </div>
+  </section>
+
+  <!-- 횡단보도 신호 상세 -->
+  <section class="screen detail" id="s-signal" hidden>
+    <header>
+      <button class="icon-btn" data-back aria-label="뒤로">‹</button>
+      <h1 id="sig-title"></h1>
+    </header>
+    <div class="list">
+      <div class="sig-hero" id="sig-hero"></div>
+      <div id="sig-known">
+        <h2 class="sub">앞으로 6분 동안 이 신호</h2>
+        <div class="tl-labels" id="sig-tl-me"></div>
+        <div class="timeline" id="sig-timeline" role="img"></div>
+        <div class="tl-labels" id="sig-tl-labels"></div>
+      </div>
+      <h2 class="sub">이 신호에 대해</h2>
+      <dl class="facts" id="sig-facts"></dl>
+      <button class="btn btn-ghost" id="sig-req" style="margin-top:16px" hidden>이 신호도 모아주세요</button>
+      <p class="note" id="sig-note">신호는 주기를 반복하는 패턴으로 예측해요. 실제 신호와 다를 수 있으니 건널 때는 꼭 확인하세요.</p>
+    </div>
+  </section>
+
+  <!-- ⑤ 도착 공유 카드 -->
+  <section class="screen done" id="s-done" hidden>
+    <div class="card" id="share-card">
+      <span class="logo">쭉고</span>
+      <span class="date" id="card-date"></span>
+      <div id="card-shape"></div>
+      <div class="kind" id="card-kind"></div>
+      <div class="stats">
+        <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
+        <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
+        <div class="stat-big"><strong id="c-time"></strong><span>걸은 시간</span></div>
+      </div>
+      <p class="compare" id="c-compare"></p>
+    </div>
+    <p class="hint" id="done-hint">스크린샷을 찍어 공유해 보세요</p>
+    <div class="actions">
+      <button class="btn btn-ghost" data-go="result">다시 길 찾기</button>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script>
+/*APP_JS*/
+</script>
