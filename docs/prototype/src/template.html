@@ -313,7 +313,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     <button class="solo" id="ctl-north" aria-label="북쪽 보기" hidden>N</button>
     <button class="solo" id="ctl-loc" aria-label="내 위치"><svg viewBox="0 0 24 24" fill="none" stroke="#2F5BFF" stroke-width="2.2"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#2F5BFF"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
   </div>
-  <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap contributors</div>
+  <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap · 지형 Mapzen / USGS</div>
 
   <!-- 0 로고 -->
   <section class="screen splash" id="s-splash" hidden data-go="home">
@@ -343,8 +343,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div id="home-intro">
-          <div class="row-label"><h2>언제 나가면 안 멈출까요?</h2></div>
-          <p class="safety" style="font-size:13px;margin-top:4px">광화문 일대, 덜 기다리는 출발 시각을 찾아요.</p>
+          <div class="row-label"><h2>비슷한 시간이면, 덜 힘들게.</h2></div>
+          <p class="safety" style="font-size:13px;margin-top:4px">신호 · 계단 · 오르막을 함께 비교해요.</p>
           <div class="deadline-row">
             <span id="deadline-label">도착 마감</span>
             <fieldset class="time-picker" id="deadline" aria-labelledby="deadline-label">
@@ -367,6 +367,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
           <h2 id="hp-name"></h2>
           <p id="hp-sub"></p>
         </div>
+        <p class="safety" id="location-status" role="status">내 위치는 허용할 때만 연결해요.</p>
         <div class="actions" id="home-actions" data-mid-end></div>
       </div>
     </div>
@@ -383,6 +384,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       </div>
     </header>
     <div class="search-for" id="search-for"></div>
+    <p class="safety" id="search-location" role="status" style="padding:0 20px"></p>
     <div class="list" id="search-list"></div>
   </section>
 
@@ -403,10 +405,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
         <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
+        <div class="row-between" style="margin-bottom:10px"><span class="safety">더 걸려도 괜찮은 시간</span><div class="chips" role="group" aria-label="추가 시간 예산"><button class="chip" data-budget="60" aria-pressed="false">+1분</button><button class="chip" data-budget="120" aria-pressed="true">+2분</button><button class="chip" data-budget="180" aria-pressed="false">+3분</button></div></div>
         <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
           <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
           <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
         </div>
+        <p class="safety" id="result-location" role="status"></p>
         <div><p class="tradeoff" id="tradeoff"></p><p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p></div>
         <div class="actions" id="result-actions" data-mid-end>
           <button class="btn btn-ghost" data-go="detail">횡단보도 보기</button>
@@ -449,13 +453,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="progress">
-          <div><span>멈춘 횟수</span><strong id="w-stops">0</strong></div>
-          <div><span>남은 시간</span><strong id="w-left">—</strong></div>
-          <div><span>도착 예상</span><strong id="w-eta">—</strong></div>
+          <div><span>지나온 거리</span><strong id="w-stops">—</strong></div>
+          <div><span>남은 거리</span><strong id="w-left">—</strong></div>
+          <div><span>걷기만 약</span><strong id="w-eta">—</strong></div>
         </div>
+        <p class="safety" id="walk-location" role="status">위치 연결 대기</p>
+        <div class="chips"><button class="chip" data-gps-retry>위치 다시 연결</button><button class="chip" data-walk-demo>움직임 시연</button></div>
         <div class="actions">
           <button class="btn btn-ghost" data-go="result">그만 걷기</button>
-          <button class="btn btn-primary" data-go="done">도착 화면 보기</button>
+          <button class="btn btn-primary" data-go="done">경로 요약 보기</button>
         </div>
       </div>
     </div>
@@ -506,7 +512,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="stats">
         <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
         <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span>걸은 시간</span></div>
+        <div class="stat-big"><strong id="c-time"></strong><span>시연 예상 시간</span></div>
       </div>
       <p class="compare" id="c-compare"></p>
     </div>
