@@ -28,8 +28,8 @@ from .budget import Budget, run_allowance
 from .normalize import normalize
 from .segments import to_segments
 from .store import read_day, read_segments_day, write_part, write_segments
-from .targets import (load_cursor, load_discovered, load_last_fetch, load_targets, round_robin, rows_to_fetch,
-                      save_cursor, save_last_fetch)
+from .targets import (load_crawl_cursor, load_crawl_ids, load_cursor, load_discovered, load_last_fetch, load_targets,
+                      load_tick, round_robin, rows_to_fetch, save_crawl_cursor, save_cursor, save_last_fetch, save_tick)
 from .tdata_client import ApiError, FixtureClient, QuotaExceeded, RateLimited, TDataClient
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -189,7 +189,15 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
             if not targets:
                 summary["skipped"] = "교차로별 호출 모드인데 대상 교차로가 없음 (config/collector.toml [targets] 확인)"
             else:
-                picked, next_cursor = round_robin(targets, load_cursor(data_dir), min(allowance, budget_cfg.get("calls_per_run", allowance)))
+                n_calls = min(allowance, budget_cfg.get("calls_per_run", allowance))
+                # 핵심 구간(targets)을 깊게 모으면서, crawl_every번에 한 번은 서울 전체 목록을 한 곳씩 훑는다
+                crawl_ids, every, tick = load_crawl_ids(cfg["targets"], ROOT), int(cfg["targets"].get("crawl_every", 0)), load_tick(data_dir)
+                use_crawl = bool(crawl_ids) and every > 1 and tick % every == every - 1
+                if use_crawl:
+                    picked, next_cursor = round_robin(crawl_ids, load_crawl_cursor(data_dir), n_calls)
+                else:
+                    picked, next_cursor = round_robin(targets, load_cursor(data_dir), n_calls)
+                summary["crawl"] = use_crawl
                 last_fetch = load_last_fetch(data_dir)
                 for itst_id in picked:
                     n = rows_to_fetch(last_fetch.get(itst_id), now.timestamp(),
@@ -198,7 +206,8 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
                     records.extend(page)
                     last_fetch[itst_id] = now.timestamp()
                     save_last_fetch(data_dir, last_fetch)
-                save_cursor(data_dir, next_cursor)
+                (save_crawl_cursor if use_crawl else save_cursor)(data_dir, next_cursor)
+                save_tick(data_dir, tick + 1)
     except RateLimited as e:
         summary["rate_limited"] = str(e)  # 기다리면 풀리는 제한: 오늘 수집을 멈추지 않는다
     except QuotaExceeded as e:

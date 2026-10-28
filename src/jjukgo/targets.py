@@ -64,6 +64,31 @@ def load_targets(cfg: dict, root: Path) -> list[str]:
     return []
 
 
+def load_crawl_ids(cfg: dict, root: Path) -> list[str]:
+    """서울 전체를 돌며 한 번씩 훑을 교차로 목록(config/crawl_ids.txt). 주석(#)과 빈 줄은 무시."""
+    path = cfg.get("crawl_ids_file")
+    if not path or not (Path(root) / path).exists():
+        return []
+    return [ln.strip() for ln in (Path(root) / path).read_text(encoding="utf-8").splitlines() if ln.strip() and not ln.startswith("#")]
+
+
+def _meta_int(data_dir: Path, name: str, key: str) -> int:
+    path = Path(data_dir) / "meta" / name
+    return int(json.loads(path.read_text(encoding="utf-8")).get(key, 0)) if path.exists() else 0
+
+
+def _save_meta_int(data_dir: Path, name: str, key: str, value: int) -> None:
+    path = Path(data_dir) / "meta" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({key: value}), encoding="utf-8")
+
+
+load_crawl_cursor = lambda d: _meta_int(d, "crawl_cursor.json", "next_index")  # noqa: E731
+save_crawl_cursor = lambda d, v: _save_meta_int(d, "crawl_cursor.json", "next_index", v)  # noqa: E731
+load_tick = lambda d: _meta_int(d, "tick.json", "n")  # noqa: E731
+save_tick = lambda d, v: _save_meta_int(d, "tick.json", "n", v)  # noqa: E731
+
+
 def round_robin(targets: list[str], cursor: int, n: int) -> tuple[list[str], int]:
     """cursor부터 n개를 순환하며 고르고, 다음 cursor를 돌려준다."""
     if not targets or n <= 0:

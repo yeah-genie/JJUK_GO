@@ -244,3 +244,19 @@ def test_client_spaces_calls_across_runs(tmp_path, monkeypatch):
     import pytest
     with pytest.raises(tc.RateLimited):
         client.fetch(1, 300, "2217", max_wait_s=0)
+
+
+def test_crawl_alternates_with_focus_targets(tmp_path):
+    (tmp_path / "meta").mkdir()
+    (tmp_path / "meta" / "api_probe.json").write_text(json.dumps({"version": 2, "mode": "per_intersection"}), encoding="utf-8")
+    crawl = tmp_path / "crawl.txt"
+    crawl.write_text("# 주석\n1600\n23665\n", encoding="utf-8")
+    cfg = {**CFG, "targets": {"itst_ids": ["1537"], "crawl_ids_file": str(crawl), "crawl_every": 3}}
+    got = []
+    for i in range(6):
+        now = NOW.replace(minute=5 * i)
+        budget = Budget(tmp_path, now, 1000, 0.7)
+        s = collect_once(cfg, tmp_path, FixtureClient(FIXTURE, on_call=budget.record_call), budget, now)
+        got.append(s["crawl"])
+    assert got == [False, False, True, False, False, True]
+    assert json.loads((tmp_path / "meta" / "crawl_cursor.json").read_text())["next_index"] == 0  # 2곳 중 2번 돌아 처음으로
