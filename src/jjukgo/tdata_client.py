@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import datetime, timezone
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -118,6 +119,7 @@ class TDataClient:
         rate_limit_wait_max_s: float = 330,
         last_call_path: Path | None = None,
         clock: Callable[[], float] = time.time,
+        call_log_path: Path | None = None,
     ):
         self.base_url = base_url
         self.api_key = api_key
@@ -128,6 +130,7 @@ class TDataClient:
         self.rate_limit_wait_max_s = rate_limit_wait_max_s
         self.last_call_path = last_call_path
         self.clock = clock
+        self.call_log_path = call_log_path
 
     def _last_call(self) -> float | None:
         if self.last_call_path is None or not self.last_call_path.exists():
@@ -148,6 +151,18 @@ class TDataClient:
         if wait > 0:
             self.sleep(wait)
 
+    def _log(self, params: dict, outcome: str, retry_after=None, extra: str = "") -> None:
+        """모든 시도를 meta/call_log.csv에 남긴다(시각, 교차로, 결과, 서버가 알려준 남은 시간). 제한이 왜 걸리는지 분석하려고."""
+        if self.call_log_path is None:
+            return
+        self.call_log_path.parent.mkdir(parents=True, exist_ok=True)
+        new = not self.call_log_path.exists()
+        with open(self.call_log_path, "a", encoding="utf-8") as f:
+            if new:
+                f.write("utc,itst_id,rows,outcome,retry_after_s,extra\n")
+            f.write(f"{datetime.fromtimestamp(self.clock(), timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')},{params.get('itstId', '')},"
+                    f"{params.get('numOfRows', '')},{outcome},{'' if retry_after is None else retry_after},{extra}\n")
+
     def _mark_call(self) -> None:
         if self.last_call_path is not None:
             self.last_call_path.parent.mkdir(parents=True, exist_ok=True)
@@ -161,6 +176,7 @@ class TDataClient:
             self._mark_call()
             try:
                 with urllib.request.urlopen(url, timeout=self.timeout_s) as resp:
+                    self._log(params, "ok")
                     return json.loads(resp.read().decode("utf-8"))
             except urllib.error.HTTPError as e:
                 body = e.read().decode("utf-8", errors="replace")
@@ -170,14 +186,18 @@ class TDataClient:
                     parsed = None
                 limited = parse_rate_limit(parsed)
                 if limited:
+                    self._log(params, "429_repeat", limited.retry_after_s)
                     raise limited from e
                 if e.code == 429:
+                    self._log(params, "429_other", extra=body[:80].replace(",", ";").replace("\n", " "))
                     raise QuotaExceeded(f"HTTP 429: {body[:200]}") from e
+                self._log(params, f"http_{e.code}")
                 if e.code < 500:
                     check_error(parsed)
                     raise ApiError(f"HTTP {e.code}: {body[:200]}") from e
                 last_error = e
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+                self._log(params, "net_error", extra=type(e).__name__)
                 last_error = e
             self.sleep(2 ** attempt)
         raise ApiError(f"요청 실패 ({self.max_retries}회 시도): {last_error}")

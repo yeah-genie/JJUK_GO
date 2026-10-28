@@ -331,6 +331,7 @@ def main(argv: list[str] | None = None) -> int:
             api["base_url"], api_key, api["timeout_s"], api["max_retries"], on_call=budget.record_call,
             rate_limit_wait_max_s=api.get("rate_limit_wait_max_s", 330),
             last_call_path=args.data_dir / "meta" / "last_call.json",
+            call_log_path=args.data_dir / "meta" / "call_log.csv",
         )
 
     if args.command == "discover":
