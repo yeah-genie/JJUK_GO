@@ -24,7 +24,7 @@
 대상 지역(MVP): 강남구 테헤란로 일대.
 
 ## 신호 데이터 자동 수집
-GitHub Actions가 15분마다 C-ITS 실시간 API를 호출해 `data` 브랜치에 신호 이력을 쌓습니다. 호출 예산은 하루 한도의 70%로 제한합니다.
+GitHub Actions의 연속 실행이 약 5분(305초) 간격으로 교차로 한 곳씩 C-ITS API를 호출해 `data` 브랜치에 신호 이력을 쌓습니다. 모든 교차로의 5분 갱신을 뜻하지 않으며, 호출 실패와 이력 공백은 별도 점검이 필요합니다. 호출 예산은 설정상 하루 한도의 70%로 제한합니다.
 처음 한 번 리포 Secrets에 `SEOUL_TDATA_API_KEY`만 등록하면 됩니다. → [docs/DATA_COLLECTION.md](docs/DATA_COLLECTION.md)
 
 ```bash
@@ -45,6 +45,7 @@ python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype
 브라우저에서 <http://127.0.0.1:8766/#home>을 여세요. HTML 파일을 직접 열면 데이터 요청이 막힐 수 있으므로 HTTP 서버로 실행합니다. 지도 라이브러리와 웹폰트 로딩에는 인터넷 연결이 필요합니다.
 
 ## 문서 목록
+- [수집 상태·공공 데이터·네이버/카카오 차별화 조사](reports/쭉고%20데이터와%20차별화%20검증.md)
 - [최신 제품 방향: 신호·경사·계단 Walking](docs/PRODUCT_DIRECTION.md)
 - [작업 인수인계와 현재 상태](docs/HANDOFF.md)
 - [날짜별 사용자 논의 기록](docs/discussions/2026-10-28.md)

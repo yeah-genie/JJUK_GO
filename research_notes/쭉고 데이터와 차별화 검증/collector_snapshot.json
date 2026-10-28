@@ -1,0 +1,231 @@
+{
+  "checked_at_kst": "2026-10-28T20:24:45.102975+09:00",
+  "snapshot_sha": "52b5ce05ea1cc83aa24f50f133b53340af256133",
+  "outcomes": {
+    "ok": 35,
+    "net_error": 47,
+    "429_repeat": 47
+  },
+  "first_logged_at_kst": "2026-10-28T13:14:32+09:00",
+  "last_success_at_kst": "2026-10-28T20:23:56+09:00",
+  "last_failed_at_kst": "2026-10-28T18:57:11+09:00",
+  "recovery_first_at_kst": "2026-10-28T19:02:21+09:00",
+  "recovery_successes": 17,
+  "recovery_gap_s": {
+    "min": 297.0,
+    "median": 306.0,
+    "max": 317.0
+  },
+  "largest_success_gap": [
+    15685.0,
+    "2026-10-28T05:40:56",
+    "2026-10-28T10:02:21"
+  ],
+  "last_successes": [
+    {
+      "utc": "2026-10-28T11:03:30",
+      "itst_id": "2975",
+      "rows": "2200",
+      "outcome": "ok",
+      "retry_after_s": "",
+      "extra": ""
+    },
+    {
+      "utc": "2026-10-28T11:08:36",
+      "itst_id": "2878",
+      "rows": "2200",
+      "outcome": "ok",
+      "retry_after_s": "",
+      "extra": ""
+    },
+    {
+      "utc": "2026-10-28T11:13:43",
+      "itst_id": "2219",
+      "rows": "2200",
+      "outcome": "ok",
+      "retry_after_s": "",
+      "extra": ""
+    },
+    {
+      "utc": "2026-10-28T11:18:49",
+      "itst_id": "22905",
+      "rows": "2200",
+      "outcome": "ok",
+      "retry_after_s": "",
+      "extra": ""
+    },
+    {
+      "utc": "2026-10-28T11:23:56",
+      "itst_id": "4500",
+      "rows": "2200",
+      "outcome": "ok",
+      "retry_after_s": "",
+      "extra": ""
+    }
+  ],
+  "usage": {
+    "date": "2026-10-28",
+    "calls": 363,
+    "quota_hit": false
+  },
+  "last_fetch_kst": {
+    "1537": "2026-10-28T19:17:40.775445+09:00",
+    "1619": "2026-10-28T19:28:04.779455+09:00",
+    "1946": "2026-10-28T19:53:29.692716+09:00",
+    "21946": "2026-10-28T19:33:09.750119+09:00",
+    "2212": "2026-10-28T18:51:47.021554+09:00",
+    "2217": "2026-10-28T19:48:24.400696+09:00",
+    "2219": "2026-10-28T20:08:44.142420+09:00",
+    "22903": "2026-10-28T19:23:00.351825+09:00",
+    "22904": "2026-10-28T14:26:01.908652+09:00",
+    "22905": "2026-10-28T20:14:09.556253+09:00",
+    "23967": "2026-10-28T19:43:19.398856+09:00",
+    "2691": "2026-10-28T19:38:14.104757+09:00",
+    "2878": "2026-10-28T20:03:39.792689+09:00",
+    "2903": "2026-10-28T14:36:13.576612+09:00",
+    "2904": "2026-10-28T14:15:51.650268+09:00",
+    "2906": "2026-10-28T14:05:41.421774+09:00",
+    "2907": "2026-10-28T13:35:06.836057+09:00",
+    "2910": "2026-10-28T13:19:51.379084+09:00",
+    "2974": "2026-10-28T14:31:07.339993+09:00",
+    "2975": "2026-10-28T19:58:34.548955+09:00",
+    "3011": "2026-10-28T19:07:28.161928+09:00",
+    "31946": "2026-10-28T19:02:23.923941+09:00",
+    "3265": "2026-10-28T13:50:21.155083+09:00",
+    "3967": "2026-10-28T19:12:34.431997+09:00",
+    "4500": "2026-10-28T20:19:07.923662+09:00"
+  },
+  "segment_files_today": 58,
+  "recent_segments": [
+    {
+      "path": "segments/2026/10/28/195834.csv.gz",
+      "rows": 4,
+      "first": {
+        "itst_id": "2975",
+        "direction": "st",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:00:00.828Z",
+        "end_utc": "2026-10-28T11:01:10.830Z",
+        "rem_start_ds": "707",
+        "rem_end_ds": "7",
+        "samples": "71"
+      },
+      "last": {
+        "itst_id": "2975",
+        "direction": "st",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:01:51.826Z",
+        "end_utc": "2026-10-28T11:03:27.827Z",
+        "rem_start_ds": "1300",
+        "rem_end_ds": "337",
+        "samples": "97"
+      }
+    },
+    {
+      "path": "segments/2026/10/28/200339.csv.gz",
+      "rows": 42,
+      "first": {
+        "itst_id": "2878",
+        "direction": "et",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:00:00.390Z",
+        "end_utc": "2026-10-28T11:02:02.426Z",
+        "rem_start_ds": "1223",
+        "rem_end_ds": "1",
+        "samples": "123"
+      },
+      "last": {
+        "itst_id": "2878",
+        "direction": "wt",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:08:20.426Z",
+        "end_utc": "2026-10-28T11:08:22.426Z",
+        "rem_start_ds": "36001",
+        "rem_end_ds": "36001",
+        "samples": "3"
+      }
+    },
+    {
+      "path": "segments/2026/10/28/200844.csv.gz",
+      "rows": 61,
+      "first": {
+        "itst_id": "2219",
+        "direction": "et",
+        "movement": "Pd",
+        "state": "permissive-Movement-Allowed",
+        "start_utc": "2026-10-28T11:00:00.312Z",
+        "end_utc": "2026-10-28T11:00:06.468Z",
+        "rem_start_ds": "70",
+        "rem_end_ds": "8",
+        "samples": "7"
+      },
+      "last": {
+        "itst_id": "2219",
+        "direction": "wt",
+        "movement": "Pd",
+        "state": "protected-Movement-Allowed",
+        "start_utc": "2026-10-28T11:13:37.461Z",
+        "end_utc": "2026-10-28T11:13:40.472Z",
+        "rem_start_ds": "379",
+        "rem_end_ds": "349",
+        "samples": "4"
+      }
+    },
+    {
+      "path": "segments/2026/10/28/201409.csv.gz",
+      "rows": 50,
+      "first": {
+        "itst_id": "22905",
+        "direction": "se",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:00:00.518Z",
+        "end_utc": "2026-10-28T11:00:42.627Z",
+        "rem_start_ds": "419",
+        "rem_end_ds": "0",
+        "samples": "43"
+      },
+      "last": {
+        "itst_id": "22905",
+        "direction": "se",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:18:32.622Z",
+        "end_utc": "2026-10-28T11:18:33.639Z",
+        "rem_start_ds": "499",
+        "rem_end_ds": "489",
+        "samples": "2"
+      }
+    },
+    {
+      "path": "segments/2026/10/28/201907.csv.gz",
+      "rows": 130,
+      "first": {
+        "itst_id": "4500",
+        "direction": "et",
+        "movement": "Pd",
+        "state": "permissive-Movement-Allowed",
+        "start_utc": "2026-10-28T11:00:00.265Z",
+        "end_utc": "2026-10-28T11:00:09.648Z",
+        "rem_start_ds": "103",
+        "rem_end_ds": "9",
+        "samples": "10"
+      },
+      "last": {
+        "itst_id": "4500",
+        "direction": "st",
+        "movement": "Pd",
+        "state": "stop-And-Remain",
+        "start_utc": "2026-10-28T11:23:49.644Z",
+        "end_utc": "2026-10-28T11:23:53.631Z",
+        "rem_start_ds": "350",
+        "rem_end_ds": "310",
+        "samples": "5"
+      }
+    }
+  ]
+}
