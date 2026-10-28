@@ -193,21 +193,21 @@ def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetim
                 # 핵심 구간(targets)을 깊게 모으면서, crawl_every번에 한 번은 서울 전체 목록을 한 곳씩 훑는다
                 crawl_ids, every, tick = load_crawl_ids(cfg["targets"], ROOT), int(cfg["targets"].get("crawl_every", 0)), load_tick(data_dir)
                 use_crawl = bool(crawl_ids) and every > 1 and tick % every == every - 1
-                if use_crawl:
-                    picked, next_cursor = round_robin(crawl_ids, load_crawl_cursor(data_dir), n_calls)
-                else:
-                    picked, next_cursor = round_robin(targets, load_cursor(data_dir), n_calls)
+                cursor = (load_crawl_cursor if use_crawl else load_cursor)(data_dir)
+                candidates = crawl_ids if use_crawl else targets
+                picked, _ = round_robin(candidates, cursor, n_calls)
                 summary["crawl"] = use_crawl
                 last_fetch = load_last_fetch(data_dir)
-                for itst_id in picked:
+                for index, itst_id in enumerate(picked):
                     n = rows_to_fetch(last_fetch.get(itst_id), now.timestamp(),
                                       api_cfg.get("rows_per_intersection", 2200), api_cfg.get("min_rows", 300))
+                    # 실패한 한 교차로가 다음 실행까지 수집 순서를 독점하지 않게 한다.
+                    (save_crawl_cursor if use_crawl else save_cursor)(data_dir, (cursor + index + 1) % len(candidates))
+                    save_tick(data_dir, tick + 1)
                     page, _ = client.fetch(1, n, itst_id)
                     records.extend(page)
                     last_fetch[itst_id] = now.timestamp()
                     save_last_fetch(data_dir, last_fetch)
-                (save_crawl_cursor if use_crawl else save_cursor)(data_dir, next_cursor)
-                save_tick(data_dir, tick + 1)
     except RateLimited as e:
         summary["rate_limited"] = str(e)  # 기다리면 풀리는 제한: 오늘 수집을 멈추지 않는다
     except QuotaExceeded as e:

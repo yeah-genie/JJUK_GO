@@ -131,14 +131,15 @@ class TDataClient:
         self.last_call_path = last_call_path
         self.clock = clock
         self.call_log_path = call_log_path
+        self._last_call_at: float | None = None
 
     def _last_call(self) -> float | None:
         if self.last_call_path is None or not self.last_call_path.exists():
-            return None
+            return self._last_call_at
         try:
             return float(json.loads(self.last_call_path.read_text(encoding="utf-8"))["at"])
         except (ValueError, KeyError, json.JSONDecodeError):
-            return None
+            return self._last_call_at
 
     def _space_out(self, wait_cap: float) -> None:
         """마지막 호출(거절 포함)에서 SPACING_S가 지나지 않았으면 기다린다. wait_cap보다 오래면 부르지 않는다."""
@@ -164,20 +165,23 @@ class TDataClient:
                     f"{params.get('numOfRows', '')},{outcome},{'' if retry_after is None else retry_after},{extra}\n")
 
     def _mark_call(self) -> None:
+        self._last_call_at = self.clock()
         if self.last_call_path is not None:
             self.last_call_path.parent.mkdir(parents=True, exist_ok=True)
-            self.last_call_path.write_text(json.dumps({"at": self.clock()}), encoding="utf-8")
+            self.last_call_path.write_text(json.dumps({"at": self._last_call_at}), encoding="utf-8")
 
-    def _get(self, params: dict) -> Any:
+    def _get(self, params: dict, wait_cap: float) -> Any:
         url = f"{self.base_url}?{urllib.parse.urlencode(params)}"
         last_error: Exception | None = None
         for attempt in range(self.max_retries):
+            self._space_out(wait_cap)
             self.on_call()  # 재시도도 호출 횟수에 포함된다
             self._mark_call()
             try:
                 with urllib.request.urlopen(url, timeout=self.timeout_s) as resp:
+                    payload = json.loads(resp.read().decode("utf-8"))
                     self._log(params, "ok")
-                    return json.loads(resp.read().decode("utf-8"))
+                    return payload
             except urllib.error.HTTPError as e:
                 body = e.read().decode("utf-8", errors="replace")
                 try:
@@ -199,7 +203,7 @@ class TDataClient:
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
                 self._log(params, "net_error", extra=type(e).__name__)
                 last_error = e
-            self.sleep(2 ** attempt)
+            # 다음 시도도 마지막 호출로부터 305초를 지켜야 한다.
         raise ApiError(f"요청 실패 ({self.max_retries}회 시도): {last_error}")
 
     def fetch(
@@ -216,14 +220,14 @@ class TDataClient:
         wait_cap = self.rate_limit_wait_max_s if max_wait_s is None else max_wait_s
         self._space_out(wait_cap)
         try:
-            payload = self._get(params)
+            payload = self._get(params, wait_cap)
             check_error(payload)
         except RateLimited:
             # 거절된 이 호출이 창을 다시 시작했으므로 retryAfter가 아니라 창 전체를 기다린다
             if SPACING_S > wait_cap:
                 raise
             self.sleep(SPACING_S)
-            payload = self._get(params)
+            payload = self._get(params, wait_cap)
             check_error(payload)
         return extract_records(payload), extract_total_count(payload)
 

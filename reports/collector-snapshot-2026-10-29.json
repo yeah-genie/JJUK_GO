@@ -1,0 +1,114 @@
+{
+  "checked_at_kst": "2026-10-29T01:18:13.499810+09:00",
+  "snapshot_sha": "bc1759acba342290e5fee134518d91ae033aed17",
+  "last_success_kst": "2026-10-29T01:15:50+09:00",
+  "last_failure": {
+    "utc": "2026-10-28T15:55:26",
+    "itst_id": "2212",
+    "rows": "2200",
+    "outcome": "429_repeat",
+    "retry_after_s": "279",
+    "extra": ""
+  },
+  "recent_two_hours_outcomes": {
+    "ok": 4,
+    "net_error": 19,
+    "429_repeat": 19
+  },
+  "recovery_successes": 4,
+  "recovery_successes_kst": [
+    "2026-10-29T01:00:32+09:00",
+    "2026-10-29T01:05:38+09:00",
+    "2026-10-29T01:10:44+09:00",
+    "2026-10-29T01:15:50+09:00"
+  ],
+  "recovery_gap_seconds": {
+    "min": 306.0,
+    "median": 306.0,
+    "max": 306.0
+  },
+  "latest_segments": [
+    {
+      "path": "segments/2026/10/28/202917.csv.gz",
+      "rows": 40,
+      "latest_end_utc": "2026-10-28T11:36:39.755Z",
+      "columns": [
+        "itst_id",
+        "direction",
+        "movement",
+        "state",
+        "start_utc",
+        "end_utc",
+        "rem_start_ds",
+        "rem_end_ds",
+        "samples"
+      ]
+    },
+    {
+      "path": "segments/2026/10/28/203937.csv.gz",
+      "rows": 156,
+      "latest_end_utc": "2026-10-28T11:36:39.848Z",
+      "columns": [
+        "itst_id",
+        "direction",
+        "movement",
+        "state",
+        "start_utc",
+        "end_utc",
+        "rem_start_ds",
+        "rem_end_ds",
+        "samples"
+      ]
+    },
+    {
+      "path": "segments/2026/10/29/005528.csv.gz",
+      "rows": 8,
+      "latest_end_utc": "2026-10-28T16:00:32.473Z",
+      "columns": [
+        "itst_id",
+        "direction",
+        "movement",
+        "state",
+        "start_utc",
+        "end_utc",
+        "rem_start_ds",
+        "rem_end_ds",
+        "samples"
+      ]
+    },
+    {
+      "path": "segments/2026/10/29/010035.csv.gz",
+      "rows": 9,
+      "latest_end_utc": "2026-10-28T16:05:36.799Z",
+      "columns": [
+        "itst_id",
+        "direction",
+        "movement",
+        "state",
+        "start_utc",
+        "end_utc",
+        "rem_start_ds",
+        "rem_end_ds",
+        "samples"
+      ]
+    },
+    {
+      "path": "segments/2026/10/29/010541.csv.gz",
+      "rows": 74,
+      "latest_end_utc": "2026-10-28T16:10:43.428Z",
+      "columns": [
+        "itst_id",
+        "direction",
+        "movement",
+        "state",
+        "start_utc",
+        "end_utc",
+        "rem_start_ds",
+        "rem_end_ds",
+        "samples"
+      ]
+    }
+  ],
+  "preceding_success_gap_seconds": 15371.0,
+  "previous_success_kst": "2026-10-28T20:44:21+09:00"
+}
