@@ -32,6 +32,16 @@ python -m pytest -q
 
 > ⚠️ 모든 시간은 예상값입니다. 길 선택을 돕는 용도이며, 횡단 시에는 반드시 실제 신호를 확인하세요.
 
-## 문서
+## 프로토타입 실행
+
+지도·검색·길찾기 데이터는 `docs/prototype/seoul/`에 포함되어 있어 별도 ZIP이 필요 없습니다.
+
+```bash
+python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype
+```
+
+브라우저에서 <http://127.0.0.1:8766/#home>을 여세요. HTML 파일을 직접 열면 데이터 요청이 막힐 수 있으므로 HTTP 서버로 실행합니다. 지도 라이브러리와 웹폰트 로딩에는 인터넷 연결이 필요합니다.
+
+## 문서 목록
 - [기획서](docs/PROPOSAL.md)
 - [데이터 수집](docs/DATA_COLLECTION.md)
