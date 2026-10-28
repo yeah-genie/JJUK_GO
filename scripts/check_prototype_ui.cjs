@@ -60,6 +60,7 @@ const assert = require('node:assert/strict');
       $('s-result').hidden = false;
       $('sheet-result').classList.add('full');
       $('sheet-result').style.setProperty('--h', '65%');
+      $('result-options').open = true;
       $('from-name').textContent = '서대문역';
       $('to-name').textContent = '청계광장';
       state.sims = { jjuk: { knownN: 2 }, short: { knownN: 2 } };

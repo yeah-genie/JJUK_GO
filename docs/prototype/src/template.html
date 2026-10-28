@@ -152,7 +152,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .time-unit input::-webkit-inner-spin-button, .time-unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .time-picker:disabled { opacity: .4; }
 .time-unit button:disabled { cursor: default; opacity: .4; }
-.gocard { gap: 12px; padding: 18px; }
+.gocard { gap: 10px; padding: 16px; }
+.route-facts { grid-column: 1 / -1; display: flex; gap: 12px; margin-top: 7px; }
+.route-facts > span { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.route-facts small { font-size: 11px; color: var(--muted); }
+.route-facts b { font-size: 14px; font-weight: 600; }
+.result-options { flex: none; border-top: 1px solid var(--line); }
+.result-options summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; }
+.result-options summary::-webkit-details-marker { display: none; }
+.result-options summary span { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 400; }
+.result-options summary::after { content: "⌄"; color: var(--muted); }
+.result-options[open] summary::after { content: "⌃"; }
+.result-options summary:focus-visible { outline: 3px solid var(--asphalt); outline-offset: -3px; border-radius: 6px; }
+.option-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0 12px; }
+.option-body .link-btn { align-self: flex-start; padding-left: 0; }
+#sheet-result .sheet-body > *, #sheet-result .route { flex-shrink: 0; }
+#result-actions { padding-top: 4px; }
+#result-note { font-size: 11px; }
+#tradeoff { font-size: 13px; font-weight: 500; }
+
 .route .mins { font-family: var(--body); font-weight: 700; font-size: 23px; justify-self: end; }
 .route { grid-template-columns: 1fr auto; padding: 12px; }
 .miss { display: block; margin-top: 2px; color: #3E6B4A; font-size: 12.5px; }
@@ -404,28 +422,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
-        <div class="row-between" style="margin-bottom:10px"><span class="safety">더 걸려도 괜찮은 시간</span><div class="chips" role="group" aria-label="추가 시간 예산"><button class="chip" data-budget="60" aria-pressed="false">+1분</button><button class="chip" data-budget="120" aria-pressed="true">+2분</button><button class="chip" data-budget="180" aria-pressed="false">+3분</button></div></div>
+        <div class="row-label" id="result-heading"><h2>걷기 경로</h2><span class="safety">시연</span></div>
         <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
           <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
           <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
         </div>
-        <p class="safety" id="result-location" role="status"></p>
-        <div><p class="tradeoff" id="tradeoff"></p><p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p></div>
-        <div class="actions" id="result-actions" data-mid-end>
-          <button class="btn btn-ghost" data-go="detail">횡단보도 보기</button>
-          <button class="btn btn-primary" data-go="walk" id="start-walk">쭉고로 걷기 시작</button>
-        </div>
-        <div class="row-label more">
-          <h2 id="depart-label">08:40 출발</h2>
-          <div class="chips" role="group" aria-label="출발 시각">
-            <button class="chip" data-dep="0" aria-pressed="true">지금</button>
-            <button class="chip" data-dep="60" aria-pressed="false">+1분</button>
-            <button class="chip" data-dep="180" aria-pressed="false">+3분</button>
+        <p class="safety" id="result-note">예상 시간 · 미확인 신호 대기 제외</p>
+        <p class="tradeoff" id="tradeoff" hidden></p>
+        <p class="safety" id="result-location" role="status" hidden></p>
+        <details class="result-options" id="result-options">
+          <summary>출발 시각·경로 조건 <span id="budget-label">+2분까지</span></summary>
+          <div class="option-body">
+            <div class="row-between"><span class="safety">더 걸려도 괜찮은 시간</span><div class="chips" role="group" aria-label="추가 시간 예산"><button class="chip" data-budget="60" aria-pressed="false">+1분</button><button class="chip" data-budget="120" aria-pressed="true">+2분</button><button class="chip" data-budget="180" aria-pressed="false">+3분</button></div></div>
+            <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
+            <p class="safety" id="route-facts"></p>
+            <p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p>
+            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
+            <div class="row-label">
+              <h2 id="depart-label">08:40 출발</h2>
+              <div class="chips" role="group" aria-label="출발 시각">
+                <button class="chip" data-dep="0" aria-pressed="true">기준 시각</button>
+                <button class="chip" data-dep="60" aria-pressed="false">+1분</button>
+                <button class="chip" data-dep="180" aria-pressed="false">+3분</button>
+              </div>
+            </div>
+            <button class="link-btn" data-go="depart">다른 출발 시각 비교</button>
+            <p class="safety" id="result-safety"></p>
           </div>
+        </details>
+        <div class="actions" id="result-actions" data-mid-end>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
         </div>
-        <div class="row-between more"><div class="legend"><span><i class="dot" style="background:var(--lane)"></i>걷기</span><span><i class="dot" style="background:var(--stop)"></i>신호 기다림</span><span><i class="dot" style="background:var(--unknown)"></i>패턴 없는 신호</span></div><button class="link-btn" data-go="depart">언제 나가면 덜 멈출까?</button></div>
-        <p class="safety more" id="result-safety">예상값이에요. 건널 때는 신호를 꼭 확인하세요. 걷는 속도 1.2m/s 기준.</p>
       </div>
     </div>
   </section>

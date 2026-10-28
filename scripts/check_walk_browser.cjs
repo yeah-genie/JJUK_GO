@@ -11,8 +11,17 @@ const fs = require('node:fs');
     const errors=[];page.on('pageerror', e=>errors.push(e.message));
     await page.goto((process.env.UI_BASE_URL || 'http://127.0.0.1:8766') + '/#result');
     await page.waitForFunction(()=>!!state.sims,{timeout:60000});
-    assert.match(await page.locator('#card-jjuk').innerText(), /검출 계단.*지형 오르막/s);
-    assert.match(await page.locator('#go-foot').innerText(), /실시간 아님/);
+    assert.match(await page.locator('#card-jjuk').innerText(), /신호.*계단.*오르막 추정/s);
+    assert.equal(await page.locator('#go-card').isVisible(),false);
+    assert.equal(await page.locator('#route-cards .strip').count(),0);
+    await page.locator('#result-options summary').click();
+    assert.equal(await page.locator('#go-card').isVisible(),true);
+    await page.locator('[data-budget="180"]').click();
+    assert.equal(await page.locator('#budget-label').innerText(),'+3분까지');
+    await page.locator('#result-options summary').focus();
+    await page.keyboard.press('Space');
+    assert.equal(await page.locator('#go-card').isVisible(),false);
+    assert.match(await page.locator('#go-foot').textContent(), /실시간 아님/);
     for(const budget of [60,180,120]) {
       await page.evaluate(b=>{state.budget=b;refreshSims();},budget);
       assert(await page.evaluate(()=>{
@@ -22,7 +31,7 @@ const fs = require('node:fs');
     }
     const shots=process.env.UI_SHOTS;
     if(shots)fs.mkdirSync(shots,{recursive:true});
-    await page.evaluate(()=>{state.deadline=33000;renderResult();setSheet('result','full');});
+    await page.evaluate(()=>{state.deadline=33000;renderResult();setSheet('result','mid');document.activeElement.blur();});
     await page.waitForFunction(()=>map && map.loaded(),{timeout:60000});
     if(shots) await page.screenshot({path:path.join(shots,'walking-result.png')});
     await page.locator('#start-walk').click();
@@ -62,7 +71,17 @@ const fs = require('node:fs');
       await page.evaluate(()=>go('result'));
       await page.waitForFunction(()=>!!state.sims);
       assert(await page.evaluate(()=>document.getElementById('sheet-result').scrollWidth<=document.getElementById('phone').clientWidth));
+      await page.waitForFunction(()=>{
+        const a=document.getElementById('start-walk').getBoundingClientRect(),p=document.getElementById('phone').getBoundingClientRect();
+        return a.top>=p.top && a.bottom<=p.bottom+1;
+      });
     }
+    await page.setViewportSize({width:390,height:844});
+    await page.evaluate(async()=>{await exampleTrip({from:'독립문역',to:'서울광장'});});
+    await page.waitForFunction(()=>!!state.sims && state.same);
+    assert.equal(await page.locator('#tradeoff').isVisible(),false);
+    await page.waitForFunction(()=>map.loaded(),{timeout:60000});
+    if(shots)await page.screenshot({path:path.join(shots,'simplified-single-route.png')});
     assert.deepEqual(errors,[]);
     console.log('PASS: real Seoul graph/terrain, budgets, synthetic GPS progress, off-route, permission denial, cleanup, no GPS persistence, responsive views');
   } finally {await browser.close();}

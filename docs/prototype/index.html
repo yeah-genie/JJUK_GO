@@ -152,7 +152,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .time-unit input::-webkit-inner-spin-button, .time-unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .time-picker:disabled { opacity: .4; }
 .time-unit button:disabled { cursor: default; opacity: .4; }
-.gocard { gap: 12px; padding: 18px; }
+.gocard { gap: 10px; padding: 16px; }
+.route-facts { grid-column: 1 / -1; display: flex; gap: 12px; margin-top: 7px; }
+.route-facts > span { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.route-facts small { font-size: 11px; color: var(--muted); }
+.route-facts b { font-size: 14px; font-weight: 600; }
+.result-options { flex: none; border-top: 1px solid var(--line); }
+.result-options summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; }
+.result-options summary::-webkit-details-marker { display: none; }
+.result-options summary span { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 400; }
+.result-options summary::after { content: "⌄"; color: var(--muted); }
+.result-options[open] summary::after { content: "⌃"; }
+.result-options summary:focus-visible { outline: 3px solid var(--asphalt); outline-offset: -3px; border-radius: 6px; }
+.option-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0 12px; }
+.option-body .link-btn { align-self: flex-start; padding-left: 0; }
+#sheet-result .sheet-body > *, #sheet-result .route { flex-shrink: 0; }
+#result-actions { padding-top: 4px; }
+#result-note { font-size: 11px; }
+#tradeoff { font-size: 13px; font-weight: 500; }
+
 .route .mins { font-family: var(--body); font-weight: 700; font-size: 23px; justify-self: end; }
 .route { grid-template-columns: 1fr auto; padding: 12px; }
 .miss { display: block; margin-top: 2px; color: #3E6B4A; font-size: 12.5px; }
@@ -404,28 +422,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
-        <div class="row-between" style="margin-bottom:10px"><span class="safety">더 걸려도 괜찮은 시간</span><div class="chips" role="group" aria-label="추가 시간 예산"><button class="chip" data-budget="60" aria-pressed="false">+1분</button><button class="chip" data-budget="120" aria-pressed="true">+2분</button><button class="chip" data-budget="180" aria-pressed="false">+3분</button></div></div>
+        <div class="row-label" id="result-heading"><h2>걷기 경로</h2><span class="safety">시연</span></div>
         <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
           <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
           <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
         </div>
-        <p class="safety" id="result-location" role="status"></p>
-        <div><p class="tradeoff" id="tradeoff"></p><p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p></div>
-        <div class="actions" id="result-actions" data-mid-end>
-          <button class="btn btn-ghost" data-go="detail">횡단보도 보기</button>
-          <button class="btn btn-primary" data-go="walk" id="start-walk">쭉고로 걷기 시작</button>
-        </div>
-        <div class="row-label more">
-          <h2 id="depart-label">08:40 출발</h2>
-          <div class="chips" role="group" aria-label="출발 시각">
-            <button class="chip" data-dep="0" aria-pressed="true">지금</button>
-            <button class="chip" data-dep="60" aria-pressed="false">+1분</button>
-            <button class="chip" data-dep="180" aria-pressed="false">+3분</button>
+        <p class="safety" id="result-note">예상 시간 · 미확인 신호 대기 제외</p>
+        <p class="tradeoff" id="tradeoff" hidden></p>
+        <p class="safety" id="result-location" role="status" hidden></p>
+        <details class="result-options" id="result-options">
+          <summary>출발 시각·경로 조건 <span id="budget-label">+2분까지</span></summary>
+          <div class="option-body">
+            <div class="row-between"><span class="safety">더 걸려도 괜찮은 시간</span><div class="chips" role="group" aria-label="추가 시간 예산"><button class="chip" data-budget="60" aria-pressed="false">+1분</button><button class="chip" data-budget="120" aria-pressed="true">+2분</button><button class="chip" data-budget="180" aria-pressed="false">+3분</button></div></div>
+            <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
+            <p class="safety" id="route-facts"></p>
+            <p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p>
+            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
+            <div class="row-label">
+              <h2 id="depart-label">08:40 출발</h2>
+              <div class="chips" role="group" aria-label="출발 시각">
+                <button class="chip" data-dep="0" aria-pressed="true">기준 시각</button>
+                <button class="chip" data-dep="60" aria-pressed="false">+1분</button>
+                <button class="chip" data-dep="180" aria-pressed="false">+3분</button>
+              </div>
+            </div>
+            <button class="link-btn" data-go="depart">다른 출발 시각 비교</button>
+            <p class="safety" id="result-safety"></p>
           </div>
+        </details>
+        <div class="actions" id="result-actions" data-mid-end>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
         </div>
-        <div class="row-between more"><div class="legend"><span><i class="dot" style="background:var(--lane)"></i>걷기</span><span><i class="dot" style="background:var(--stop)"></i>신호 기다림</span><span><i class="dot" style="background:var(--unknown)"></i>패턴 없는 신호</span></div><button class="link-btn" data-go="depart">언제 나가면 덜 멈출까?</button></div>
-        <p class="safety more" id="result-safety">예상값이에요. 건널 때는 신호를 꼭 확인하세요. 걷는 속도 1.2m/s 기준.</p>
       </div>
     </div>
   </section>
@@ -977,7 +1004,7 @@ function snaps(name) {
   const grip = sh.querySelector(".grip-area").offsetHeight;
   const vis = c => !c.hidden && c.offsetHeight > 0;
   const mark = [...sh.querySelectorAll("[data-mid-end]")].find(vis) || [...body.children].filter(vis).pop() || body;
-  const mid = Math.min(grip + mark.offsetTop + mark.offsetHeight - body.offsetTop + 12, Math.round(H * (H < 700 ? .5 : .6)));
+  const mid = Math.min(grip + mark.offsetTop + mark.offsetHeight - body.offsetTop + 12, name === "result" ? H - 160 : Math.round(H * (H < 700 ? .5 : .6)));
   const peek = Math.min(grip + 54, mid);
   const full = Math.max(mid, Math.min(H - 100, grip + body.scrollHeight + 4));
   if (wasPeek) sh.classList.add("peek");
@@ -1067,7 +1094,7 @@ const tripLabel = p => p.me ? `${p.name}` : p.name;
 // 위치는 기기 메모리에만 둔다. 최근 검색·서버·공유 카드에는 GPS 좌표를 저장하지 않는다.
 let gpsFix = null, gpsWatch = null, gpsStaleTimer = null, gpsRequest = 0;
 function gpsStatus(text) {
-  for (const id of ["location-status", "walk-location", "search-location", "result-location"]) $(id).textContent = text;
+  for (const id of ["location-status", "walk-location", "search-location", "result-location"]) { $(id).textContent = text; $(id).hidden = !text; }
 }
 function stopGPS() {
   if (gpsWatch != null) navigator.geolocation?.clearWatch(gpsWatch);
@@ -1211,7 +1238,7 @@ async function renderResult() {
   $("from-name").innerHTML = esc(tripLabel(state.from)) + (state.from.sub ? `<small>${esc(state.from.sub)}</small>` : "");
   $("to-name").innerHTML = esc(state.to.name) + (state.to.sub ? `<small>${esc(state.to.sub)}</small>` : "");
   const st = $("result-status"), cards = $("route-cards");
-  const waitUI = on => { ["tradeoff", "result-actions"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
+  const waitUI = on => { ["tradeoff", "result-actions", "result-heading", "result-note", "result-options"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
   if (state.tripKey !== tripKeyNow()) { state.routes = null; state.error = null; }
   if (!state.routes && !state.error) {
     st.hidden = false; st.innerHTML = "<b>길 찾는 중…</b>지도 데이터를 받고 있어요."; cards.hidden = true; waitUI(false);
@@ -1227,16 +1254,17 @@ async function renderResult() {
   }
   st.hidden = true; cards.hidden = false; waitUI(true);
   const go = renderGoCard();
-  const S = state.sims, scale = Math.max(S.jjuk.total, S.short.total);
+  const S = state.sims;
   $("depart-label").textContent = `${clock(BASE + state.dep)} 출발`;
   for (const k of ["jjuk", "short"]) {
     const sim = S[k], c = $("card-" + k);
     c.hidden = k === "short" && state.same;
     c.setAttribute("aria-pressed", String(state.focus === k));
-    const name = k === "jjuk" ? (state.same ? "쭉고 · 빠른 길" : "쭉고") : "빠른 길";
+    const name = k === "jjuk" ? "쭉고" : "빠른 길";
     const route = state.routes[k];
-    c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span><span class="stat">${statLine(sim)}<br>검출 계단 <strong>${route.stairs}구간</strong> · 지형 오르막 ${route.terrainMeters > 0 ? `<strong>약 ${Math.round(route.rise)}m↑</strong>` : "미확인"}${route.under.length ? " · 입체구간 미확인" : ""}</span>
-      <span class="strip" aria-hidden="true">${stripHTML(sim, scale, k === "jjuk" ? "walk-j" : "walk-s")}</span>`;
+    const stairText = route.under.length && !route.stairs ? "미확인" : `${route.stairs}구간${route.under.length ? " 이상" : ""}`;
+    c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span>
+      <span class="route-facts"><span><small>신호</small><b>${sim.knownN + sim.unknownN}곳</b></span><span><small>계단</small><b>${stairText}</b></span><span><small>오르막 추정</small><b>${route.terrainMeters > 0 ? `약 ${Math.round(route.rise)}m↑` : "미확인"}</b></span></span>`;
   }
   const kn = S.jjuk.knownN + S.short.knownN, dWalk = S.jjuk.walk - S.short.walk;
   let t;
@@ -1259,8 +1287,11 @@ async function renderResult() {
   const savedWait = S.short.wait - S.jjuk.wait;
   if (savedWait > 5) reductions.push(`신호 대기 ${phrase(savedWait)}`);
   $("tradeoff").textContent = state.same ? `+${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : `${extra > 2 ? `약 ${phrase(extra)} 더 걸리고, ` : ""}${reductions.length ? reductions.join(" · ") + " 줄여요." : t}`;
-  $("tradeoff").hidden = false;
+  $("tradeoff").hidden = state.same;
   document.querySelectorAll("[data-budget]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.budget === state.budget)));
+  $("budget-label").textContent = `+${state.budget / 60}분까지`;
+  const selected = S[state.focus], selectedRoute = state.routes[state.focus];
+  $("route-facts").innerHTML = `${statLine(selected)}<br>검출 계단 ${selectedRoute.stairs}구간 · 지형 상승 약 ${Math.round(selectedRoute.rise)}m${selectedRoute.under.length ? " · 입체구간 미확인" : ""}${state.same ? `<br>추가 ${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : ""}`;
   $("start-walk").textContent = "걷기 시작";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
@@ -1503,6 +1534,7 @@ async function renderSearchList() {
   }).join("") : `<p class="note">"${esc(q)}"에 맞는 곳이 없어요. 역 이름이나 동네 이름으로 찾아보거나, 지도를 눌러 골라 주세요.</p>`;
 }
 function choosePlace(p) {
+  $("result-location").hidden = true;
   const place = { name: p.name, sub: p.kind && p.kind !== "역" ? p.kind : "", ll: p.ll, kind: p.kind };
   if (!p.me) {
     const recent = store.get("recent", []).filter(r => r.name !== p.name);
@@ -1515,6 +1547,7 @@ function choosePlace(p) {
 }
 
 async function exampleTrip(ex) {
+  $("result-location").hidden = true;
   const list = await ensureSearch();
   const find = n => list.find(p => p.name === n) || list.find(p => p.name.startsWith(n));
   const a = find(ex.from), b = find(ex.to);
@@ -1593,6 +1626,11 @@ document.addEventListener("click", e => {
   if (b.dataset.dep !== undefined) { state.dep = +b.dataset.dep; renderResult(); return; }
   if (b.dataset.route) { state.focus = b.dataset.route; renderResult(); return; }
   go(b.dataset.go);
+});
+$("result-options").addEventListener("toggle", () => {
+  if (current !== "result") return;
+  setSheet("result", $("result-options").open ? "full" : "mid");
+  if (!$("result-options").open) $("sheet-result").querySelector(".sheet-body").scrollTop = 0;
 });
 $("sq").addEventListener("input", () => renderSearchList());
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });
