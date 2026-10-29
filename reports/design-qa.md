@@ -29,3 +29,5 @@
 브라우저 시험은 위치 제공 성공을 실제 야외 GPS로 검증한 것이 아니다. 개인 걸음 정확도·고령/보조기 사용자 현장 사용성·횡단 안전·지속 백그라운드 동작은 미완료다. 실제 신호 방향·길이·점멸 검증까지 마친 것처럼 이미지의 ~12초를 표시하지 않는다. 데스크톱 보조기기/스크린리더 전수 감사까지 수행하지 않았다.
 
 최종 판정: 확인한 범위의 미해결 P0/P1/P2 없음. [시안/구현 비교](ui/asphalt-implementation/comparison.png), [360 상세 수정 후](ui/asphalt-implementation/360-details.png). 실기기·데이터 검증 제한은 별도 남는다.
+
+운영 확인: `https://jjukgo.vercel.app/`에서 동일 설문/미측정 홈/예시 경로·실제 지도 확인, 오류 로그 0건. [운영 증거](ui/asphalt-implementation/production.png).

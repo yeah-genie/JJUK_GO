@@ -25,4 +25,15 @@
 
 ## 최종 동기화·배포
 
-현재 작업 중. GitHub push·배포 식별자·최종 브라우저 결과는 확인 후 아래에 기록한다.
+- [PR #4](https://github.com/yeah-genie/JJUK_GO/pull/4) 병합 완료. 기본 브랜치 `ccr-94bac9df-i81579`, 병합 commit `2fcd6ad453d09f4de1522a5cbc8fb018ee86f55e`. 앱 구현 `3a94c0e`, CI 폰트 수정 `83c2bda`.
+- Vercel 운영 프로젝트 `jjukgo` / `prj_rhMUEQmYTvE5MyHqnuhVAhgXt7MH`, 배포 `dpl_5SDDbVDzxf9M7Uq9NVed4MfjYwnq` READY. Git 소스는 위 병합 commit이며 대표 주소 [jjukgo.vercel.app](https://jjukgo.vercel.app/) 연결 확인. 보안 보호 설정은 변경하지 않았다.
+- 운영 주소에서 로그인 없이 새 설문 → 건너뛰기 → 미측정 홈 → 실제 지도/서대문역–청계광장 예시 경로를 확인. 브라우저 오류 로그 없음. [실제 운영 화면](../reports/ui/asphalt-implementation/production.png).
+- GitHub 최신 head `83c2bda`의 두 test check와 Vercel check 전부 success. 첫 CI의 한글 폰트 누락은 fonts-nanum 설치로 해결했다. 로컬 59개 시험 + Node 3종도 통과.
+- 최종 인수인계 문서만 덧붙이는 커밋은 동일 앱 산출물로 다시 배포될 수 있다. 위 식별자는 실제 확인한 앱 배포이며 문서 커밋 자체를 뜻하지 않는다.
+
+## Claude가 이어서 할 일
+
+1. 실제 휴대전화에서 위치 허용/거부, 느린 보행과 정지·실내·끊김을 시험해 자동 학습 임계치를 검증한다. 이번 브라우저 시험이 실외 GPS 정확도 검증을 대신하지 않는다.
+2. 횡단 방향·길이·초록/점멸 정의·요일을 대조하고 현장 표본으로 검증하기 전 여유 숫자 gate를 열지 않는다.
+3. 계단·엘리베이터·보도 접근성 공공데이터를 그래프에 연결할 때 실제 출입구·단절·운영 상태와 갱신일을 검증한다. 자료가 있다는 이유로 무장애 통행으로 표시하지 않는다.
+4. UI를 새로 발명하지 말고 승인 시안과 현재 DESIGN_SYSTEM/PRODUCT_SPEC을 이어간다. 큰 카운트다운·시간 막대·운동 기록·기본 수동 속도 칩을 되살리지 않는다.

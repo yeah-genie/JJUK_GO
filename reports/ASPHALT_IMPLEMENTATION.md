@@ -32,4 +32,8 @@
 
 - 최종 브라우저: 360/390/768 viewport에서 경로·스크롤/CTA 확인, 360 상세 조작부 겹침 수정 후 재확인, 걷기 초기화 오류 수정 후 지도·위치 대기 확인. 자세한 증거는 [design-qa](design-qa.md).
 
-- 첫 GitHub CI는 기존 replay 시험의 Linux 한글 폰트 누락으로 58개 통과·1개 실패했다. CI에 fonts-nanum 설치를 추가해 재검증한다. 앱의 웹폰트와 별개인 기존 영상 시험 환경 의존성이다.
+- 첫 GitHub CI는 기존 replay 시험의 Linux 한글 폰트 누락으로 58개 통과·1개 실패했다. CI에 fonts-nanum 설치를 추가했고 최신 head의 온라인 검사도 모두 통과했다. 앱의 웹폰트와 별개인 기존 영상 시험 환경 의존성이다.
+
+## 운영 반영 결과
+
+PR #4를 기본 브랜치에 병합했다(2fcd6ad). Vercel 운영 배포 dpl_5SDDbVDzxf9M7Uq9NVed4MfjYwnq READY 및 대표 주소 `https://jjukgo.vercel.app/` 연결을 확인했다. 운영 브라우저에서 새 선택 설문·건너뛰기·미측정 홈·실제 지도·예시 경로 계산 완료, 오류 로그 없음. 야외 GPS/횡단 신뢰도는 여전히 미검증이다.
