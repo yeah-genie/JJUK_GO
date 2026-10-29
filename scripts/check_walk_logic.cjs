@@ -17,6 +17,14 @@ const context = vm.createContext({
 const app = fs.readFileSync(path.join(__dirname, '../docs/prototype/src/app.js'), 'utf8').replace(/boot\(\);\s*$/, '');
 vm.runInContext(app, context);
 vm.runInContext(`
+  REAL = {signals:{'test':{bands:[{start:28800,end:32400,legs:{n:{day0:0,ref:0,c:120,win:[[0,30]]}}}]}},source_dates:[]};
+  assert.equal(known('test',28800,'n'),true);
+  assert.equal(known('test',32400,'n'),false);
+  assert.equal(known('test',28800,'s'),false);
+  assert.equal(known('test',28800,null),false);
+  assert.equal(sigWait('test',28800,'n'),0);
+  assert.equal(sigWait('test',28800,'s'),null);
+  REAL={signals:{},source_dates:[]};
   // Direction matters: descending is not climbing; missing/grade-separated is unknown.
   G.node.set(1, { x:100, y:100, h:10 }); G.node.set(2, { x:200, y:100, h:30 });
   assert.equal(edgeRise({cls:2},1,2),20);

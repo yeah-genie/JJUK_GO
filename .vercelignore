@@ -1,0 +1,5 @@
+official-history/
+datastore/
+.pytest_cache/
+.venv/
+tests/

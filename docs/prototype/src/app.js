@@ -49,27 +49,43 @@ function edgeRise(e, u, v) {
 
 // ---------- 신호 ----------
 // 수집 데이터로 찾은 실제 신호 패턴(scripts/export_signal_plans.py가 확신 기준을 넘은 곳만 채운다). 여기 없는 신호는 '모름'이다(예시 값을 쓰지 않는다).
-const REAL = /*REAL_SIGNALS*/{"day0": 1793113200.0, "date": "2026-10-28", "signals": {"2691": {"dir": "wt", "c": 140.01, "ref": 1793116819.232, "win": [[56.0, 89.0], [138.0, 140.0], [0.0, 31.0]], "day0": 1793113200.0, "impurity": 0.0006, "observed_min": 156.3, "from": "10/28 01:00", "to": "10/28 03:36", "legs": {"e": {"c": 140.01, "ref": 1793116819.232, "win": [[56.0, 84.0], [138.0, 140.0], [0.0, 26.0]], "code": "et"}, "w": {"c": 140.01, "ref": 1793116819.232, "win": [[56.0, 89.0], [138.0, 140.0], [0.0, 31.0]], "code": "wt"}}}, "1619": {"dir": "nw", "c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "day0": 1793113200.0, "impurity": 0.0008, "observed_min": 156.4, "from": "10/28 01:00", "to": "10/28 03:36", "legs": {"n": {"c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "code": "nw"}, "w": {"c": 140.015, "ref": 1793116819.086, "win": [[90.0, 133.0]], "code": "nw"}}}, "1537": {"dir": "nw", "c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "day0": 1793113200.0, "impurity": 0.0011, "observed_min": 36.6, "from": "10/28 03:00", "to": "10/28 03:36", "legs": {"n": {"c": 140.03, "ref": 1793124000.648, "win": [[10.0, 46.0], [102.0, 138.0]], "code": "ne"}, "e": {"c": 140.03, "ref": 1793124000.648, "win": [[10.0, 46.0], [102.0, 138.0]], "code": "ne"}, "w": {"c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "code": "nw"}, "s": {"c": 140.03, "ref": 1793124000.648, "win": [[51.0, 94.0]], "code": "se"}}}, "2910": {"dir": "st", "c": 130.045, "ref": 1793160022.657, "win": [[34.0, 66.0]], "day0": 1793113200.0, "impurity": 0.0006, "observed_min": 24.3, "from": "10/28 13:00", "to": "10/28 13:24", "legs": {"e": {"c": 130.035, "ref": 1793160022.657, "win": [[106.0, 130.0], [0.0, 6.0]], "code": "et"}, "s": {"c": 130.045, "ref": 1793160022.657, "win": [[34.0, 66.0]], "code": "st"}}}}}/*END_REAL*/;
-const known = id => !!REAL.signals[id];
-const MIN_GREEN = 8;  // 초록이 이보다 적게 남았으면 건너기 시작하지 않고 다음 초록을 기다리는 것으로 본다(서두르게 하지 않는다)
-// 도착 시각 t(자정 기준 초)의 신호 상태: 초록이면 {g: true, rem: 남은 초}, 빨강이면 {g: false, wait: 다음 초록까지 초}
-// dir: 건너는 다리(n/e/s/w). 그 다리의 보행신호 패턴이 있으면 쓰고, 없으면 교차로 기본 패턴을 쓴다.
+let REAL = /*REAL_SIGNALS*/{"signals":{},"date":null,"source_dates":[]}/*END_REAL*/;
+function signalPlan(id, t = BASE, dir) {
+  const bands = REAL.signals[id]?.bands || [];
+  const band = bands.find(b => t >= b.start && t < b.end);
+  if (!band || dir === null) return null;
+  return dir ? band.legs[dir] || null : Object.values(band.legs)[0] || null;
+}
+async function loadSignalPlans() {
+  const index = await getJSON("signal-plans.json");
+  const hours = [8, 9, 10]; // 기준 출발08:40과 이후 걷기 시간대만 받는다.
+  const shards = await Promise.all(hours.map(h => getJSON(`signal-hours/${String(h).padStart(2, "0")}.json`).catch(() => ({}))));
+  index.signals = {};
+  for (const shard of shards) for (const [id, bands] of Object.entries(shard)) {
+    (index.signals[id] ??= {bands:[]}).bands.push(...bands);
+  }
+  return index;
+}
+const known = (id, t = BASE, dir) => !!signalPlan(id, t, dir);
+const MIN_GREEN = 8;
 function sigState(id, t, dir) {
-  const base = REAL.signals[id], r = (dir && base.legs && base.legs[dir]) || base;
-  const ph = ((((base.day0 ?? REAL.day0) + t - r.ref) % r.c) + r.c) % r.c;
+  const r = signalPlan(id, t, dir);
+  if (!r) return { g: false, wait: UNKNOWN_SIG_COST, unknown: true };
+  const ph = (((r.day0 + t - r.ref) % r.c) + r.c) % r.c;
   let wait = Infinity;
   for (const [a, b] of r.win) {
-    for (const shift of [0, r.c]) { if (ph + shift >= a && ph + shift < b) return { g: true, rem: b - ph - shift }; }
+    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) return { g: true, rem: b - ph - shift };
     wait = Math.min(wait, ((a - ph) % r.c + r.c) % r.c);
   }
-  return { g: false, wait: wait === Infinity ? 0 : wait };
+  return { g: false, wait: wait === Infinity ? UNKNOWN_SIG_COST : wait };
 }
-// 건너기 전에 기다려야 하는 초. 초록이 곧 끝날 때(MIN_GREEN 미만)는 놓친 것으로 보고 다음 초록까지 센다.
 function sigWait(id, t, dir) {
   const s = sigState(id, t, dir);
+  if (s.unknown) return null;
   if (!s.g) return s.wait;
   if (s.rem >= MIN_GREEN) return 0;
-  return s.rem + sigState(id, t + s.rem + 0.5, dir).wait;
+  const next = sigState(id, t + s.rem + .5, dir);
+  return next.unknown ? null : s.rem + next.wait;
 }
 const DIR_KO = { n: "북쪽", e: "동쪽", s: "남쪽", w: "서쪽" };
 const sigName = (id, dir) => { const m = SIGMETA.get(id); return (m && m.name ? m.name + " " : "") + (dir ? DIR_KO[dir] + " " : "") + "횡단보도"; };
@@ -148,7 +164,9 @@ function search(src, dst, mode, dep) {
         const s = e.sig || (nv.s && nv.s !== nu.s ? nv.s : null), share = e.sig && e.half ? 0.5 : 1;
         const stop = mode !== "short" ? STOP_COST * share : 0;
         if (s) {
-          if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv), e.sig ? e.dir : null); tv += w; cv += w + (w > 2 ? stop : 0); }
+          const arrival = BASE + dep + (e.sig ? tu : tv), direction = e.sig ? e.dir : null;
+          const w = sigWait(s, arrival, direction);
+          if (w !== null) { tv += w; cv += w + (w > 2 ? stop : 0); }
           else { tv += UNKNOWN_SIG_COST * share; cv += UNKNOWN_SIG_COST * share + stop * 0.8; }
         }
       }
@@ -203,7 +221,7 @@ function simulate(route, dep) {
   for (const x of route.x) {
     const walk = (x.d - prev) / SPEED;
     segs.push({ type: "walk", s: walk }); t += walk; prev = x.d;
-    if (known(x.s)) {
+    if (known(x.s, t, x.dir ?? null) && sigWait(x.s, t, x.dir ?? null) !== null) {
       const w = Math.round(sigWait(x.s, t, x.dir)), st = sigState(x.s, t, x.dir);
       // 놓치면: 초록일 때 이번 초록을 보내고 다음 초록까지 기다리는 시간
       const miss = st.g ? Math.round(st.rem + sigState(x.s, t + st.rem + 0.5, x.dir).wait) : 0;
@@ -632,7 +650,7 @@ function renderGoCard() {
   if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 선택됨</span>` : `<button class="use" data-dep-use="${best.d}">이 시각 선택</button>`}<span class="note2">지금 출발하면 ${now.s.stops}번 멈춤</span></div>`;
   if (dl != null) h += `<div class="gc-head">${clock(dl)} 마감 · ${latest ? `${clock(BASE + latest.d)}까지 출발` : pick.arr > dl ? `약 ${phrase(pick.arr - dl).trim()} 늦음` : "도착 여유 30초 미만"}</div>`;
   el.innerHTML = h;
-  $("go-foot").textContent = `신호 ${now.s.knownN}곳 예측` + (now.s.unknownN ? ` · ${now.s.unknownN}곳 대기시간 미반영` : "") + " · 10/28 08:40 시연, 실시간 아님";
+  $("go-foot").textContent = `신호 ${now.s.knownN}곳 예측` + (now.s.unknownN ? ` · ${now.s.unknownN}곳 대기시간 미반영` : "") + ` · 공식 이력 기반 · 실시간 아님`;
   wrap.hidden = false;
   return { pick, when };
 }
@@ -744,7 +762,7 @@ async function renderResult() {
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
   $("cov-note").hidden = !anyUnknown || !$("go-wrap").hidden;  // 출발 카드가 있으면 그 각주로 대신
   $("cov-text").textContent = anyKnown ? "일부 신호는 패턴이 없어 개수만 셌어요" : "이 길은 신호 패턴이 없어 신호 개수만 비교했어요";
-  $("result-safety").textContent = `${REAL.date} 08:40 기준 신호 시연 · 실시간 아님. 시간은 미확인 신호 대기 제외. 계단은 OSM 검출 구간, 오르막은 약120m 지형망 추정(육교·지하 제외). 무장애 경로 보장 아님.`;
+  $("result-safety").textContent = `${REAL.source_dates.length}일 공식 이력 · 시간대별 검증 패턴 기준, 실시간 아님. 시간은 미확인 신호 대기 제외. 계단은 OSM 검출 구간, 오르막은 약120m 지형망 추정(육교·지하 제외). 무장애 경로 보장 아님.`;
   setRoutes(state.focus === "jjuk" || state.same ? state.routes.jjuk : state.routes.short, state.same ? null : (state.focus === "jjuk" ? state.routes.short : state.routes.jjuk));
   ready(() => { map.setPaintProperty("route-jjuk", "line-color", state.focus === "jjuk" ? "#F6C343" : "#9AA3B2"); });
   markTrip(S, state.focus);
@@ -888,11 +906,13 @@ function renderSignal() {
   $("sig-title").textContent = sigName(id);
   const x = state.sims && [...state.sims[state.focus].xings, ...state.sims.jjuk.xings, ...state.sims.short.xings].find(z => z.id === id);
   const arrive = x ? x.arrive : BASE + state.dep;
-  $("sig-known").hidden = !known(id); $("sig-req").hidden = known(id);
-  if (known(id)) {
-    const dir = x && x.dir, w = Math.round(sigWait(id, arrive, dir)), stop = w > 2;
+  const activePlan = signalPlan(id, arrive, x ? x.dir ?? null : undefined);
+  const canPredict = !!activePlan && sigWait(id, arrive, x ? x.dir ?? null : undefined) !== null;
+  $("sig-known").hidden = !canPredict; $("sig-req").hidden = canPredict;
+  if (canPredict) {
+    const dir = x ? x.dir ?? null : undefined, w = Math.round(sigWait(id, arrive, dir)), stop = w > 2;
     $("sig-hero").innerHTML = `<div class="lamp ${stop ? "stop" : "go"}">${stop ? w : "✓"}</div>
-      <div><b>${clock(arrive)} 도착하면 ${stop ? `약 ${w}초 기다려요` : "초록불, 그대로 건너요"}</b><span>${x ? "지금 보는 길 기준" : `${clock(BASE + state.dep)} 기준`}</span>${x && state.sims ? missLine(x, state.sims[state.focus]) : ""}</div>`;
+      <div><b>${clock(arrive)} 도착하면 ${stop ? `약 ${w}초 기다려요` : "이력 패턴상 대기 없음"}</b><span>${x ? "지금 보는 길 기준" : `${clock(BASE + state.dep)} 기준`}</span>${x && state.sims ? missLine(x, state.sims[state.focus]) : ""}</div>`;
     const t0 = arrive - 60, span = 360; let html = "", runStart = null;
     for (let i = 0; i <= span; i++) {
       const green = i < span && sigState(id, t0 + i, dir).g;
@@ -904,12 +924,12 @@ function renderSignal() {
     $("sig-tl-me").innerHTML = `<span style="left:calc(${60 / span * 100}% - 6px); transform:none; font-weight:700; color:var(--asphalt)">▼ 내 도착 ${clock(arrive)}</span>`;
     $("sig-tl-labels").innerHTML = `<span style="left:0">${clock(t0)}</span><span style="left:100%">${clock(t0 + span)}</span>`;
   } else {
-    $("sig-hero").innerHTML = `<div class="lamp unk">?</div><div><b>이 신호는 아직 패턴을 몰라요</b><span>서울 신호를 하나씩 모으는 중이에요(지금 ${realCount()}곳 확인). 이 신호는 지나는 개수로만 셌어요.</span></div>`;
+    $("sig-hero").innerHTML = `<div class="lamp unk">?</div><div><b>이 신호는 아직 패턴을 몰라요</b><span>이 방향·시간대의 검증된 패턴이 없어요. 공식 이력 기준 ${realCount()}곳의 일부 시간대 패턴을 보유하고 있어요.</span></div>`;
   }
-  const r = REAL.signals[id];
+  const r = activePlan;
   const facts = r
-    ? [["주기", `${r.c.toFixed(1)}초`], ["보행 초록", `${Math.round(r.win.reduce((a, w) => a + w[1] - w[0], 0))}초 (한 주기에 ${r.win.length}번)`], ["근거", `실측 ${r.from}–${r.to} (${r.observed_min}분 관측)`], ["방향", `${Object.keys(r.legs || {}).map(l => DIR_KO[l]).join("·") || "기본"} 횡단보도 (C-ITS 방향 대응은 가정)`], ["교차로", `${id} · ${r.dir} 방향 보행신호`]]
-    : [["종류", m.cits ? `C-ITS 신호 교차로 ${id}` : "OSM 신호 표시"], ["패턴", "아직 없음"], ["위치", `${m.ll[1].toFixed(5)}, ${m.ll[0].toFixed(5)}`]];
+    ? [["자료", `서울시 공식 이력 ${r.date} · 실시간 아님`], ["시간대", `${clock(r.start)}–${clock(r.end)}`], ["주기", `${r.c.toFixed(1)}초`], ["근거", `${r.from}–${r.to}, 실제 관측 ${r.observed_min}분`], ["검증", `같은 날 뒷부분 상태 일치율 ${Math.round(r.holdout_accuracy * 100)}% (오늘 정확도 아님)`], ["방향", `${r.code} · 지도 방향 대응 가정, 현장 미검증`], ["교차로", id]]
+    : [["종류", m.cits ? `C-ITS 신호 교차로 ${id}` : "OSM 신호 표시"], ["패턴", "이 방향·시간대는 미확인"], ["위치", `${m.ll[1].toFixed(5)}, ${m.ll[0].toFixed(5)}`]];
   $("sig-facts").innerHTML = facts.map(([k2, v]) => `<dt>${k2}</dt><dd>${esc(v)}</dd>`).join("");
 }
 
@@ -1104,7 +1124,7 @@ for (const id of ["deadline-hour", "deadline-minute"]) $(id).addEventListener("c
 async function boot() {
   show("splash");
   try {
-    [IDX, SIGS, GMETA, TERRAIN] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null)]);
+    [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans().catch(() => ({signals:{},date:null,source_dates:[]}))]);
   } catch (err) {
     $("splash-foot").textContent = "지도 데이터를 못 불러왔어요. 새로고침해 주세요.";
     console.error(err);
@@ -1116,7 +1136,7 @@ async function boot() {
   ["home", "result", "walk"].forEach(n => { sheets[n] = { pos: "mid", h: 0 }; initSheet(n); });
   setDeadline(store.get(DEADLINE_KEY, 9 * 3600 + 600));
   booted = true;
-  $("splash-foot").textContent = "서울 어디든 · 광화문은 신호 패턴까지";
+  $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   const target = pendingScreen || location.hash.slice(1);
   if (target && target !== "splash") go(target); else splashTimer = setTimeout(() => go("home"), 1400);
 }

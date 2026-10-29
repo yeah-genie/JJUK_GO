@@ -2410,5 +2410,7 @@
   "last_utc": "2026-10-27T09:41:06.674Z",
   "remaining_unit": "decisecond (verified by adjacent 1s messages decreasing by about 10)",
   "license": "Seoul T Data attribution BY",
-  "kind": "historical observations, not live signals"
+  "kind": "historical observations, not live signals",
+  "segment_sha256": "090a9d2f699fb0771ce58b2a858de561257e39ecb8b5243695e11057a4127780",
+  "archive_release_url": "https://github.com/yeah-genie/JJUK_GO/releases/download/signal-history-sample-20261027/20261027.csv.gz"
 }

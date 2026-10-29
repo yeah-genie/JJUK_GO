@@ -7,10 +7,13 @@ import argparse
 import csv
 import gzip
 import hashlib
+import http.client
 import io
 import json
 import re
+import time
 import urllib.request
+import urllib.error
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -55,17 +58,40 @@ def import_day(date, ident):
     RAW.mkdir(parents=True, exist_ok=True)
     meta_path = OUT / (date + '.json')
     target = OUT / (date + '.csv.gz')
-    if meta_path.exists() and target.exists():
-        return json.loads(meta_path.read_text(encoding='utf-8'))
+    if meta_path.exists():
+        prior = json.loads(meta_path.read_text(encoding='utf-8'))
+        if target.exists() or prior.get('archive_release_url'):
+            return prior
     archive = RAW / ('signalPhaseTimeFusion_' + date + '.zip')
     url = 'https://t-data.seoul.go.kr/dataprovide/download.do?id=' + ident
+    if archive.exists() and not zipfile.is_zipfile(archive):
+        if archive.resolve().parent != RAW.resolve():
+            raise ValueError('Invalid archive path escaped temporary directory')
+        archive.unlink()
     if not archive.exists():
         partial = archive.with_suffix('.part')
-        with urllib.request.urlopen(url, timeout=120) as response, partial.open('wb') as dest:
-            while chunk := response.read(4 * 1024 * 1024):
-                dest.write(chunk)
-        partial.replace(archive)
-    digest = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+        for attempt in range(3):
+            try:
+                request = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+                with urllib.request.urlopen(request, timeout=180) as response, partial.open('wb') as dest:
+                    expected = int(response.headers.get('Content-Length', 0))
+                    while chunk := response.read(4 * 1024 * 1024):
+                        dest.write(chunk)
+            except (urllib.error.URLError, http.client.HTTPException, TimeoutError, ConnectionError) as error:
+                print(json.dumps({'date': date, 'download_error': type(error).__name__, 'attempt': attempt + 1}), flush=True)
+                if attempt == 2:
+                    raise
+                time.sleep(20)
+                continue
+            if (not expected or partial.stat().st_size == expected) and zipfile.is_zipfile(partial):
+                partial.replace(archive)
+                break
+            print(json.dumps({'date': date, 'invalid_zip_attempt': attempt + 1, 'bytes': partial.stat().st_size}), flush=True)
+            if attempt == 2:
+                raise zipfile.BadZipFile('Official archive is incomplete; keep previous valid data')
+            time.sleep(20)
+    with archive.open('rb') as source:
+        digest = hashlib.file_digest(source, 'sha256').hexdigest()
     usecols = ['ITST_ID', 'TRSM_UTC_TIME'] + [d + '_PDSG_' + suffix for d in DIRS for suffix in ('STAT_NM', 'RMDR_CS')]
     rows = 0
     segments = []
@@ -123,7 +149,7 @@ def main():
             if archive.resolve().parent != RAW.resolve():
                 raise ValueError('Raw cleanup path escaped temporary directory')
             archive.unlink(missing_ok=True)
-    summaries = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(OUT.glob('????????.json'))]
+    summaries = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(OUT.glob('????????.json')) if p.stem.isdigit()]
     (OUT / 'manifest.json').write_text(json.dumps({'source': PAGE, 'available_dates': sorted(available), 'days': summaries}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
