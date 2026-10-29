@@ -20,6 +20,8 @@ P = json.load(open(args[0]))["pairs"]
 DELTAS = [30, 60, 120, 180]
 IMP = [("sig", "신호 횡단", 1), ("stairs", "계단", 1), ("rise", "상승", 10), (SK, "급경사", 100)]
 WORSE = {"sig": 0, "stairs": 0, "big": 0, "cross": 1, "rise": 5, SK: 50}
+if "--no-terrain" in args:  # 지형 자료를 믿을 수 없을 때: 신호·계단만 보고, 지형 악화 조건도 뺀다
+    IMP = IMP[:2]; WORSE = {"sig": 0, "stairs": 0, "big": 0, "cross": 1}
 
 
 def fine(a, s):
@@ -69,6 +71,8 @@ for d in DELTAS:
         print(f"   {t}: {c} ({100 * c / tot:.0f}%)")
     print("   줄인 양 중앙값: " + ", ".join(f"{name} {st.median(v):.0f}" for name, v in amt.items() if v))
 print()
+if "--no-terrain" in args:
+    sys.exit()
 print("예시 카드(+1분, 처음 5개)")
 shown = 0
 for p in P:
