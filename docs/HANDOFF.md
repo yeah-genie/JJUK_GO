@@ -1,5 +1,7 @@
 # 쭉고 인수인계
 
+> **최신(2026-10-29 밤, Claude):** 작업 기준은 Claude 브랜치 `ccr-94bac9df-i81579` 하나다(사용자: "코덱스 무시"). **MVP 계획은 [MVP_PLAN](MVP_PLAN.md)** — 그늘로(ttubeok.com) 벤치마킹, MVP-0(숫자 닫힘)·MVP-1(횡단별 증거가 갖춰진 곳에서만 숫자 개방), 쟁점별 중재안, 사용자 결정 7개. 입장 원문은 `reports/team-2026-10-29/12~13_*.md`. 사용자 결정 전에는 gate를 열거나 화면 순서를 바꾸는 작업을 시작하지 않는다. 결과 후보 이름은 사용자 결정으로 `여유 있는 길` / `빠른 길`. 아래 본문은 Codex 시기 기록이 섞여 있으니 최신 코드는 `docs/prototype/src`와 시험(`scripts/check_*.cjs`)을 기준으로 읽는다.
+
 최종 갱신: 2026-10-29. 현재 작업: `codex/asphalt-onboarding`, Claude 기본 브랜치 `ccr-94bac9df-i81579`의 0c4f772에서 시작했다. 사용자 승인: 최신 네 화면 느낌으로 Vercel 수정·자동 걸음 기본·보조기 설문·불필요 문서 정리. 이전 ‘Codex 코드 참고만’ 상태 이후 사용자가 이 구현을 명시적으로 요청했다.
 
 먼저 [문서 안내](DOCUMENTATION_INDEX.md), [제품 정의](PRODUCT_DEFINITION.md), [화면/상태 명세](PRODUCT_SPEC.md), [디자인 시스템](DESIGN_SYSTEM.md), [구현·검증](../reports/ASPHALT_IMPLEMENTATION.md)을 읽는다. 실제 완료와 설계 목표를 구분한다.
@@ -38,7 +40,7 @@
 3. 계단·엘리베이터·보도 접근성 공공데이터를 그래프에 연결할 때 실제 출입구·단절·운영 상태와 갱신일을 검증한다. 자료가 있다는 이유로 무장애 통행으로 표시하지 않는다.
 4. UI를 새로 발명하지 말고 승인 시안과 현재 DESIGN_SYSTEM/PRODUCT_SPEC을 이어간다. 큰 카운트다운·시간 막대·운동 기록·기본 수동 속도 칩을 되살리지 않는다.
 
-## 2026-10-29 화면 차이 수정(Amelia, 로컬 커밋·미push)
+## 2026-10-29 화면 차이 수정(Amelia, 79baa73에 병합·push 완료)
 
 홈 지도 빈 위쪽(컨테이너를 시트 위까지만), 결과 구조(두 행·계산 기준·정보 없는 횡단 N곳·조건 조정/걷기 시작), 설문 장식, 초기화 확인을 시안·명세에 맞췄다. 브라우저 시험 `node scripts/check_screens.cjs`(Playwright 필요, CI 제외). 상세·한계: [reports/team-2026-10-29/10_Dev_Amelia_asphalt_screens.md](../reports/team-2026-10-29/10_Dev_Amelia_asphalt_screens.md).
 4. UI를 새로 발명하지 말고 승인 시안과 현재 DESIGN_SYSTEM/PRODUCT_SPEC을 이어간다. 큰 카운트다운·시간 막대·활동 목록·기본 수동 속도 칩을 되살리지 않는다. 시작 로고·인증 카드는 최신 사용자 요청이므로 유지한다.
