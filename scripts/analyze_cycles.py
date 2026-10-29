@@ -19,16 +19,18 @@ from jjukgo.segments import to_segments  # noqa: E402
 from jjukgo.signal.cycle import evaluate, fit_cycle, samples_from_segments  # noqa: E402
 
 
-def load(data_dir: Path) -> dict:
+def load(data_dir: Path, movement: str = "Pd") -> dict:
+    """기본은 보행(Pd)만. 직진(St) 등 다른 신호종류가 섞이면 보행 패턴이 오염된다."""
     groups = defaultdict(list)
     for path in sorted(data_dir.glob("segments/**/*.csv.gz")):
         with gzip.open(path, "rt", encoding="utf-8") as f:
             for s in csv.DictReader(f):
-                groups[(s["itst_id"], s["direction"])].append(s)
+                if s.get("movement", "Pd") == movement:
+                    groups[(s["itst_id"], s["direction"])].append(s)
     raw = []
     for path in sorted(data_dir.glob("signals/**/*.csv.gz")):
         with gzip.open(path, "rt", encoding="utf-8") as f:
-            raw += list(csv.DictReader(f))
+            raw += [r for r in csv.DictReader(f) if r.get("movement", "Pd") == movement]
     for s in to_segments(raw):
         groups[(s["itst_id"], s["direction"])].append(s)
     return groups

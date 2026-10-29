@@ -30,6 +30,9 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SEOUL_TDATA_API_KEY: ${{ secrets.SEOUL_TDATA_API_KEY }}
       CMD: ${{ github.event.inputs.command || 'loop' }}
+      # 방향 검증 기간 동안 직진(St)도 모으고 핵심 교차로 10곳만 깊게 본다. 끝나면 이 두 줄을 지운다.
+      JJUK_MOVEMENTS: Pd,St
+      JJUK_CRAWL_EVERY: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

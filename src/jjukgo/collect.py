@@ -148,6 +148,11 @@ def discover(client, api_cfg: dict, data_dir: Path, now: datetime) -> dict:
 def collect_once(cfg: dict, data_dir: Path, client, budget: Budget, now: datetime) -> dict:
     data_dir = Path(data_dir)
     api_cfg, budget_cfg, store_cfg = cfg["api"], cfg["budget"], cfg["store"]
+    # 환경변수로 설정을 잠시 덮어쓴다(방향 검증용). 예: JJUK_MOVEMENTS=Pd,St  JJUK_CRAWL_EVERY=0
+    if os.environ.get("JJUK_MOVEMENTS"):
+        store_cfg = {**store_cfg, "movements": [m.strip() for m in os.environ["JJUK_MOVEMENTS"].split(",") if m.strip()]}
+    if os.environ.get("JJUK_CRAWL_EVERY") not in (None, ""):
+        cfg["targets"] = {**cfg["targets"], "crawl_every": int(os.environ["JJUK_CRAWL_EVERY"])}
     targets = load_targets(cfg["targets"], ROOT) or load_discovered(data_dir)
     summary: dict = {"date": budget.date, "targets": len(targets)}
     records: list[dict] = []
