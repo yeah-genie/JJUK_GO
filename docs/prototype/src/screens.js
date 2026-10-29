@@ -60,7 +60,7 @@ function renderHome(){
   setText('home-pace',paceRowText(paceState()));setText('home-origin',state.from?tripLabel(state.from):'출발지를 정해 주세요');
   const recent=store.get('recent',[]).slice(0,2);$('home-chips').chips=recent;
   $('home-chips').innerHTML=recent.map((p,i)=>`<button class="recent-row" data-chip="${i}">${esc(p.name)}<span>›</span></button>`).join('')+'<button class="text-action" data-trip="demo">먼저 예시 길 둘러보기 ›</button>';
-  setSheet('home','mid');ready(()=>{if(!state.homeView){map.jumpTo({center:state.from?.ll||DEMO_FROM.ll,zoom:15.5});state.homeView=true;}});
+  setSheet('home','mid');ready(()=>{if(!state.homeView){map.jumpTo({center:state.from?.ll||DEMO_FROM.ll,zoom:13.7});state.homeView=true;}});
 }
 // 횡단 여유 숫자는 방향·길이·점멸 의미·날짜 근거가 함께 검증되기 전(PRODUCT_SPEC §6 gate)에는 만들지 않는다.
 // 숫자 자리에는 숫자가 없는 이유가 되는 상태만 쓴다. 검증 증거가 생기면 이 함수 앞에 근거 확인을 추가한다.
@@ -116,7 +116,8 @@ document.addEventListener('click',e=>{
   if(t.closest('#reset-confirm-no')){$('reset-confirm').hidden=true;$('reset-learning').focus();}
   if(t.closest('#reset-confirm-yes')){resetLearning();applyPace();state.routes=null;state.tripKey=null;renderSettings();setText('settings-message','맞춰 온 걸음 속도 요약을 지웠어요.');}
   if(t.closest('#calc-basis')){setBasisOpen($('result-options').hidden);fitResultSheet();}
-  if(t.closest('#layer-toggle')){const b=$('layer-toggle'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);setText('layer-toggle',`횡단 정보 표시 ${on?'켜짐':'꺼짐'}`);ready(()=>map.setLayoutProperty('sig-all','visibility',on?'visible':'none'));}
+  if(t.closest('#layer-toggle')){const b=$('layer-toggle'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);setText('layer-toggle',`횡단 시간 표시 ${on?'켜짐':'꺼짐'}`);XW.show(on);ready(()=>map.setLayoutProperty('sig-all','visibility',on?'visible':'none'));}
+  if(t.closest('#xw-mine')){XW.setSpeed(SPEED);}
 });
 $('auto-mode').addEventListener('change',()=>{if($('auto-mode').checked)$('manual-mode').checked=false;});
 $('manual-mode').addEventListener('change',()=>{if($('manual-mode').checked)$('auto-mode').checked=false;});

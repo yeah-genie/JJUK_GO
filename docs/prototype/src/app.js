@@ -326,6 +326,42 @@ function corridor() {
   const y0 = Math.min(...pts.map(p => p[1])) - my, y1 = Math.max(...pts.map(p => p[1])) + my;
   return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] } };
 }
+// 횡단 시간 지도 (내 걸음 지도)
+const XW = {
+  lens: [], v: 1.0, on: true, cuts: [20, 35], colors: ["#8FA3B3", "#F6C343", "#FF6B4A"],
+  colorExpr() { const v = this.v; return ["step", ["/", ["get", "len"], v], this.colors[0], this.cuts[0], this.colors[1], this.cuts[1], this.colors[2]]; },
+  async load() {
+    const d = await getJSON("crosswalks.json"), K = d.q, f = [], p = [];
+    this.lens = [];
+    for (const [x, y, dx, dy, l] of d.rows) {
+      const a = [d.lon0 + x / K, d.lat0 + y / K], b = [d.lon0 + (x + dx) / K, d.lat0 + (y + dy) / K], len = l / 10;
+      this.lens.push(len);
+      f.push({ type: "Feature", properties: { len }, geometry: { type: "LineString", coordinates: [a, b] } });
+      p.push({ type: "Feature", properties: { len }, geometry: { type: "Point", coordinates: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] } });
+    }
+    this.fc = [f, p]; this.apply(); this.paint();
+  },
+  apply() {
+    if (!this.fc || !map || !mapReady) return;
+    map.getSource("xwl").setData({ type: "FeatureCollection", features: this.fc[0] }); map.getSource("xwp").setData({ type: "FeatureCollection", features: this.fc[1] });
+    this.paint(); this.sync();
+  },
+  share(sec) { const n = this.lens.length; return n ? this.lens.filter(l => l / this.v >= sec).length / n : 0; },
+  paint() {
+    if (map && mapReady) for (const id of ["xw-dot", "xw-line"]) map.setPaintProperty(id, id === "xw-dot" ? "circle-color" : "line-color", this.colorExpr());
+    const kmh = this.v * 3.6, out = $("xw-value"), sl = $("xw-speed");
+    if (!out) return;
+    out.textContent = `시속 ${kmh.toFixed(1)}km`;
+    if (sl && Number(sl.value) !== Math.round(kmh * 10) / 10) sl.value = kmh.toFixed(1);
+    const n = this.lens.length;
+    $("xw-stat").textContent = n ? `35초 넘는 횡단 ${Math.round(this.share(35) * 100)}%` : "횡단 길이 불러오는 중…";
+    $("xw-sub").textContent = n ? `서울 횡단 ${n.toLocaleString("ko-KR")}곳 · 길이÷속도` : "";
+  },
+  setSpeed(mps) { this.v = Math.min(1.7, Math.max(0.35, mps)); this.paint(); },
+  // 횡단 시간 칠하기는 홈 지도에서만 보이고, 켜짐 토글이 꺼져 있으면 숨긴다.
+  sync() { if (!map) return; const vis = current === "home" && this.userOn !== false; this.on = vis; $("xw-panel").hidden = !vis; ready(() => { for (const id of ["xw-dot", "xw-line"]) map.setLayoutProperty(id, "visibility", vis ? "visible" : "none"); }); },
+  show(on) { this.userOn = on; this.sync(); },
+};
 function mapStyle() {
   const W = pairs => ["interpolate", ["exponential", 1.5], ["zoom"], ...pairs.flat()];
   const kinds = arr => ["in", ["get", "kind"], ["literal", arr]];
@@ -344,6 +380,7 @@ function mapStyle() {
       osm: { type: "vector", tiles: ["jj://tiles/{z}/{x}/{y}"], minzoom: 0, maxzoom: 14, bounds: [126.58, 37.35, 127.31, 37.72] },
       cov: { type: "geojson", data: corridor() },
       rs: { type: "geojson", data: EMPTY }, rj: { type: "geojson", data: EMPTY },
+      xwl: { type: "geojson", data: EMPTY }, xwp: { type: "geojson", data: EMPTY },
       sigall: { type: "geojson", data: { type: "FeatureCollection", features: SIGS.map(([id, x, y, , cits]) => ({ type: "Feature", properties: { id, c: cits, k: known(id) ? 1 : 0 }, geometry: { type: "Point", coordinates: fromQ(x, y) } })) } },
     },
     layers: [
@@ -373,6 +410,9 @@ function mapStyle() {
       { id: "route-jjuk", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#F6C343", "line-width": W([[12, 4.5], [18, 9]]) } },
       { id: "route-jjuk-under", type: "line", source: "rj", filter: ["has", "u"], paint: { "line-color": "#2A3140", "line-width": W([[12, 1.5], [18, 3]]), "line-dasharray": [1, 1.5] } },
       // 신호 교차로: 가까이서만 표시. 노란 테두리 = 패턴 수집 중
+      // 횡단 시간 지도: 길이 ÷ 걷는 속도로 칠한다(신호와 무관). 색 기준은 XW.colorExpr()이 속도에 따라 바꾼다.
+      { id: "xw-dot", type: "circle", source: "xwp", maxzoom: 15.5, paint: { "circle-color": XW.colorExpr(), "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 1.1, 13, 2.4, 15, 4], "circle-opacity": .92 } },
+      { id: "xw-line", type: "line", source: "xwl", minzoom: 14.5, layout: { "line-cap": "round" }, paint: { "line-color": XW.colorExpr(), "line-width": ["interpolate", ["linear"], ["zoom"], 14.5, 2.2, 17, 6, 19, 11], "line-opacity": .96 } },
       { id: "sig-all", type: "circle", source: "sigall", minzoom: 15, paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, ["case", ["==", ["get", "k"], 1], 5, 3], 18, ["case", ["==", ["get", "k"], 1], 9, 6]],
         "circle-color": ["case", ["==", ["get", "k"], 1], "#2A3140", ["==", ["get", "c"], 1], "#59617A", "#959CAB"],
@@ -397,10 +437,10 @@ const mapEl = Object.assign(document.createElement("div"), { id: "mapbox" });
 function el(cls, html) { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; return d; }
 function ensureMap() {
   if (map) return map;
-  map = new maplibregl.Map({ container: mapEl, style: mapStyle(), center: ME.ll, zoom: 16, attributionControl: false,
+  map = new maplibregl.Map({ container: mapEl, style: mapStyle(), center: ME.ll, zoom: 14.9, attributionControl: false,
     localIdeographFontFamily: "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif",
     pitchWithRotate: false, maxBounds: [[126.62, 37.38], [127.27, 37.70]], minZoom: 10, maxZoom: 19 });
-  map.once("load", () => { mapReady = true; });
+  map.once("load", () => { mapReady = true; XW.apply(); });
   map.touchZoomRotate.disableRotation();
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
@@ -459,6 +499,12 @@ document.addEventListener("click", e => {
 // 지도 누르기: 홈에서는 그 위치를 도착지 후보로, 신호 점을 누르면 신호 상세로
 function onMapClick(ev) {
   const box = [[ev.point.x - 8, ev.point.y - 8], [ev.point.x + 8, ev.point.y + 8]];
+  const xw = XW.on && map.queryRenderedFeatures(box, { layers: ["xw-line", "xw-dot"] })[0];
+  if (xw && !map.queryRenderedFeatures(box, { layers: ["sig-all"] })[0]) {
+    const len = xw.properties.len, sec = Math.round(len / XW.v);
+    new maplibregl.Popup({ closeButton: false, offset: 10, className: "xw-pop" }).setLngLat(ev.lngLat).setHTML(`<b>${sec}초</b><span>길이 약 ${Math.round(len)}m · 시속 ${(XW.v * 3.6).toFixed(1)}km</span>`).addTo(map);
+    return;
+  }
   const sig = map.queryRenderedFeatures(box, { layers: ["sig-all"] })[0];
   if (sig) { state.sig = String(sig.properties.id); go("signal"); return; }
   if (current !== "home") return;
@@ -998,6 +1044,7 @@ function show(name) {
   if (booted && !readProfile().onboarded && !["splash","onboarding"].includes(name)) { onboardingTarget=name; name="onboarding"; }
   current = name;
   SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
+  if (map) XW.sync();
   $("badge").hidden = true;  // 예시 표시는 숫자 옆(카드·신호 상세·공유 카드)에만 둔다
   $("mapctl").hidden = !MAP_SCREENS.includes(name); $("map-attrib").hidden = !MAP_SCREENS.includes(name);
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
@@ -1059,6 +1106,7 @@ document.addEventListener("click", e => {
   go(b.dataset.go);
 });
 $("sq").addEventListener("input", () => renderSearchList());
+$("xw-speed").addEventListener("input", e => XW.setSpeed(Number(e.target.value) / 3.6));
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });
 addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
@@ -1079,6 +1127,8 @@ async function boot() {
   ["home", "result", "walk"].forEach(n => { sheets[n] = { pos: "mid", h: 0 }; initSheet(n); });
   state.deadline = null; state.budget = readProfile().budgetSeconds;
   applyPace();
+  XW.v = Math.min(1.7, Math.max(0.35, SPEED)); XW.paint();
+  XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
   booted = true;
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   const target = pendingScreen || location.hash.slice(1);

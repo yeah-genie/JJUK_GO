@@ -29,8 +29,10 @@
  <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
  <button class="searchbox" data-search="to"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>어디로 걸어갈까요?</span></button>
  <div class="home-origin"><span id="home-origin">출발지를 정해 주세요</span><button data-search="from">변경</button></div></div>
- <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 정보 표시 켜짐</button>
- <div class="map-legend" aria-label="횡단 정보 범례"><span class="lg"><i class="lg-hist"></i>이력 있음</span><span class="lg"><i class="lg-unk"></i>미확인</span></div>
+ <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 시간 표시 켜짐</button>
+ <div class="xw-panel" id="xw-panel" aria-label="횡단 시간 지도"><div class="xw-top"><span class="xw-name">걷는 속도</span><output class="xw-value" id="xw-value" for="xw-speed">시속 3.6km</output><button class="xw-mine" id="xw-mine" type="button">내 걸음</button></div>
+ <input id="xw-speed" type="range" min="1.4" max="6" step="0.1" value="3.6" aria-label="걷는 속도 시속 킬로미터">
+ <div class="xw-bot"><strong id="xw-stat"></strong><span class="xw-leg"><i style="background:#8FA3B3"></i>~20초<i style="background:#F6C343"></i>~35초<i style="background:#FF6B4A"></i>35초~</span></div><small id="xw-sub"></small></div>
  <div class="sheet" id="sheet-home"><div class="grip-area"><div class="grip"></div></div><div class="sheet-body">
  <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" id="home-pace-row" data-go="settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="home-pace">내 걸음 · 아직 측정 전</span><span class="go">설정 ›</span></button>
  <div class="recent-heading">최근 찾은 곳</div><div id="home-chips"></div></div>

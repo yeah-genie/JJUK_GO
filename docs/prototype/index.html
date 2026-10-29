@@ -58,6 +58,17 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 .route .margin{border-left:1px solid var(--line);justify-content:flex-end;text-align:right;font-size:14px;line-height:1.3;color:var(--muted)}
 .route[aria-pressed=true]{box-shadow:none}
 .route[aria-pressed=true]::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:4px;border-radius:2px;background:var(--lane)}
+
+/* 횡단 시간 지도(내 걸음 지도) */
+.xw-panel{position:absolute;left:10px;right:10px;bottom:calc(var(--sheet-h) + 10px);z-index:9;background:#242A32f2;border:1px solid var(--line);border-radius:14px;padding:10px 14px 8px;color:var(--zebra);display:flex;flex-direction:column;gap:6px}
+.xw-panel[hidden]{display:none}.xw-top{display:flex;align-items:center;gap:10px}.xw-name{font-size:13px;color:var(--muted)}.xw-value{font-size:15px;font-weight:700;margin-right:auto}
+.xw-mine{border:1px solid var(--line);background:none;color:var(--lane);border-radius:16px;min-height:32px;padding:0 12px;font-size:13px}
+.xw-panel input[type=range]{width:100%;height:28px;accent-color:#F6C343;margin:0}
+.xw-bot{display:flex;align-items:center;justify-content:space-between;gap:8px}.xw-bot strong{font-size:18px;font-weight:800;color:var(--lane)}
+.xw-leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#D3D7DC}.xw-leg i{width:10px;height:10px;border-radius:50%;display:inline-block}.xw-leg i:not(:first-child){margin-left:6px}
+.xw-panel small{font-size:11px;color:var(--muted)}
+.xw-pop .maplibregl-popup-content{background:#242A32;color:var(--zebra);border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;font-size:12px}.xw-pop b{font-size:20px;color:var(--lane)}.xw-pop .maplibregl-popup-tip{display:none}
+@media(max-height:690px){.xw-panel{padding:6px 12px 6px;gap:3px}.xw-panel small{display:none}}
 </style>
 
 <div class="phone" id="phone">
@@ -78,8 +89,10 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
  <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
  <button class="searchbox" data-search="to"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>어디로 걸어갈까요?</span></button>
  <div class="home-origin"><span id="home-origin">출발지를 정해 주세요</span><button data-search="from">변경</button></div></div>
- <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 정보 표시 켜짐</button>
- <div class="map-legend" aria-label="횡단 정보 범례"><span class="lg"><i class="lg-hist"></i>이력 있음</span><span class="lg"><i class="lg-unk"></i>미확인</span></div>
+ <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 시간 표시 켜짐</button>
+ <div class="xw-panel" id="xw-panel" aria-label="횡단 시간 지도"><div class="xw-top"><span class="xw-name">걷는 속도</span><output class="xw-value" id="xw-value" for="xw-speed">시속 3.6km</output><button class="xw-mine" id="xw-mine" type="button">내 걸음</button></div>
+ <input id="xw-speed" type="range" min="1.4" max="6" step="0.1" value="3.6" aria-label="걷는 속도 시속 킬로미터">
+ <div class="xw-bot"><strong id="xw-stat"></strong><span class="xw-leg"><i style="background:#8FA3B3"></i>~20초<i style="background:#F6C343"></i>~35초<i style="background:#FF6B4A"></i>35초~</span></div><small id="xw-sub"></small></div>
  <div class="sheet" id="sheet-home"><div class="grip-area"><div class="grip"></div></div><div class="sheet-body">
  <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" id="home-pace-row" data-go="settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="home-pace">내 걸음 · 아직 측정 전</span><span class="go">설정 ›</span></button>
  <div class="recent-heading">최근 찾은 곳</div><div id="home-chips"></div></div>
@@ -668,6 +681,42 @@ function corridor() {
   const y0 = Math.min(...pts.map(p => p[1])) - my, y1 = Math.max(...pts.map(p => p[1])) + my;
   return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] } };
 }
+// 횡단 시간 지도 (내 걸음 지도)
+const XW = {
+  lens: [], v: 1.0, on: true, cuts: [20, 35], colors: ["#8FA3B3", "#F6C343", "#FF6B4A"],
+  colorExpr() { const v = this.v; return ["step", ["/", ["get", "len"], v], this.colors[0], this.cuts[0], this.colors[1], this.cuts[1], this.colors[2]]; },
+  async load() {
+    const d = await getJSON("crosswalks.json"), K = d.q, f = [], p = [];
+    this.lens = [];
+    for (const [x, y, dx, dy, l] of d.rows) {
+      const a = [d.lon0 + x / K, d.lat0 + y / K], b = [d.lon0 + (x + dx) / K, d.lat0 + (y + dy) / K], len = l / 10;
+      this.lens.push(len);
+      f.push({ type: "Feature", properties: { len }, geometry: { type: "LineString", coordinates: [a, b] } });
+      p.push({ type: "Feature", properties: { len }, geometry: { type: "Point", coordinates: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] } });
+    }
+    this.fc = [f, p]; this.apply(); this.paint();
+  },
+  apply() {
+    if (!this.fc || !map || !mapReady) return;
+    map.getSource("xwl").setData({ type: "FeatureCollection", features: this.fc[0] }); map.getSource("xwp").setData({ type: "FeatureCollection", features: this.fc[1] });
+    this.paint(); this.sync();
+  },
+  share(sec) { const n = this.lens.length; return n ? this.lens.filter(l => l / this.v >= sec).length / n : 0; },
+  paint() {
+    if (map && mapReady) for (const id of ["xw-dot", "xw-line"]) map.setPaintProperty(id, id === "xw-dot" ? "circle-color" : "line-color", this.colorExpr());
+    const kmh = this.v * 3.6, out = $("xw-value"), sl = $("xw-speed");
+    if (!out) return;
+    out.textContent = `시속 ${kmh.toFixed(1)}km`;
+    if (sl && Number(sl.value) !== Math.round(kmh * 10) / 10) sl.value = kmh.toFixed(1);
+    const n = this.lens.length;
+    $("xw-stat").textContent = n ? `35초 넘는 횡단 ${Math.round(this.share(35) * 100)}%` : "횡단 길이 불러오는 중…";
+    $("xw-sub").textContent = n ? `서울 횡단 ${n.toLocaleString("ko-KR")}곳 · 길이÷속도` : "";
+  },
+  setSpeed(mps) { this.v = Math.min(1.7, Math.max(0.35, mps)); this.paint(); },
+  // 횡단 시간 칠하기는 홈 지도에서만 보이고, 켜짐 토글이 꺼져 있으면 숨긴다.
+  sync() { if (!map) return; const vis = current === "home" && this.userOn !== false; this.on = vis; $("xw-panel").hidden = !vis; ready(() => { for (const id of ["xw-dot", "xw-line"]) map.setLayoutProperty(id, "visibility", vis ? "visible" : "none"); }); },
+  show(on) { this.userOn = on; this.sync(); },
+};
 function mapStyle() {
   const W = pairs => ["interpolate", ["exponential", 1.5], ["zoom"], ...pairs.flat()];
   const kinds = arr => ["in", ["get", "kind"], ["literal", arr]];
@@ -686,6 +735,7 @@ function mapStyle() {
       osm: { type: "vector", tiles: ["jj://tiles/{z}/{x}/{y}"], minzoom: 0, maxzoom: 14, bounds: [126.58, 37.35, 127.31, 37.72] },
       cov: { type: "geojson", data: corridor() },
       rs: { type: "geojson", data: EMPTY }, rj: { type: "geojson", data: EMPTY },
+      xwl: { type: "geojson", data: EMPTY }, xwp: { type: "geojson", data: EMPTY },
       sigall: { type: "geojson", data: { type: "FeatureCollection", features: SIGS.map(([id, x, y, , cits]) => ({ type: "Feature", properties: { id, c: cits, k: known(id) ? 1 : 0 }, geometry: { type: "Point", coordinates: fromQ(x, y) } })) } },
     },
     layers: [
@@ -715,6 +765,9 @@ function mapStyle() {
       { id: "route-jjuk", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#F6C343", "line-width": W([[12, 4.5], [18, 9]]) } },
       { id: "route-jjuk-under", type: "line", source: "rj", filter: ["has", "u"], paint: { "line-color": "#2A3140", "line-width": W([[12, 1.5], [18, 3]]), "line-dasharray": [1, 1.5] } },
       // 신호 교차로: 가까이서만 표시. 노란 테두리 = 패턴 수집 중
+      // 횡단 시간 지도: 길이 ÷ 걷는 속도로 칠한다(신호와 무관). 색 기준은 XW.colorExpr()이 속도에 따라 바꾼다.
+      { id: "xw-dot", type: "circle", source: "xwp", maxzoom: 15.5, paint: { "circle-color": XW.colorExpr(), "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 1.1, 13, 2.4, 15, 4], "circle-opacity": .92 } },
+      { id: "xw-line", type: "line", source: "xwl", minzoom: 14.5, layout: { "line-cap": "round" }, paint: { "line-color": XW.colorExpr(), "line-width": ["interpolate", ["linear"], ["zoom"], 14.5, 2.2, 17, 6, 19, 11], "line-opacity": .96 } },
       { id: "sig-all", type: "circle", source: "sigall", minzoom: 15, paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, ["case", ["==", ["get", "k"], 1], 5, 3], 18, ["case", ["==", ["get", "k"], 1], 9, 6]],
         "circle-color": ["case", ["==", ["get", "k"], 1], "#2A3140", ["==", ["get", "c"], 1], "#59617A", "#959CAB"],
@@ -739,10 +792,10 @@ const mapEl = Object.assign(document.createElement("div"), { id: "mapbox" });
 function el(cls, html) { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; return d; }
 function ensureMap() {
   if (map) return map;
-  map = new maplibregl.Map({ container: mapEl, style: mapStyle(), center: ME.ll, zoom: 16, attributionControl: false,
+  map = new maplibregl.Map({ container: mapEl, style: mapStyle(), center: ME.ll, zoom: 14.9, attributionControl: false,
     localIdeographFontFamily: "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif",
     pitchWithRotate: false, maxBounds: [[126.62, 37.38], [127.27, 37.70]], minZoom: 10, maxZoom: 19 });
-  map.once("load", () => { mapReady = true; });
+  map.once("load", () => { mapReady = true; XW.apply(); });
   map.touchZoomRotate.disableRotation();
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
@@ -801,6 +854,12 @@ document.addEventListener("click", e => {
 // 지도 누르기: 홈에서는 그 위치를 도착지 후보로, 신호 점을 누르면 신호 상세로
 function onMapClick(ev) {
   const box = [[ev.point.x - 8, ev.point.y - 8], [ev.point.x + 8, ev.point.y + 8]];
+  const xw = XW.on && map.queryRenderedFeatures(box, { layers: ["xw-line", "xw-dot"] })[0];
+  if (xw && !map.queryRenderedFeatures(box, { layers: ["sig-all"] })[0]) {
+    const len = xw.properties.len, sec = Math.round(len / XW.v);
+    new maplibregl.Popup({ closeButton: false, offset: 10, className: "xw-pop" }).setLngLat(ev.lngLat).setHTML(`<b>${sec}초</b><span>길이 약 ${Math.round(len)}m · 시속 ${(XW.v * 3.6).toFixed(1)}km</span>`).addTo(map);
+    return;
+  }
   const sig = map.queryRenderedFeatures(box, { layers: ["sig-all"] })[0];
   if (sig) { state.sig = String(sig.properties.id); go("signal"); return; }
   if (current !== "home") return;
@@ -1340,6 +1399,7 @@ function show(name) {
   if (booted && !readProfile().onboarded && !["splash","onboarding"].includes(name)) { onboardingTarget=name; name="onboarding"; }
   current = name;
   SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
+  if (map) XW.sync();
   $("badge").hidden = true;  // 예시 표시는 숫자 옆(카드·신호 상세·공유 카드)에만 둔다
   $("mapctl").hidden = !MAP_SCREENS.includes(name); $("map-attrib").hidden = !MAP_SCREENS.includes(name);
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
@@ -1401,6 +1461,7 @@ document.addEventListener("click", e => {
   go(b.dataset.go);
 });
 $("sq").addEventListener("input", () => renderSearchList());
+$("xw-speed").addEventListener("input", e => XW.setSpeed(Number(e.target.value) / 3.6));
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });
 addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
@@ -1421,6 +1482,8 @@ async function boot() {
   ["home", "result", "walk"].forEach(n => { sheets[n] = { pos: "mid", h: 0 }; initSheet(n); });
   state.deadline = null; state.budget = readProfile().budgetSeconds;
   applyPace();
+  XW.v = Math.min(1.7, Math.max(0.35, SPEED)); XW.paint();
+  XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
   booted = true;
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   const target = pendingScreen || location.hash.slice(1);
@@ -1489,7 +1552,7 @@ function renderHome(){
   setText('home-pace',paceRowText(paceState()));setText('home-origin',state.from?tripLabel(state.from):'출발지를 정해 주세요');
   const recent=store.get('recent',[]).slice(0,2);$('home-chips').chips=recent;
   $('home-chips').innerHTML=recent.map((p,i)=>`<button class="recent-row" data-chip="${i}">${esc(p.name)}<span>›</span></button>`).join('')+'<button class="text-action" data-trip="demo">먼저 예시 길 둘러보기 ›</button>';
-  setSheet('home','mid');ready(()=>{if(!state.homeView){map.jumpTo({center:state.from?.ll||DEMO_FROM.ll,zoom:15.5});state.homeView=true;}});
+  setSheet('home','mid');ready(()=>{if(!state.homeView){map.jumpTo({center:state.from?.ll||DEMO_FROM.ll,zoom:13.7});state.homeView=true;}});
 }
 // 횡단 여유 숫자는 방향·길이·점멸 의미·날짜 근거가 함께 검증되기 전(PRODUCT_SPEC §6 gate)에는 만들지 않는다.
 // 숫자 자리에는 숫자가 없는 이유가 되는 상태만 쓴다. 검증 증거가 생기면 이 함수 앞에 근거 확인을 추가한다.
@@ -1545,7 +1608,8 @@ document.addEventListener('click',e=>{
   if(t.closest('#reset-confirm-no')){$('reset-confirm').hidden=true;$('reset-learning').focus();}
   if(t.closest('#reset-confirm-yes')){resetLearning();applyPace();state.routes=null;state.tripKey=null;renderSettings();setText('settings-message','맞춰 온 걸음 속도 요약을 지웠어요.');}
   if(t.closest('#calc-basis')){setBasisOpen($('result-options').hidden);fitResultSheet();}
-  if(t.closest('#layer-toggle')){const b=$('layer-toggle'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);setText('layer-toggle',`횡단 정보 표시 ${on?'켜짐':'꺼짐'}`);ready(()=>map.setLayoutProperty('sig-all','visibility',on?'visible':'none'));}
+  if(t.closest('#layer-toggle')){const b=$('layer-toggle'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);setText('layer-toggle',`횡단 시간 표시 ${on?'켜짐':'꺼짐'}`);XW.show(on);ready(()=>map.setLayoutProperty('sig-all','visibility',on?'visible':'none'));}
+  if(t.closest('#xw-mine')){XW.setSpeed(SPEED);}
 });
 $('auto-mode').addEventListener('change',()=>{if($('auto-mode').checked)$('manual-mode').checked=false;});
 $('manual-mode').addEventListener('change',()=>{if($('manual-mode').checked)$('auto-mode').checked=false;});
