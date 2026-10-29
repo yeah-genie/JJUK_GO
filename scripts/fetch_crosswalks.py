@@ -169,6 +169,7 @@ def summarize(rows, total, received_at, sample=False):
             lens.append(f)
     xs, ys, wkt_failed, wkt_missing = [], [], 0, 0
     for r in rows:
+        got = False
         for col in ("NODE_WKT", "LNKG_WKT"):
             try:
                 pts = parse_wkt(r.get(col))
@@ -176,10 +177,12 @@ def summarize(rows, total, received_at, sample=False):
                 wkt_failed += 1
                 continue
             if pts is None:
-                wkt_missing += 1
                 continue
+            got = True
             xs += [p[0] for p in pts]
             ys += [p[1] for p in pts]
+        if not got:
+            wkt_missing += 1  # 노드 행은 NODE_WKT, 링크 행은 LNKG_WKT만 채워진다: 둘 다 비었을 때만 결측
     if lens:
         stats = {"count": len(lens), "min": min(lens), "median": statistics.median(lens), "max": max(lens),
                  "zero_count": sum(1 for v in lens if v == 0), "negative_count": sum(1 for v in lens if v < 0)}
