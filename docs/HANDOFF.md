@@ -1,6 +1,6 @@
 # 쭉고 인수인계
 
-> **최신(2026-10-29 밤, Claude):** 작업 기준은 Claude 브랜치 `ccr-94bac9df-i81579` 하나다(사용자: "코덱스 무시"). **MVP 계획은 [MVP_PLAN](MVP_PLAN.md)** — 그늘로(ttubeok.com) 벤치마킹, MVP-0(숫자 닫힘)·MVP-1(횡단별 증거가 갖춰진 곳에서만 숫자 개방), 쟁점별 중재안, 사용자 결정 7개. 입장 원문은 `reports/team-2026-10-29/12~13_*.md`. 사용자 결정 전에는 gate를 열거나 화면 순서를 바꾸는 작업을 시작하지 않는다. 결과 후보 이름은 사용자 결정으로 `여유 있는 길` / `빠른 길`. 아래 본문은 Codex 시기 기록이 섞여 있으니 최신 코드는 `docs/prototype/src`와 시험(`scripts/check_*.cjs`)을 기준으로 읽는다.
+> **최신(2026-10-29 밤, Claude):** 작업 기준은 Claude 브랜치 `ccr-94bac9df-i81579` 하나다(사용자: "코덱스 무시"). **서비스 전략은 [SERVICE_STRATEGY](SERVICE_STRATEGY.md)(그늘로 벤치마킹 토론), MVP 계획은 [MVP_PLAN](MVP_PLAN.md)** — 그늘로(ttubeok.com) 벤치마킹, MVP-0(숫자 닫힘)·MVP-1(횡단별 증거가 갖춰진 곳에서만 숫자 개방), 쟁점별 중재안, 사용자 결정 7개. 입장 원문은 `reports/team-2026-10-29/12~13_*.md`. 사용자 결정 전에는 gate를 열거나 화면 순서를 바꾸는 작업을 시작하지 않는다. 결과 후보 이름은 사용자 결정으로 `여유 있는 길` / `빠른 길`. 아래 본문은 Codex 시기 기록이 섞여 있으니 최신 코드는 `docs/prototype/src`와 시험(`scripts/check_*.cjs`)을 기준으로 읽는다.
 
 최종 갱신: 2026-10-29. 현재 작업: `codex/asphalt-onboarding`, Claude 기본 브랜치 `ccr-94bac9df-i81579`의 0c4f772에서 시작했다. 사용자 승인: 최신 네 화면 느낌으로 Vercel 수정·자동 걸음 기본·보조기 설문·불필요 문서 정리. 이전 ‘Codex 코드 참고만’ 상태 이후 사용자가 이 구현을 명시적으로 요청했다.
 

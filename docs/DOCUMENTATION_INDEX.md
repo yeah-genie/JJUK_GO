@@ -7,6 +7,7 @@
 1. [HANDOFF](HANDOFF.md): 실제 구현·배포 상태와 남은 검증.
 2. [PRODUCT_DEFINITION](PRODUCT_DEFINITION.md): 서두르지 않아도 되는 길이라는 제품 방향.
 2-1. [MVP_PLAN](MVP_PLAN.md): MVP 범위(MVP-0/MVP-1), 그늘로 벤치마크, 사용자 결정. 팀 회의 원문은 `../reports/team-2026-10-29/`.
+2-2. [SERVICE_STRATEGY](SERVICE_STRATEGY.md): 그늘로 벤치마킹 토론 결과(재현 가능/불가, 현실성 판정, 포지셔닝, Threads 조각 전략, 중단 기준, 사용자 결정 5개).
 3. [PRODUCT_SPEC](PRODUCT_SPEC.md): 화면·상태·저장·실패 처리 계약.
 4. [DESIGN_SYSTEM](DESIGN_SYSTEM.md): 승인 이미지, 색·밀도·컴포넌트와 화면 크기 기준.
 5. [구현 검증](../reports/ASPHALT_IMPLEMENTATION.md), [보행 확장 데이터·속도 조사](../reports/보행%20확장%20데이터와%20개인%20속도.md).
