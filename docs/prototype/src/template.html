@@ -422,12 +422,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div class="row-label" id="result-heading"><h2>걷기 경로</h2><span class="safety">시연</span></div>
+        <div class="row-label" id="result-heading"><h2>걷기 경로</h2><span class="safety" id="result-mode">이력 추정</span></div>
         <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
           <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
           <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
         </div>
-        <p class="safety" id="result-note">공식 이력 기준 · 실시간 아님 · 미확인 신호 대기 제외</p>
+        <p class="safety" id="result-note">이력 추정 · 미확인 신호45초/곳 포함</p>
         <p class="tradeoff" id="tradeoff" hidden></p>
         <p class="safety" id="result-location" role="status" hidden></p>
         <details class="result-options" id="result-options">
@@ -484,6 +484,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
           <div><span>남은 거리</span><strong id="w-left">—</strong></div>
           <div><span>걷기만 약</span><strong id="w-eta">—</strong></div>
         </div>
+        <button class="btn btn-primary" id="walk-reroute" data-reroute hidden>내 위치에서 다시 찾기</button>
         <p class="safety" id="walk-location" role="status">위치 연결 대기</p>
         <div class="chips"><button class="chip" data-gps-retry>위치 다시 연결</button><button class="chip" data-walk-demo>움직임 시연</button></div>
         <div class="actions">
@@ -539,7 +540,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="stats">
         <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
         <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span>시연 예상 시간</span></div>
+        <div class="stat-big"><strong id="c-time"></strong><span>예상 소요 시간</span></div>
       </div>
       <p class="compare" id="c-compare"></p>
     </div>
