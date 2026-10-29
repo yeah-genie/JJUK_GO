@@ -4,7 +4,6 @@ const $ = id => document.getElementById(id);
 const DATA = new URL("seoul/", document.baseURI).href;
 const SPEED = 1.2, BASE = 8 * 3600 + 40 * 60;      // 걷는 속도 m/s, 기준 출발 08:40
 const UNKNOWN_SIG_COST = 45;                        // 패턴을 모르는 신호를 지날 때 쭉고가 치는 비용(초): 평균 대기 근사
-const SLOW_OK = 30;                                 // 쭉고가 최단 시간보다 늦게 도착해도 되는 한계(초)
 const STOP_COST = 15;                               // 멈춤 한 번에 더하는 비용(초): 같은 대기라도 덜 멈추는 길을 고른다
 // '내 위치'는 아직 GPS를 쓰지 않는 예시 위치다. 신호 패턴을 아는 광화문 일대(서울광장)에 둔다.
 const ME = { name: "내 위치", sub: "예시: 서울광장", ll: [126.97799, 37.56562], me: true };
@@ -13,7 +12,7 @@ const DEMO_TO = { name: "청계광장", sub: "명소", ll: [126.9776, 37.56922] 
 // 예시 길. 앞의 둘은 패턴을 아는 신호를 지나는 길(광화문 일대), 뒤는 서울 다른 동네(신호 개수만 비교)
 const EXAMPLES = [{ from: "서대문역", to: "청계광장" }, { from: "독립문역", to: "서울광장" }, { from: "시청역", to: "경복궁" }, { from: "홍대입구역", to: "연남동" }, { from: "잠실역", to: "석촌호수" }];
 const DEADLINE_KEY = "deadline";
-let IDX = null, SIGS = null, GMETA = null, SEARCH = null;
+let IDX = null, SIGS = null, GMETA = null, SEARCH = null, TERRAIN = null;
 const SIGMETA = new Map();
 
 async function getJSON(p) { const r = await fetch(DATA + p); if (!r.ok) throw new Error(p + " " + r.status); return r.json(); }
@@ -29,6 +28,24 @@ const toQ = ([lon, lat]) => [(lon - LON0) * Q, (lat - LAT0) * Q];
 const KXQ = 111320 * Math.cos(37.55 * Math.PI / 180) / Q, KYQ = 110540 / Q;
 function distLL(a, b) { const kx = 111320 * Math.cos((a[1] + b[1]) / 2 * Math.PI / 180); return Math.hypot((a[0] - b[0]) * kx, (a[1] - b[1]) * 110540); }
 const km = m => m < 1000 ? Math.round(m / 10) * 10 + "m" : (m / 1000).toFixed(1) + "km";
+
+function terrainHeight(lon, lat) {
+  if (!TERRAIN) return null;
+  const n = 2 ** TERRAIN.zoom, size = TERRAIN.size;
+  const px = (lon + 180) / 360 * n * size;
+  const py = (1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2 * n * size;
+  const x = Math.floor(px), y = Math.floor(py), fx = px - x, fy = py - y;
+  const sample = (a, b) => TERRAIN.tiles[Math.floor(a / size) + "_" + Math.floor(b / size)]?.[(b % size) * size + a % size];
+  const a = sample(x, y), b = sample(x + 1, y), c = sample(x, y + 1), d = sample(x + 1, y + 1);
+  if (![a, b, c, d].every(Number.isFinite)) return null;
+  return a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy;
+}
+function edgeRise(e, u, v) {
+  if (e.cls === 4) return null; // 지형 높이로 육교·지하도 높이를 대신하지 않는다.
+  const a = G.node.get(u), b = G.node.get(v);
+  if (!Number.isFinite(a.h) || !Number.isFinite(b.h)) return null;
+  return Math.max(0, b.h - a.h);
+}
 
 // ---------- 신호 ----------
 // 수집 데이터로 찾은 실제 신호 패턴(scripts/export_signal_plans.py가 확신 기준을 넘은 곳만 채운다). 여기 없는 신호는 '모름'이다(예시 값을 쓰지 않는다).
@@ -71,7 +88,7 @@ function cellsFor(a, b, margin = 700) {
 }
 function loadCell(k) {
   if (!G.cells.has(k)) G.cells.set(k, getJSON(`graph/c${k}.json`).then(c => {
-    for (const [id, x, y, s] of c.n) G.node.set(id, { x, y, s: s ?? null });
+    for (const [id, x, y, s] of c.n) G.node.set(id, { x, y, s: s ?? null, h: terrainHeight(...fromQ(x, y)) });
     for (const [a, b, len, cls, geom, sig, dir, half] of c.e) {
       const key = a + ":" + b + ":" + len;
       if (G.seen.has(key)) continue;
@@ -122,10 +139,14 @@ function search(src, dst, mode, dep) {
       const v = e.a === u ? e.b : e.a, nv = G.node.get(v);
       if (!nv || done.has(v)) continue;
       let tv = tu + e.len / SPEED, cv = c + e.len / SPEED;
+      if (mode !== "short") {
+        const weight = mode === "gentle" ? 3 : 1;
+        cv += weight * ((e.cls === 3 ? e.len * 2 : 0) + (edgeRise(e, u, v) ?? 0) * 8);
+      }
       {
         // 횡단보도 신호는 건너기 전에 기다린다. 골목 교차로 신호(노드)는 들어설 때 센다
         const s = e.sig || (nv.s && nv.s !== nu.s ? nv.s : null), share = e.sig && e.half ? 0.5 : 1;
-        const stop = mode === "jjuk" ? STOP_COST * share : 0;
+        const stop = mode !== "short" ? STOP_COST * share : 0;
         if (s) {
           if (known(s)) { const w = sigWait(s, BASE + dep + (e.sig ? tu : tv), e.sig ? e.dir : null); tv += w; cv += w + (w > 2 ? stop : 0); }
           else { tv += UNKNOWN_SIG_COST * share; cv += UNKNOWN_SIG_COST * share + stop * 0.8; }
@@ -149,12 +170,17 @@ function edgePts(e, from) {
 // 경로 = 좌표, 누적 거리, 지나는 신호(처음 들어선 지점), 입체 보행(지하도·육교) 구간
 function buildRoute(steps, src, fromLL, toLL) {
   const coords = [fromLL], cum = [0], x = [], under = [];
+  let stairs = 0, stairMeters = 0, rise = 0, terrainMeters = 0, lastStairs = false;
   const add = (ll, u) => { const d = cum[cum.length - 1] + distLL(coords[coords.length - 1], ll); coords.push(ll); cum.push(d); if (u) under.push(coords.length - 1); };
   const s0 = G.node.get(src);
   add(fromQ(s0.x, s0.y));
   // 같은 신호를 60m 안에서 또 건너면(왕복 도로를 두 번에 나눠 건너기) 한 번으로 센다
   const push = (s, dir, d, at) => { if (!x.some(z => z.s === s && d - z.d < 60)) x.push({ s, dir, d, at }); };
   for (const [u, v, e] of steps) {
+    if (e.cls === 3) { if (!lastStairs) stairs++; stairMeters += e.len; }
+    lastStairs = e.cls === 3;
+    const up = edgeRise(e, u, v);
+    if (up != null) { rise += up; terrainMeters += e.len; }
     const start = cum[cum.length - 1], startAt = coords[coords.length - 1];
     const pts = edgePts(e, u);
     for (let i = 1; i < pts.length; i++) add(fromQ(...pts[i]), e.cls === 4);
@@ -163,7 +189,7 @@ function buildRoute(steps, src, fromLL, toLL) {
     else if (nv.s && nv.s !== nu.s) push(nv.s, null, cum[cum.length - 1], coords[coords.length - 1]);
   }
   add(toLL);
-  return { coords, cum, length: cum[cum.length - 1], x, under, key: steps.map(s => s[2].a + "-" + s[2].b).join(",") };
+  return { coords, cum, length: cum[cum.length - 1], x, under, stairs, stairMeters, rise, terrainMeters, key: steps.map(s => s[2].a + "-" + s[2].b).join(",") };
 }
 function routeFor(mode, dep) {
   const steps = search(state.src, state.dst, mode, dep);
@@ -348,7 +374,7 @@ function fit(coordsList, extra = {}) {
   const pad = { top: current === "result" ? (phoneH() < 700 ? 80 : 120) : 90, bottom: sheetH() + 30, left: 34, right: 64, ...extra };
   ready(() => map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }));
 }
-function markTrip(sims, focus) {
+function markTrip(sims, focus, forecasts = true) {
   clearDyn();
   addDyn(el(state.from.me ? "m-me" : "m-start", state.from.me ? "<i></i>" : ""), state.from.ll);
   addDyn(el("m-dest", `<i></i><span>${esc(state.to.name)}</span>`), state.to.ll, { anchor: "left", offset: [-11, 0] });
@@ -358,8 +384,8 @@ function markTrip(sims, focus) {
     if (!sims[k]) continue;
     for (const x of sims[k].xings) {
       if (seen.has(x.id)) continue; seen.add(x.id);
-      const cls = !x.known ? "unk" : x.wait > 2 ? "stop" : "go", label = x.known && x.wait > 2 && k === focus ? `<b>${x.wait}초</b>` : "";
-      const m = el(`m-sig ${cls}${k === focus ? "" : " dim"}`, `<span>${!x.known ? "" : x.wait > 2 ? "Ⅱ" : "✓"}</span>${label}`);
+      const cls = !forecasts || !x.known ? "unk" : x.wait > 2 ? "stop" : "go", label = forecasts && x.known && x.wait > 2 && k === focus ? `<b>${x.wait}초</b>` : "";
+      const m = el(`m-sig ${cls}${k === focus ? "" : " dim"}`, `<span>${!forecasts || !x.known ? "" : x.wait > 2 ? "Ⅱ" : "✓"}</span>${label}`);
       m.dataset.sig = x.id; m.title = x.name;
       addDyn(m, x.at);
     }
@@ -370,7 +396,12 @@ document.addEventListener("click", e => {
   if (e.target.closest("#ctl-in")) map.zoomIn();
   if (e.target.closest("#ctl-out")) map.zoomOut();
   if (e.target.closest("#ctl-north")) map.resetNorth();
-  if (e.target.closest("#ctl-loc")) map.easeTo({ center: walker ? walker.getLngLat() : state.from.ll, zoom: Math.max(map.getZoom(), 16.5) });
+  if (e.target.closest("#ctl-loc")) {
+    if (current === "walk") {
+      if (walker && gpsFix && Date.now() - gpsFix.timestamp < 30000) map.easeTo({ center: walker.getLngLat(), zoom: 16.5 });
+      else renderWalk();
+    } else locate(false);
+  }
 });
 
 // 지도 누르기: 홈에서는 그 위치를 도착지 후보로, 신호 점을 누르면 신호 상세로
@@ -396,8 +427,8 @@ function showPlace(p) {
   pickMarker = new maplibregl.Marker({ element: el("m-pick", ""), anchor: "bottom-left", offset: [-4, 4] }).setLngLat(p.ll).addTo(map);
   $("home-intro").hidden = true; $("home-place").hidden = false;
   $("hp-name").textContent = p.name;
-  const d = distLL(ME.ll, p.ll);
-  $("hp-sub").textContent = (p.sub ? p.sub + " · " : "") + `내 위치(서울광장 예시)에서 직선 ${km(d)}`;
+  const d = distLL(state.from.ll, p.ll);
+  $("hp-sub").textContent = (p.sub ? p.sub + " · " : "") + `${state.from.name}에서 직선 ${km(d)}`;
   $("home-actions").innerHTML = `<button class="btn btn-ghost" id="hp-from">여기서 출발</button><button class="btn btn-primary" id="hp-to">여기까지 길찾기</button>`;
   setSheet("home", "mid");
 }
@@ -405,7 +436,7 @@ function resetHomeSheet() {
   state.picked = null;
   if (pickMarker) { pickMarker.remove(); pickMarker = null; }
   $("home-intro").hidden = false; $("home-place").hidden = true;
-  $("home-actions").innerHTML = `<button class="btn btn-primary" data-trip="demo">서대문역 → 청계광장 예시 보기</button>`;
+  $("home-actions").innerHTML = `<button class="btn btn-ghost" data-locate>내 위치로 출발</button><button class="btn btn-primary" data-trip="demo">예시 길 보기</button>`;
 }
 
 // ---------- 끌 수 있는 아래 시트 ----------
@@ -419,7 +450,7 @@ function snaps(name) {
   const grip = sh.querySelector(".grip-area").offsetHeight;
   const vis = c => !c.hidden && c.offsetHeight > 0;
   const mark = [...sh.querySelectorAll("[data-mid-end]")].find(vis) || [...body.children].filter(vis).pop() || body;
-  const mid = Math.min(grip + mark.offsetTop + mark.offsetHeight - body.offsetTop + 12, Math.round(H * (H < 700 ? .5 : .6)));
+  const mid = Math.min(grip + mark.offsetTop + mark.offsetHeight - body.offsetTop + 12, name === "result" ? H - 160 : Math.round(H * (H < 700 ? .5 : .6)));
   const peek = Math.min(grip + 54, mid);
   const full = Math.max(mid, Math.min(H - 100, grip + body.scrollHeight + 4));
   if (wasPeek) sh.classList.add("peek");
@@ -461,7 +492,7 @@ function initSheet(name) {
 }
 
 // ---------- 상태 ----------
-const state = { deadline: 9 * 3600 + 600, from: DEMO_FROM, to: DEMO_TO, dep: 0, focus: "jjuk", routes: null, sims: null, src: null, dst: null, pick: "to", tripKey: null, error: null };
+const state = { deadline: 9 * 3600 + 600, budget: 120, from: DEMO_FROM, to: DEMO_TO, dep: 0, focus: "jjuk", routes: null, sims: null, src: null, dst: null, pick: "to", tripKey: null, error: null };
 let current = null;
 const setStatus = (title, text) => { if (current === "result") { $("result-status").hidden = false; $("result-status").innerHTML = `<b>${esc(title)}</b>${esc(text)}`; } };
 const tripKeyNow = () => state.from.ll.join() + "|" + state.to.ll.join();
@@ -481,27 +512,95 @@ async function computeTrip() {
   const short = routeFor("short", state.dep), jjuk = routeFor("jjuk", state.dep);
   state.lastRouteMs = performance.now() - t0;
   if (!short || !jjuk) { state.error = { title: "길을 못 찾았어요", text: "두 곳이 걸어서 이어지지 않아요(강·고속도로 등). 다른 곳을 골라 주세요." }; return; }
-  state.routes = { short, jjuk, dep: state.dep };
+  state.routes = { short, jjuk, dep: state.dep, budget: null };
   refreshSims();
 }
 function refreshSims() {
   if (!state.routes) { state.sims = null; return; }
   // 출발 시각이 바뀌면 신호 위상이 달라지므로 두 길을 다시 찾는다
-  if (state.routes.dep !== state.dep) { state.routes.short = routeFor("short", state.dep); state.routes.jjuk = routeFor("jjuk", state.dep); state.routes.dep = state.dep; }
+  if (state.routes.dep !== state.dep || state.routes.budget !== state.budget) {
+    state.routes.short = routeFor("short", state.dep);
+    const ss = simulate(state.routes.short, state.dep);
+    const cost = (r, s) => s.wait + s.unknownN * UNKNOWN_SIG_COST + s.stops * STOP_COST + r.stairMeters * 2 + r.rise * 8;
+    const candidates = [state.routes.short, routeFor("jjuk", state.dep), routeFor("gentle", state.dep)].filter(Boolean);
+    const expected = s => s.total + s.unknownN * UNKNOWN_SIG_COST;
+    state.routes.jjuk = candidates.filter(r => expected(simulate(r, state.dep)) <= expected(ss) + state.budget)
+      .sort((a, b) => cost(a, simulate(a, state.dep)) - cost(b, simulate(b, state.dep)) || a.length - b.length)[0] || state.routes.short;
+    state.routes.dep = state.dep; state.routes.budget = state.budget;
+  }
   const R = state.routes;
   let sj = simulate(R.jjuk, state.dep), ss = simulate(R.short, state.dep);
-  // 쭉고 길은 "최단 시간"보다 나쁘면 안 된다: 멈춤·기다림·신호 수 중 어느 것도 늘지 않고 하나는 줄어야 하며,
-  // 도착이 늦어지더라도 SLOW_OK초 이내일 때만 보여준다. 아니면 최단 시간 길이 곧 쭉고 길이다.
-  const nSig = s => s.unknownN + s.knownN, extra = sj.total - ss.total;
-  const savedStops = ss.stops - sj.stops, savedSig = nSig(ss) - nSig(sj), savedWait = ss.wait - sj.wait;
-  const notWorse = savedStops >= 0 && savedWait >= -5 && savedSig >= 0;
-  const improves = savedStops > 0 || savedWait > 5 || savedSig > 0;
-  if (!(notWorse && improves && extra <= SLOW_OK) && R.jjuk.key !== R.short.key) { R.jjuk = R.short; sj = ss; }
+  // shortcut: 세 가중치 후보의 비교이며 전역 최적·무장애 경로를 보장하지 않는다.
   state.same = R.jjuk.key === R.short.key;
   state.sims = { jjuk: sj, short: ss };
   if (state.same) state.focus = "jjuk";
 }
 const tripLabel = p => p.me ? `${p.name}` : p.name;
+
+// 위치는 기기 메모리에만 둔다. 최근 검색·서버·공유 카드에는 GPS 좌표를 저장하지 않는다.
+let gpsFix = null, gpsWatch = null, gpsStaleTimer = null, gpsRequest = 0;
+function gpsStatus(text) {
+  for (const id of ["location-status", "walk-location", "search-location", "result-location"]) { $(id).textContent = text; $(id).hidden = !text; }
+}
+function stopGPS() {
+  if (gpsWatch != null) navigator.geolocation?.clearWatch(gpsWatch);
+  gpsWatch = null; clearInterval(gpsStaleTimer); gpsRequest++;
+}
+function readFix(p) {
+  const { longitude, latitude, accuracy } = p.coords;
+  if (![longitude, latitude, accuracy, p.timestamp].every(Number.isFinite) || accuracy < 0) throw new Error("위치 정보를 확인하지 못했어요");
+  if (Date.now() - p.timestamp > 30000) throw new Error("위치가 오래됐어요. 다시 연결해 주세요");
+  if (longitude < 126.68 || longitude > 127.23 || latitude < 37.39 || latitude > 37.72) throw new Error("지금은 서울 지도 범위에서만 길을 찾을 수 있어요");
+  if (accuracy > 100) throw new Error(`위치 오차가 약 ${Math.round(accuracy)}m예요. 탁 트인 곳에서 다시 연결해 주세요`);
+  return { ll: [longitude, latitude], accuracy, timestamp: p.timestamp };
+}
+function gpsError(err) {
+  gpsStatus(err.code === 1 ? "위치 권한이 꺼져 있어요. 장소를 검색하거나 지도에서 골라 주세요" : err.code === 3 ? "위치 연결이 늦어져요. 다시 시도하거나 지도에서 골라 주세요" : err.message || "위치를 찾지 못했어요. 지도에서 골라 주세요");
+}
+function locate(useAsStart) {
+  if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("위치 연결은 HTTPS에서 사용할 수 있어요. 지도에서 출발지를 골라 주세요"); return; }
+  const request = ++gpsRequest, screen = current;
+  gpsStatus("내 위치를 찾고 있어요…");
+  navigator.geolocation.getCurrentPosition(p => {
+    if (request !== gpsRequest || current !== screen) return;
+    try {
+      gpsFix = readFix(p);
+      gpsStatus(`내 위치 연결 · 오차 약 ${Math.round(gpsFix.accuracy)}m`);
+      if (useAsStart) {
+        state.from = { name: "내 위치", sub: "GPS", ll: gpsFix.ll, me: true };
+        state.dep = 0; state.homeView = true;
+        if (current === "search") go("result"); else { renderHome(); map.easeTo({ center: gpsFix.ll, zoom: 16.5 }); }
+      } else if (map) {
+        if (walker) walker.setLngLat(gpsFix.ll);
+        else addDyn(el("m-me", "<i></i>"), gpsFix.ll);
+        map.easeTo({ center: gpsFix.ll, zoom: 16.5 });
+      }
+    } catch (err) { gpsError(err); }
+  }, err => { if (request === gpsRequest && current === screen) gpsError(err); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+function projectOnRoute(route, ll) {
+  let best = { offset: Infinity, distance: 0 };
+  const kx = 111320 * Math.cos(ll[1] * Math.PI / 180);
+  for (let i = 1; i < route.coords.length; i++) {
+    const a = route.coords[i - 1], b = route.coords[i];
+    const ax = (a[0] - ll[0]) * kx, ay = (a[1] - ll[1]) * 110540;
+    const dx = (b[0] - a[0]) * kx, dy = (b[1] - a[1]) * 110540;
+    const t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy || 1)));
+    const offset = Math.hypot(ax + t * dx, ay + t * dy);
+    if (offset < best.offset) best = { offset, distance: route.cum[i - 1] + t * (route.cum[i] - route.cum[i - 1]) };
+  }
+  return best;
+}
+function plausibleProgress(previous, fix, distance) {
+  if (!previous) return true;
+  const dt = (fix.timestamp - previous.timestamp) / 1000;
+  const limit = Math.max(60, dt * 3 + previous.accuracy + fix.accuracy);
+  return dt > 0 && distLL(previous.ll, fix.ll) <= limit && Math.abs(distance - previous.distance) <= limit;
+}
+addEventListener("pagehide", stopGPS);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("위치 추적이 멈췄어요. 화면을 켜고 다시 연결해 주세요"); }
+});
 
 // ---------- 출발 시각 (쭉고의 중심) ----------
 // 지금 보는 길 그대로, 지금(dep=0)부터 15분 사이 5초 간격으로 출발해 보며
@@ -527,15 +626,13 @@ function renderGoCard() {
   const better = best.d > 0 && (best.s.stops < now.s.stops || best.arr < now.arr - 5);
   const pick = better ? best : now, when = pick.d === 0 ? "지금" : (pick.d < 60 ? pick.d + "초" : phrase(pick.d)) + " 뒤";
   const stat = (label, val, bad) => `<div class="${bad ? "bad" : ""}"><span>${label}</span><b>${val}</b></div>`;
-  const dlStat = dl == null ? stat("지금 나가면", clock(now.arr) + " 도착")
-    : latest ? stat(`${clock(dl)} 마감`, `${clock(BASE + latest.d)}까지 출발`) : stat(`${clock(dl)} 마감`, phrase(now.arr - dl).trim() + " 늦음", true);
-  let h = `<div class="gc-head">${when} 출발하면</div>
-    <div class="gc-big">멈춤 ${pick.s.stops}번${better ? `<small>지금 나가면 ${now.s.stops}번</small>` : ""}</div>
-    <div class="gc-stats">${stat("기다림", mmss(pick.s.wait))}${stat("도착", clock(pick.arr))}${dlStat}</div>`;
-  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 이 시각으로 보고 있어요</span>` : `<button class="use" data-dep-use="${best.d}">${when} 출발로 보기</button>`}<span class="note2">${best.arr < now.arr - 5 ? `도착도 ${phrase(now.arr - best.arr)} 빨라요` : "도착은 지금과 같아요"}</span></div>`;
-  else h += `<div class="gc-row"><span class="note2">5분 안에 더 덜 멈추는 출발이 없어요. 지금 나가면 돼요.</span></div>`;
+  let h = `<div class="gc-head">신호 패턴 시연 · 추천 출발</div>
+    <div class="gc-big">${when} 출발</div>
+    <div class="gc-stats">${stat("예측 신호 멈춤", pick.s.stops + "번")}${stat("신호 대기", mmss(pick.s.wait))}${stat("도착 예상", clock(pick.arr), dl != null && pick.arr > dl)}</div>`;
+  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 선택됨</span>` : `<button class="use" data-dep-use="${best.d}">이 시각 선택</button>`}<span class="note2">지금 출발하면 ${now.s.stops}번 멈춤</span></div>`;
+  if (dl != null) h += `<div class="gc-head">${clock(dl)} 마감 · ${latest ? `${clock(BASE + latest.d)}까지 출발` : pick.arr > dl ? `약 ${phrase(pick.arr - dl).trim()} 늦음` : "도착 여유 30초 미만"}</div>`;
   el.innerHTML = h;
-  $("go-foot").textContent = `패턴 아는 신호 ${now.s.knownN}곳 기준이에요.` + (now.s.unknownN ? ` 모르는 신호 ${now.s.unknownN}곳은 출발 시각과 상관없이 같게 봤어요.` : "") + (dl != null && !latest ? " 마감이 빠듯하면 서두르기보다 늦는다고 미리 알려 두세요." : "");
+  $("go-foot").textContent = `신호 ${now.s.knownN}곳 예측` + (now.s.unknownN ? ` · ${now.s.unknownN}곳 대기시간 미반영` : "") + " · 10/28 08:40 시연, 실시간 아님";
   wrap.hidden = false;
   return { pick, when };
 }
@@ -564,9 +661,9 @@ function statLine(sim) {
 }
 function renderHome() {
   mountMap("map-home"); clearDyn();
-  setPeek("home", `<span>언제 나가면 안 멈출까요?</span><small>${state.deadline == null ? "마감 없음" : clock(state.deadline) + " 마감"}</small>`);
+  setPeek("home", `<span>비슷한 시간이면, 덜 힘들게.</span><small>${state.deadline == null ? "마감 없음" : clock(state.deadline) + " 마감"}</small>`);
   setRoutes(null, null);
-  addDyn(el("m-me", "<i></i>"), ME.ll);
+  if (gpsFix) addDyn(el("m-me", "<i></i>"), gpsFix.ll);
   if (!state.picked) resetHomeSheet();
   const recent = store.get("recent", []);
   const chips = [...recent.slice(0, 2).map(p => ({ ...p, recent: true })), ...EXAMPLES];
@@ -587,7 +684,7 @@ async function renderResult() {
   $("from-name").innerHTML = esc(tripLabel(state.from)) + (state.from.sub ? `<small>${esc(state.from.sub)}</small>` : "");
   $("to-name").innerHTML = esc(state.to.name) + (state.to.sub ? `<small>${esc(state.to.sub)}</small>` : "");
   const st = $("result-status"), cards = $("route-cards");
-  const waitUI = on => { ["tradeoff", "result-actions"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
+  const waitUI = on => { ["tradeoff", "result-actions", "result-heading", "result-note", "result-options"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
   if (state.tripKey !== tripKeyNow()) { state.routes = null; state.error = null; }
   if (!state.routes && !state.error) {
     st.hidden = false; st.innerHTML = "<b>길 찾는 중…</b>지도 데이터를 받고 있어요."; cards.hidden = true; waitUI(false);
@@ -603,15 +700,17 @@ async function renderResult() {
   }
   st.hidden = true; cards.hidden = false; waitUI(true);
   const go = renderGoCard();
-  const S = state.sims, scale = Math.max(S.jjuk.total, S.short.total);
+  const S = state.sims;
   $("depart-label").textContent = `${clock(BASE + state.dep)} 출발`;
   for (const k of ["jjuk", "short"]) {
     const sim = S[k], c = $("card-" + k);
     c.hidden = k === "short" && state.same;
     c.setAttribute("aria-pressed", String(state.focus === k));
-    const name = k === "jjuk" ? (state.same ? "쭉고 = 최단 시간" : "쭉고") : "최단 시간";
-    c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span><span class="stat">${statLine(sim)}</span>
-      <span class="strip" aria-hidden="true">${stripHTML(sim, scale, k === "jjuk" ? "walk-j" : "walk-s")}</span>`;
+    const name = k === "jjuk" ? "쭉고" : "빠른 길";
+    const route = state.routes[k];
+    const stairText = route.under.length && !route.stairs ? "미확인" : `${route.stairs}구간${route.under.length ? " 이상" : ""}`;
+    c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span>
+      <span class="route-facts"><span><small>신호</small><b>${sim.knownN + sim.unknownN}곳</b></span><span><small>계단</small><b>${stairText}</b></span><span><small>오르막 추정</small><b>${route.terrainMeters > 0 ? `약 ${Math.round(route.rise)}m↑` : "미확인"}</b></span></span>`;
   }
   const kn = S.jjuk.knownN + S.short.knownN, dWalk = S.jjuk.walk - S.short.walk;
   let t;
@@ -626,20 +725,31 @@ async function renderResult() {
     const dSig = S.short.unknownN - S.jjuk.unknownN;
     t = dSig > 0 ? `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}신호를 ${dSig}곳 덜 지나요.` : "두 길이 지나는 신호 수가 같아요.";
   }
-  $("tradeoff").textContent = t;
-  $("start-walk").textContent = state.focus === "jjuk" ? "쭉고로 걷기 시작" : "최단 시간 길로 걷기 시작";
+  const a = state.routes.short, b = state.routes.jjuk;
+  const reductions = [];
+  if (a.stairs > b.stairs) reductions.push(`계단 ${a.stairs - b.stairs}구간`);
+  if (a.rise - b.rise > 2) reductions.push(`오르막 약 ${Math.round(a.rise - b.rise)}m`);
+  const extra = S.jjuk.total + S.jjuk.unknownN * UNKNOWN_SIG_COST - S.short.total - S.short.unknownN * UNKNOWN_SIG_COST;
+  const savedWait = S.short.wait - S.jjuk.wait;
+  if (savedWait > 5) reductions.push(`신호 대기 ${phrase(savedWait)}`);
+  $("tradeoff").textContent = state.same ? `+${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : `${extra > 2 ? `약 ${phrase(extra)} 더 걸리고, ` : ""}${reductions.length ? reductions.join(" · ") + " 줄여요." : t}`;
+  $("tradeoff").hidden = state.same;
+  document.querySelectorAll("[data-budget]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.budget === state.budget)));
+  $("budget-label").textContent = `+${state.budget / 60}분까지`;
+  const selected = S[state.focus], selectedRoute = state.routes[state.focus];
+  $("route-facts").innerHTML = `${statLine(selected)}<br>검출 계단 ${selectedRoute.stairs}구간 · 지형 상승 약 ${Math.round(selectedRoute.rise)}m${selectedRoute.under.length ? " · 입체구간 미확인" : ""}${state.same ? `<br>추가 ${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : ""}`;
+  $("start-walk").textContent = "걷기 시작";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
   $("cov-note").hidden = !anyUnknown || !$("go-wrap").hidden;  // 출발 카드가 있으면 그 각주로 대신
   $("cov-text").textContent = anyKnown ? "일부 신호는 패턴이 없어 개수만 셌어요" : "이 길은 신호 패턴이 없어 신호 개수만 비교했어요";
-  $("result-safety").textContent = `예상값이에요. 건널 때는 신호를 꼭 확인하세요. 걷는 속도 1.2m/s 기준.`;
+  $("result-safety").textContent = `${REAL.date} 08:40 기준 신호 시연 · 실시간 아님. 시간은 미확인 신호 대기 제외. 계단은 OSM 검출 구간, 오르막은 약120m 지형망 추정(육교·지하 제외). 무장애 경로 보장 아님.`;
   setRoutes(state.focus === "jjuk" || state.same ? state.routes.jjuk : state.routes.short, state.same ? null : (state.focus === "jjuk" ? state.routes.short : state.routes.jjuk));
   ready(() => { map.setPaintProperty("route-jjuk", "line-color", state.focus === "jjuk" ? "#F6C343" : "#9AA3B2"); });
   markTrip(S, state.focus);
   const fk = state.same ? "jjuk" : state.focus;
-  setPeek("result", go ? `<span>${go.when} 출발 · 멈춤 ${go.pick.s.stops}번 · ${clock(go.pick.arr)} 도착</span><small>올려서 보기</small>`
-    : `<span>${fk === "jjuk" ? "쭉고" : "최단 시간"} ${mins(S[fk].total)} · ${statLine(S[fk]).replace(/<[^>]+>/g, "")}</span><small>올려서 보기</small>`);
+  setPeek("result", `<span>${clock(BASE + state.dep)} 선택 경로 · ${mins(S[fk].total)}</span><small>올려서 비교</small>`);
   setSheet("result", sheets.result?.pos === "full" ? "full" : sheets.result?.pos || "mid");
   if (!state.fitted || state.fitted !== state.tripKey) { fit([state.routes.jjuk.coords, state.routes.short.coords]); state.fitted = state.tripKey; }
 }
@@ -664,34 +774,66 @@ function pointAt(route, dist) {
   return c[c.length - 1];
 }
 let walkTimer = null;
-function renderWalk() {
+function renderWalk(demo = false) {
   if (!state.sims) return go("result");
+  stopGPS(); cancelAnimationFrame(walkTimer);
+  const session = ++gpsRequest;
   const k = state.same ? "jjuk" : state.focus, sim = state.sims[k], route = state.routes[k];
-  mountMap("map-walk");
-  setRoutes(route, null);
-  markTrip({ [k]: sim }, k);
-  setSheet("walk", "mid");
-  fit([route.coords], { top: 170 });
-  walker = new maplibregl.Marker({ element: el("m-me", "<i></i>") }).setLngLat(route.coords[0]).addTo(map);
-  const L = route.length, DUR = 9000, reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, start = performance.now();
-  cancelAnimationFrame(walkTimer);
-  const step = now => {
-    const f = reduce ? 0.32 : Math.min(1, (now - start) / DUR), dist = f * L;
-    if (walker) walker.setLngLat(pointAt(route, dist));
-    $("w-stops").textContent = sim.xings.filter(z => z.d <= dist && z.known && z.wait > 2).length;
-    $("w-left").textContent = mins(sim.total * (1 - f));
-    $("w-eta").textContent = clock(BASE + state.dep + sim.total);
-    setPeek("walk", `<span>멈춘 횟수 ${$("w-stops").textContent} · 남은 ${$("w-left").textContent}</span><small>${clock(BASE + state.dep + sim.total)} 도착</small>`);
-    const next = sim.xings.find(z => z.d > dist + 1);
-    if (next) {
-      $("next-dist").textContent = Math.round(next.d - dist) + "m";
-      if (!next.known) { $("next-state").textContent = `${next.name} · 신호 패턴을 몰라요`; $("next-say").textContent = "도착하면 신호를 확인하세요"; }
-      else if (next.wait > 2) { $("next-state").textContent = `${next.name} · 도착하면 약 ${next.wait}초 기다려요`; $("next-say").textContent = "천천히 가도 괜찮아요"; }
-      else { $("next-state").textContent = `${next.name} · 도착하면 초록불(약 ${next.rem}초 남음)`; $("next-say").textContent = next.miss ? `놓쳐도 다음 초록까지 약 ${next.miss}초, 서두르지 않아도 돼요` : "지금처럼 걸으면 돼요"; }
-    } else { $("next-dist").textContent = "없음"; $("next-state").textContent = `도착까지 ${Math.round(L - dist)}m, 남은 신호 횡단보도가 없어요`; $("next-say").textContent = "지금처럼 걸으면 돼요"; }
-    if (f < 1 && !reduce) walkTimer = requestAnimationFrame(step);
+  mountMap("map-walk"); setRoutes(route, null); markTrip({ [k]: sim }, k, false);
+  setSheet("walk", "mid"); fit([route.coords], { top: 170 });
+  let markerAdded = false;
+  const update = (dist, ll) => {
+    if (current !== "walk" || session !== gpsRequest) return;
+    if (ll) {
+      if (!markerAdded) { walker = new maplibregl.Marker({ element: el("m-me", "<i></i>") }).setLngLat(ll).addTo(map); markerAdded = true; }
+      else walker.setLngLat(ll);
+    }
+    const left = Math.max(0, route.length - dist);
+    $("w-stops").textContent = dist == null ? "—" : km(dist);
+    $("w-left").textContent = dist == null ? "—" : km(left);
+    $("w-eta").textContent = dist == null ? "—" : left < 10 ? "도착 근처" : mins(left / SPEED);
+    setPeek("walk", `<span>${demo ? "움직임 시연" : "GPS 걷기"} · 남은 ${$("w-left").textContent}</span><small>실제 신호 확인</small>`);
+    const next = dist == null ? null : sim.xings.find(z => z.d > dist + 1);
+    $("next-dist").textContent = next ? Math.round(next.d - dist) + "m" : dist == null ? "위치 연결" : "도착 방향";
+    $("next-state").textContent = next ? next.name : "지도를 보며 천천히 걸어요";
+    $("next-say").textContent = "실시간 신호는 제공하지 않아요. 건널 때 실제 신호를 확인하세요.";
   };
-  walkTimer = requestAnimationFrame(step);
+  update(null);
+  if (demo) {
+    gpsStatus("움직임 시연 · 실제 위치나 걷기 기록이 아니에요");
+    const start = performance.now(), reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const step = now => {
+      if (current !== "walk" || session !== gpsRequest) return;
+      const f = reduce ? 0.32 : Math.min(1, (now - start) / 9000);
+      update(f * route.length, pointAt(route, f * route.length));
+      if (f < 1 && !reduce) walkTimer = requestAnimationFrame(step);
+    };
+    walkTimer = requestAnimationFrame(step); return;
+  }
+  if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("HTTPS에서 위치 연결이 가능해요. 움직임 시연으로 먼저 볼 수 있어요"); return; }
+  gpsStatus("GPS 연결 중 · 위치를 허용해 주세요");
+  let lastFix = null, previous = null;
+  gpsWatch = navigator.geolocation.watchPosition(p => {
+    if (current !== "walk" || session !== gpsRequest) return;
+    try {
+      gpsFix = readFix(p); lastFix = gpsFix.timestamp;
+      const progress = projectOnRoute(route, gpsFix.ll);
+      if (progress.offset > Math.max(40, gpsFix.accuracy * 2)) {
+        update(null, gpsFix.ll);
+        gpsStatus(`경로에서 약 ${Math.round(progress.offset)}m 떨어져 있어요. 출발지를 다시 골라 주세요`);
+        return;
+      }
+      if (!plausibleProgress(previous, gpsFix, progress.distance)) {
+        update(null, gpsFix.ll); gpsStatus("위치가 갑자기 바뀌었어요. 진행 판단을 멈췄어요. 위치를 다시 연결해 주세요"); return;
+      }
+      previous = { ...gpsFix, distance: progress.distance };
+      update(progress.distance, gpsFix.ll);
+      gpsStatus(`GPS 연결 · 오차 약 ${Math.round(gpsFix.accuracy)}m · ${new Date(lastFix).toLocaleTimeString("ko-KR")} 갱신`);
+    } catch (err) { update(null); gpsError(err); }
+  }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  gpsStaleTimer = setInterval(() => {
+    if (lastFix && Date.now() - lastFix > 30000) { update(null); gpsStatus("30초 넘게 위치 갱신이 없어요. 다시 연결해 주세요"); }
+  }, 5000);
 }
 function renderDone() {
   if (!state.sims) return go("result");
@@ -699,16 +841,16 @@ function renderDone() {
   const sim = state.sims[k], other = state.sims[o], route = state.routes[k];
   const kn = sim.knownN > 0;
   $("c-stops").textContent = kn ? sim.stops + "번" : (sim.unknownN) + "곳";
-  $("c-stops-l").textContent = kn ? "멈춘 횟수" : "지난 신호";
+  $("c-stops-l").textContent = kn ? "예측 멈춤" : "경로상 신호";
   $("c-wait").textContent = kn ? mmss(sim.wait) : km(sim.meters);
-  $("c-wait-l").textContent = kn ? "신호 기다림" : "걸은 거리";
+  $("c-wait-l").textContent = kn ? "예측 대기" : "경로 거리";
   $("c-time").textContent = mmss(sim.total);
   $("card-kind").textContent = `걷기 · ${tripLabel(state.from)} → ${state.to.name}`;
   if (state.same) $("c-compare").textContent = "오늘은 최단 시간 길이 곧 쭉고 길이었어요";
   else if (kn) $("c-compare").textContent = other.stops <= sim.stops && other.wait <= sim.wait + 5 ? "오늘은 다른 길로 갔어도 비슷했을 거예요" : `${o === "short" ? "최단 시간 길" : "쭉고 길"}으로 갔다면 ${other.stops}번 멈추고 ${mmss(other.wait)} 기다렸을 거예요`;
   else $("c-compare").textContent = other.unknownN > sim.unknownN ? `${o === "short" ? "최단 시간 길" : "쭉고 길"} 길보다 신호를 ${other.unknownN - sim.unknownN}곳 덜 지났어요` : "신호 수는 다른 길과 같았어요";
   $("card-date").textContent = `10월 28일 ${clock(BASE + state.dep)}`;
-  $("done-hint").textContent = "스크린샷을 찍어 공유해 보세요";
+  $("done-hint").textContent = "경로 시연 요약 · 실제 걸은 기록이 아니에요";
   const kx = 111320 * Math.cos(37.55 * Math.PI / 180), pts = route.coords.map(c => [c[0] * kx, -c[1] * 110540]);
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
   const s = 150 / Math.max(maxX - minX, maxY - minY, 1), ox = (190 - (maxX - minX) * s) / 2, oy = (190 - (maxY - minY) * s) / 2;
@@ -816,12 +958,12 @@ let searchSeq = 0;
 async function renderSearchList() {
   const q = $("sq").value, seq = ++searchSeq, origin = state.pick === "from" ? state.to.ll : state.from.ll;
   $("sq-clear").hidden = !q;
-  $("search-for").textContent = state.pick === "from" ? "출발지를 골라요" : `도착지를 골라요 · 거리는 ${state.from.me ? "내 위치(서울광장 예시)" : state.from.name}에서 직선`;
+  $("search-for").textContent = state.pick === "from" ? "출발지를 골라요" : `도착지를 골라요 · 거리는 ${state.from.me ? "내 위치(GPS)" : state.from.name}에서 직선`;
   if (!q.trim()) {
     const recent = store.get("recent", []);
     const sugg = ["강남역", "시청역", "홍대입구역", "잠실역", "여의도역", "성수동 카페"];
     let h = "";
-    if (state.pick === "from") h += `<button class="res-item" data-res-me><b>내 위치</b><small>예시: 서울광장 · 실제 GPS는 아직 안 써요</small></button>`;
+    if (state.pick === "from") h += `<button class="res-item" data-res-me><b>내 위치</b><small>GPS로 현재 위치 연결</small></button>`;
     if (recent.length) h += `<p class="sec-title">최근</p>` + recent.map((p, i) => `<button class="res-item" data-res-recent="${i}"><b>${esc(p.name)}</b><small>${esc(p.kind || "")}</small><span class="km">${km(distLL(p.ll, origin))}</span></button>`).join("");
     h += `<p class="sec-title">이렇게 찾아보세요</p>` + sugg.map(s => `<button class="res-item" data-res-sugg="${esc(s)}"><b>${esc(s)}</b><small>${s.includes(" ") ? "동네 + 종류로 근처 찾기" : "역 이름"}</small></button>`).join("");
     h += `<p class="note">지도를 직접 눌러 도착지를 고를 수도 있어요. 검색 목록: OpenStreetMap에 이름이 있는 역·동네·대학·병원·명소·카페 등 약 1.7만 곳.</p>`;
@@ -838,18 +980,20 @@ async function renderSearchList() {
   }).join("") : `<p class="note">"${esc(q)}"에 맞는 곳이 없어요. 역 이름이나 동네 이름으로 찾아보거나, 지도를 눌러 골라 주세요.</p>`;
 }
 function choosePlace(p) {
+  $("result-location").hidden = true;
   const place = { name: p.name, sub: p.kind && p.kind !== "역" ? p.kind : "", ll: p.ll, kind: p.kind };
   if (!p.me) {
     const recent = store.get("recent", []).filter(r => r.name !== p.name);
     store.set("recent", [{ name: p.name, kind: p.kind, ll: p.ll }, ...recent].slice(0, 6));
   }
-  if (state.pick === "from") state.from = p.me ? ME : place; else state.to = place;
+  if (state.pick === "from") state.from = p.me ? p : place; else state.to = place;
   state.dep = 0; state.focus = "jjuk";
   resetHomeSheet();
   go("result");
 }
 
 async function exampleTrip(ex) {
+  $("result-location").hidden = true;
   const list = await ensureSearch();
   const find = n => list.find(p => p.name === n) || list.find(p => p.name.startsWith(n));
   const a = find(ex.from), b = find(ex.to);
@@ -875,7 +1019,8 @@ function show(name) {
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
   clearTimeout(splashTimer);
   if (name === "splash" && booted) splashTimer = setTimeout(() => go("home"), 1600);
-  if (name !== "walk") cancelAnimationFrame(walkTimer);
+  gpsRequest++;
+  if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); }
   if (name === "home") renderHome();
   if (name === "search") { renderSearchList(); setTimeout(() => $("sq").focus(), 50); }
   if (name === "result") renderResult();
@@ -902,7 +1047,11 @@ document.addEventListener("click", e => {
   if (r) { choosePlace($("search-list").results[+r.dataset.res]); return; }
   const rr = t.closest("[data-res-recent]");
   if (rr) { choosePlace(store.get("recent", [])[+rr.dataset.resRecent]); return; }
-  if (t.closest("[data-res-me]")) { choosePlace({ ...ME }); return; }
+  if (t.closest("[data-res-me],[data-locate]")) { locate(true); return; }
+  if (t.closest("[data-gps-retry]")) { renderWalk(); return; }
+  if (t.closest("[data-walk-demo]")) { renderWalk(true); return; }
+  const budget = t.closest("[data-budget]");
+  if (budget) { state.budget = +budget.dataset.budget; renderResult(); return; }
   const rs = t.closest("[data-res-sugg]");
   if (rs) { $("sq").value = rs.dataset.resSugg; renderSearchList(); return; }
   if (t.closest("#hp-to")) { state.pick = "to"; choosePlace({ ...state.picked }); return; }
@@ -913,7 +1062,9 @@ document.addEventListener("click", e => {
   const du = t.closest("[data-dep-use]");
   // 같은 길에서 출발 시각만 바꾼다(길을 다시 찾지 않음)
   if (du) { state.dep = +du.dataset.depUse; if (state.routes) state.routes.dep = state.dep; renderResult(); return; }
-  if (t.closest("#no-deadline")) { setDeadline(state.deadline == null ? 9 * 3600 + 600 : null); return; }
+  const timeStep = t.closest("[data-time-step]");
+  if (timeStep) { if (state.deadline != null) setDeadline(Math.max(0, Math.min(86340, state.deadline + Number(timeStep.dataset.timeStep) * 60))); return; }
+  if (t.closest("#no-deadline")) { setDeadline(state.deadline == null ? state.lastDeadline ?? 33000 : null); return; }
   if (t.closest("#cov-req")) { $("cov-text").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   if (t.closest("#sig-req")) { $("sig-note").textContent = "기록했어요. 프로토타입이라 실제로 보내지는 않아요."; return; }
   const b = t.closest("[data-go],[data-dep],[data-route]");
@@ -922,23 +1073,38 @@ document.addEventListener("click", e => {
   if (b.dataset.route) { state.focus = b.dataset.route; renderResult(); return; }
   go(b.dataset.go);
 });
+$("result-options").addEventListener("toggle", () => {
+  if (current !== "result") return;
+  setSheet("result", $("result-options").open ? "full" : "mid");
+  if (!$("result-options").open) $("sheet-result").querySelector(".sheet-body").scrollTop = 0;
+});
 $("sq").addEventListener("input", () => renderSearchList());
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });
 addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
 
 function setDeadline(v) {
+  if (v !== null && (!Number.isInteger(v) || v < 0 || v > 86340 || v % 60 !== 0)) v = 33000;
   state.deadline = v;
+  if (v != null) state.lastDeadline = v;
   store.set(DEADLINE_KEY, v);
   $("no-deadline").setAttribute("aria-pressed", String(v == null));
   $("deadline").disabled = v == null;
-  if (v != null) $("deadline").value = clock(v);
+  if (v != null) {
+    $("deadline-hour").value = String(Math.floor(v / 3600)).padStart(2, "0");
+    $("deadline-minute").value = String(v / 60 % 60).padStart(2, "0");
+  }
 }
-$("deadline").addEventListener("change", e => { const [h, m] = e.target.value.split(":").map(Number); if (!isNaN(h)) setDeadline(h * 3600 + m * 60); });
+for (const id of ["deadline-hour", "deadline-minute"]) $(id).addEventListener("change", () => {
+  if (state.deadline == null) return;
+  const hour = $("deadline-hour"), minute = $("deadline-minute");
+  if (!hour.value || !minute.value || !hour.validity.valid || !minute.validity.valid) { setDeadline(state.deadline); return; }
+  setDeadline(Number(hour.value) * 3600 + Number(minute.value) * 60);
+});
 async function boot() {
   show("splash");
   try {
-    [IDX, SIGS, GMETA] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json")]);
+    [IDX, SIGS, GMETA, TERRAIN] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null)]);
   } catch (err) {
     $("splash-foot").textContent = "지도 데이터를 못 불러왔어요. 새로고침해 주세요.";
     console.error(err);

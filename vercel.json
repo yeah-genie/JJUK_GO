@@ -1,0 +1,9 @@
+{
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "docs/prototype",
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "Permissions-Policy", "value": "geolocation=(self)" }] },
+    { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+  ]
+}

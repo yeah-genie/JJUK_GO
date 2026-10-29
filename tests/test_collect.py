@@ -260,3 +260,60 @@ def test_crawl_alternates_with_focus_targets(tmp_path):
         got.append(s["crawl"])
     assert got == [False, False, True, False, False, True]
     assert json.loads((tmp_path / "meta" / "crawl_cursor.json").read_text())["next_index"] == 0  # 2곳 중 2번 돌아 처음으로
+
+
+def test_network_retry_respects_global_spacing_and_success_log(tmp_path, monkeypatch):
+    import io
+    from jjukgo import tdata_client as tc
+
+    now, attempts = [1000.0], []
+    def sleep(seconds):
+        now[0] += seconds
+    def urlopen(url, timeout):
+        attempts.append(now[0])
+        if len(attempts) == 1:
+            now[0] += 20  # timeout 20초도 호출 간격에 포함된다.
+            raise TimeoutError()
+        return io.BytesIO(b'{"items": [{"itstId": "1537"}]}')
+    monkeypatch.setattr(tc.urllib.request, "urlopen", urlopen)
+    log = tmp_path / 'calls.csv'
+    client = tc.TDataClient('http://example.test', 'test', clock=lambda: now[0], sleep=sleep, call_log_path=log)
+    rows, _ = client.fetch(itst_id='1537')
+    assert rows and attempts == [1000.0, 1305.0]
+    assert log.read_text().count(',ok,') == 1
+    assert log.read_text().count(',net_error,') == 1
+
+
+def test_invalid_json_is_not_logged_as_success(tmp_path, monkeypatch):
+    import io
+    import pytest
+    from jjukgo import tdata_client as tc
+
+    monkeypatch.setattr(tc.urllib.request, 'urlopen', lambda *a, **k: io.BytesIO(b'bad json'))
+    log = tmp_path / 'calls.csv'
+    client = tc.TDataClient('http://example.test', 'test', max_retries=1, call_log_path=log)
+    with pytest.raises(tc.ApiError):
+        client.fetch()
+    assert ',ok,' not in log.read_text()
+    assert ',net_error,' in log.read_text()
+
+
+def test_failed_target_does_not_block_next_target(tmp_path):
+    from jjukgo.tdata_client import ApiError
+
+    (tmp_path / 'meta').mkdir()
+    (tmp_path / 'meta/api_probe.json').write_text(json.dumps({'version': 2, 'mode': 'per_intersection'}))
+    class FailingClient(FixtureClient):
+        def fetch(self, page_no=1, num_of_rows=1000, itst_id=None, **kwargs):
+            if itst_id == '1537':
+                raise ApiError('timeout')
+            return super().fetch(page_no, num_of_rows, itst_id, **kwargs)
+    cfg = {**CFG, 'budget': {**CFG['budget'], 'calls_per_run': 1}, 'targets': {'itst_ids': ['1537', '23665']}}
+    budget, _ = make(tmp_path)
+    first = collect_once(cfg, tmp_path, FailingClient(FIXTURE), budget, NOW)
+    assert first['error'] == 'timeout'
+    assert not (tmp_path / 'meta/last_fetch.json').exists()
+    assert json.loads((tmp_path / 'meta/cursor.json').read_text())['next_index'] == 1
+    budget, _ = make(tmp_path)
+    second = collect_once(cfg, tmp_path, FailingClient(FIXTURE), budget, NOW.replace(minute=55))
+    assert second['rows'] > 0 and 'error' not in second
