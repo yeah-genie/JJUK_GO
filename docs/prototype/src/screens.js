@@ -85,16 +85,23 @@ async function renderResult(){
   if(!state.routes&&!state.error){status.innerHTML='<b>내 걸음에 맞는 길을 찾고 있어요</b>서울 보행 도로망을 확인하고 있어요.';fitResultSheet();setRoutes(null,null);try{await computeTrip();}catch(e){console.error(e);state.error={title:'경로를 확인하지 못했어요',text:'다른 출입구를 선택하거나 다시 찾아 주세요.'};}if(current!=='result'||request!==resultRequest)return;}else refreshSims();
   if(state.error){status.innerHTML=`<b>${esc(state.error.title)}</b>${esc(state.error.text)}<button class="btn btn-ghost" data-route-retry>다시 찾기</button><button class="btn btn-primary" data-search="from">출발지 바꾸기</button>`;setRoutes(null,null);clearDyn();fitResultSheet();return;}
   status.hidden=true;content.hidden=false;$('result-footer').hidden=false;
-  const S=state.sims,ps=paceState(),cell=marginCellText(ps);setText('result-pace',paceRowText(ps));
-  for(const k of ['jjuk','short']){const c=$('card-'+k),sim=S[k];c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.focus===k));const extra=k==='jjuk'?Math.max(0,Math.round((sim.total-S.short.total)/60)):0;
-    c.innerHTML=`<span class="name">${k==='jjuk'?(state.same?'걷기 경로':'여유 있는 길'):'빠른 길'}</span><span class="mins">${mins(sim.total)}${extra?`<small>+${extra}분</small>`:''}</span><span class="margin">${cell}</span>`;}
-  const sim=S[state.focus],r=state.routes[state.focus],unk=unknownXingText(sim);
-  $('unknown-xings').hidden=!unk;setText('unknown-xings-text',unk);
-  setText('result-note',resultNote({example:state.mode==='example',base:BASE})+(state.same?' · 두 후보가 같은 길이에요':''));
-  setText('route-facts',`거리 ${km(sim.meters)} · 경로상 신호 ${sim.knownN+sim.unknownN}곳 · 지도에 표시된 계단 ${r.stairs}구간 · 오르막 추정 ${Math.round(r.rise)}m${r.under.length?' · 입체 구간 미확인':''} · 추가 ${state.budget/60}분 이내`);
-  $('cov-note').hidden=false;setText('cov-text','횡단 방향·길이·점멸 시간이 함께 검증되지 않아 건널 여유는 표시하지 않아요.');
-  setText('result-safety',`미확인 신호는 곳당 45초 대기를 가정해 소요 시간을 추정해요. 실제 신호·출입구·턱은 현장에서 확인해 주세요. 계단은 OSM 표시 구간, 경사는 지형 추정이며 무장애 경로를 보장하지 않아요.${readProfile().avoidSteps?' 확인된 계단은 제외했어요.':''}${state.same?' 조건 안에서 다른 후보를 찾지 못했어요.':''}`);
-  setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(S,state.focus,false);fitResultSheet();
+  const S=state.sims,ps=paceState(),R=state.routes,B=R.short.m,J=R.jjuk.m;setText('result-pace',paceRowText(ps));
+  // 빠른 길 vs 쭉고 길: 걷는 시간과 이동 마찰 원시값만 보여 준다(점수 없음). 쭉고 길은 의미 있는 대안이 있을 때만.
+  for(const k of ['jjuk','short']){const c=$('card-'+k),m=R[k].m;c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.focus===k));
+    const extra=k==='jjuk'&&!state.same?extraText(m.walk-B.walk):'';
+    c.innerHTML=`<span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span><span class="mins">${mins(m.walk)}</span><span class="margin">${extra||(state.same?'':'가장 빠름')}</span>`;}
+  setText('compare-line',state.same?'비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요':compareLine(R.short,R.jjuk));
+  const rows=[['걷는 시간',m=>mins(m.walk),'walk'],['신호 횡단',m=>m.sig+'곳','sig'],['계단',m=>m.stairs+'구간','stairs'],['오르막',m=>Math.round(m.gain)+'m','gain'],['급경사(8% 이상)',m=>Math.round(m.steep/10)*10+'m','steep']];
+  const cell=(m,o,k)=>{const v=m[k],w=o?o[k]:v,better=o&&(k==='walk'?v<w-0.5:v<w-(k==='gain'?0.5:k==='steep'?5:0.5));return `<span${better?' class="better"':''}>`;};
+  $('route-metrics').innerHTML=`<div class="mrow mhead"><span></span><span>빠른 길</span>${state.same?'':'<span>쭉고 길</span>'}</div>`+rows.map(([label,f,k])=>`<div class="mrow"><span>${label}</span>${cell(B,state.same?null:J,k)}${f(B)}</span>${state.same?'':`${cell(J,B,k)}${f(J)}</span>`}</div>`).join('');
+  $('route-metrics').classList.toggle('one',state.same);
+  const sim=S[state.focus],r=state.routes[state.focus];
+  $('unknown-xings').hidden=true;
+  setText('result-note',`${ps.kind==='learned'||ps.kind==='manual'?'내 걸음':'임시 걸음'} 기준 · 신호 기다림은 시간에 넣지 않았어요`);
+  setText('route-facts',`거리 ${km(r.length)} · 시간은 걷는 시간만(신호 기다림 제외) · 추가 ${Math.min(state.budget,180)/60}분 이내의 길만 비교`);
+  $('cov-note').hidden=true;
+  setText('result-safety',`신호 횡단은 서울시 횡단보도 자료(보행등 있음)로 세며 일부만 확인돼 실제보다 적을 수 있어요. 오르막·급경사는 서울시 등고선으로 계산한 추정이고, 계단은 지도에 표시된 곳만 세요. 실제 신호·턱·출입구는 현장에서 확인해 주세요.${readProfile().avoidSteps?' 계단은 제외했어요.':''}`);
+  setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(null,state.focus,false);fitResultSheet();
   if(state.fitted!==state.tripKey){fit([state.routes.jjuk.coords,state.routes.short.coords]);state.fitted=state.tripKey;}
 }
 function renderDetail(){if(!state.sims)return go('home');const xs=state.sims[state.focus].xings;setText('detail-title',`경로의 횡단 정보 ${xs.length}곳`);$('detail-list').innerHTML=xs.map(x=>`<div class="xing"><span>○</span><div><b>${esc(x.name)}</b><small>${x.known?'과거 신호 이력 있음':'신호 정보 미확인'} · 횡단 여유 미확인</small></div></div>`).join('')+'<p class="note">과거 신호 이력은 지금 켜진 불이 아니에요. 횡단 방향·길이·점멸 시간이 검증되기 전에는 남은 초나 건너도 된다는 안내를 하지 않아요.</p>';}

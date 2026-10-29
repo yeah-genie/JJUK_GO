@@ -50,20 +50,35 @@ vm.runInContext(`
   TERRAIN={zoom:0,size:2,tiles:{'0_0':[10,20,30,40]}};
   assert.equal(terrainHeight(-90, Math.atan(Math.sinh(Math.PI/2))*180/Math.PI),25);
   TERRAIN=null;
-  // A short stair route and a longer level route. A one minute budget rejects the detour.
+  // 빠른 길 vs 쭉고 길: 계단이 있는 짧은 길과 평지로 돌아가는 길. 쭉고 길은 의미 있는 대안일 때만 고른다.
   G.node.clear(); G.adj.clear();
   G.node.set(1,{x:100,y:100,h:10}); G.node.set(2,{x:200,y:100,h:10}); G.node.set(3,{x:150,y:180,h:10});
-  const edges=[{a:1,b:2,len:89,cls:3},{a:1,b:3,len:99,cls:2},{a:3,b:2,len:99,cls:2}];
+  const edges=[{a:1,b:2,len:89,cls:3,f:null},{a:1,b:3,len:99,cls:2,f:null},{a:3,b:2,len:99,cls:2,f:null}];
   for(const e of edges) for(const id of [e.a,e.b]) { if(!G.adj.has(id))G.adj.set(id,[]);G.adj.get(id).push(e); }
   state.src=1;state.dst=2;state.from={ll:fromQ(100,100)};state.to={ll:fromQ(200,100)};
-  state.routes={short:routeFor('short',0),dep:0,budget:null};state.budget=60;
-  refreshSims(); assert.equal(state.same,true);assert.equal(state.routes.jjuk.stairs,1);
-  state.budget=120;refreshSims();assert.equal(state.same,false);assert.equal(state.routes.jjuk.stairs,0);
+  const mk=w=>{const st=searchFriction(1,2,w),r=buildRoute(st,1,state.from.ll,state.to.ll);r.steps=st;r.m=routeMetrics(r,st);return r;};
+  const fast=mk([0,0,0,0,0]), level=mk([0,0,0,0,8]);
+  assert.equal(fast.m.stairs,1);assert.equal(level.m.stairs,0);assert(level.m.walk>fast.m.walk);
+  const extra=level.m.walk-fast.m.walk;
+  assert.equal(pickAlternative(fast,[level],extra-1),null,'허용 시간을 넘으면 대안 없음');
+  assert.equal(pickAlternative(fast,[level],180),level,'계단을 줄이면 대안');
+  assert.equal(compareLine(fast,level),extraText(extra)+'로 계단을 피할 수 있어요');
+  assert.equal(pickAlternative(fast,[fast],180),null,'같은 길은 대안이 아님');
+  // 다른 지표가 나빠지면 대안 아님
+  const worse={...level,m:{...level.m,sig:fast.m.sig+1}};
+  assert.equal(pickAlternative(fast,[worse],180),null,'신호 횡단이 늘면 대안 아님');
+  // 한 줄 설명 문장: 조사와 '피할/줄일'
+  const B={m:{walk:600,sig:2,stairs:0,gain:30,steep:300,cross:3,big:0}};
+  assert.equal(compareLine(B,{m:{...B.m,walk:625,sig:1}}),'+25초로 신호 횡단 1개를 줄일 수 있어요');
+  assert.equal(compareLine(B,{m:{...B.m,walk:617,steep:0}}),'+17초로 급경사 구간 300m를 피할 수 있어요');
+  assert.equal(compareLine(B,{m:{...B.m,walk:638,sig:1,steep:170}}),'+38초로 신호 횡단 1개와 급경사 구간 130m를 줄일 수 있어요');
+  assert.equal(compareLine(B,{m:{...B.m,walk:690,gain:15}}),'+1분 30초로 오르막 15m를 줄일 수 있어요');
+  assert.equal(compareLine(B,{m:{...B.m,walk:660,gain:15}}),'+1분으로 오르막 15m를 줄일 수 있어요');
+  // 계단 제외 설정이면 계단 길을 쓰지 않는다
   const baseProfile=readProfile();writeProfile({...baseProfile,avoidSteps:true});
-  assert.equal(routeFor('short',0).stairs,0);assert.equal(routeFor('jjuk',0).stairs,0);
+  assert.equal(mk([0,0,0,0,0]).m.stairs,0);
   writeProfile(baseProfile);
-  const a=state.sims.jjuk,b=state.sims.short;
-  assert(a.total>=b.total);assert(a.total<=b.total+state.budget);
+  state.routes={short:fast,jjuk:level,dep:0,budget:180,alt:true};state.budget=180;refreshSims();assert.equal(state.same,false);
   const route=state.routes.short;
   const projected=projectOnRoute(route,pointAt(route,route.length/2));
   assert(Math.abs(projected.distance-route.length/2)<0.1);assert(projected.offset<0.1);

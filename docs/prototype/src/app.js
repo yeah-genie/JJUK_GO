@@ -110,12 +110,15 @@ function cellsFor(a, b, margin = 700) {
 function loadCell(k) {
   if (!G.cells.has(k)) G.cells.set(k, getJSON(`graph/c${k}.json`).then(c => {
     for (const [id, x, y, s] of c.n) G.node.set(id, { x, y, s: s ?? null, h: terrainHeight(...fromQ(x, y)) });
-    for (const [a, b, len, cls, geom, sig, dir, half] of c.e) {
+    const F = c.f || {};
+    for (let i = 0; i < c.e.length; i++) {
+      const [a, b, len, cls, geom, sig, dir, half] = c.e[i];
       const key = a + ":" + b + ":" + len;
       if (G.seen.has(key)) continue;
       G.seen.add(key);
       // sig: 이 횡단보도의 신호(큰길을 건널 때만), dir: 건너는 다리 방향, half: 일방통행 차로 하나만 건넘
-      const e = { a, b, len, cls, geom: geom || null, sig: sig || null, dir: dir || null, half: !!half };
+      // f: 이동 마찰 원시값 [a→b 상승(0.1m), b→a 상승(0.1m), 8% 이상 경사 거리(m), 근처 횡단보도 수, 그중 보행등 있음] (scripts/build_friction_layer.py)
+      const e = { a, b, len, cls, geom: geom || null, sig: sig || null, dir: dir || null, half: !!half, f: F[i] || null };
       if (!G.adj.has(a)) G.adj.set(a, []);
       if (!G.adj.has(b)) G.adj.set(b, []);
       G.adj.get(a).push(e); G.adj.get(b).push(e);
@@ -146,7 +149,8 @@ function snap(ll) {
   G.node.set(id,{x:q[0],y:q[1],s:null,h:terrainHeight(...point)});
   const split = cum.findIndex(d => d >= at), qs = pts.map(toQ);
   const encode = points => points.slice(1,-1).flatMap((p,i)=>[p[0]-points[i][0],p[1]-points[i][1]]);
-  const parts = [{...edge,b:id,len:edge.len*at/length,geom:encode([...qs.slice(0,split),q])}, {...edge,a:id,len:edge.len*(length-at)/length,geom:encode([q,...qs.slice(split)])}];
+  const part = r => edge.f ? edge.f.map((v, i) => i < 3 ? v * r : v) : null;
+  const parts = [{...edge,b:id,len:edge.len*at/length,geom:encode([...qs.slice(0,split),q]),f:part(at/length)}, {...edge,a:id,len:edge.len*(length-at)/length,geom:encode([q,...qs.slice(split)]),f:part((length-at)/length)}];
   G.adj.set(edge.a,G.adj.get(edge.a).filter(e=>e!==edge));
   G.adj.set(edge.b,G.adj.get(edge.b).filter(e=>e!==edge));
   G.adj.set(id,[]);
@@ -596,6 +600,138 @@ const setStatus = (title, text) => { if (current === "result") { $("result-statu
 const tripKeyNow = () => `${readProfile().avoidSteps}|${state.budget}|${state.mode}|${BASE}|${SPEED}|${state.from?.ll.join()}|${state.to?.ll.join()}`;
 let tripRequest = 0, resultRequest = 0;
 const nowSeconds = () => { const n = new Date(); return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(); };
+// ---------- 이동 마찰: 빠른 길 vs 쭉고 길 ----------
+// 빠른 길 = 걷는 시간만으로 가장 빠른 길. 쭉고 길 = 아래 '의미 있는 대안' 조건을 만족하는 다른 길(없으면 보여 주지 않는다).
+// 시간 비교는 걷는 시간만 쓴다(신호 대기 가정은 넣지 않는다). 가중치는 후보를 찾을 때만 쓰고 비교는 원시값으로 한다.
+const fGain = (e, u) => e.f ? (u === e.a ? e.f[0] : e.f[1]) / 10 : 0;   // 오르는 높이(m)
+const fSteep = e => e.f ? e.f[2] : 0;                                    // 8% 이상 경사 거리(m)
+// [근처 횡단보도당 초, 보행등 횡단보도당 초, 상승 m당 초, 급경사 m당 초, 계단 m당 초] — 실험 v3와 같은 후보 탐색
+const FRICTION_WEIGHTS = [[0,0,0,0,0], [0,20,0,0,0], [0,60,0,0,0], [0,150,0,0,0], [0,0,2,0,0], [0,0,6,0,0], [0,0,15,0,0],
+  [0,0,0,0.3,0], [0,0,0,1,0], [0,0,0,3,0], [0,0,0,0,1], [0,0,0,0,3], [0,0,0,0,8], [20,20,2,0.3,1], [60,60,6,1,3], [150,150,15,3,8]];
+const ALT_GAIN = [["sig", 1], ["stairs", 1], ["steep", 100], ["gain", 10]];          // 이만큼 줄면 의미 있는 개선
+const ALT_WORSE = { sig: 0, stairs: 0, big: 0, cross: 1, gain: 5, steep: 50 };        // 이만큼까지만 나빠져도 됨
+const ALT_MAX_EXTRA = 180, SAME_OVERLAP = 0.9, SAME_EXTRA = 10;
+function searchFriction(src, dst, w) {
+  const [wx, ws, wr, wst, wt] = w, D = G.node.get(dst);
+  const hEst = n => Math.hypot((n.x - D.x) * KXQ, (n.y - D.y) * KYQ) / SPEED * 0.999;
+  const cost = new Map([[src, 0]]), prev = new Map(), done = new Set(), h = new Heap(), avoid = readProfile().avoidSteps;
+  h.push(hEst(G.node.get(src)), src);
+  while (h.size) {
+    const u = h.pop()[1], c = cost.get(u);
+    if (done.has(u)) continue;
+    done.add(u);
+    if (u === dst) break;
+    for (const e of G.adj.get(u) || []) {
+      if (e.cls === 3 && avoid) continue;
+      const v = e.a === u ? e.b : e.a, nv = G.node.get(v);
+      if (!nv || done.has(v)) continue;
+      let cv = c + e.len / SPEED;
+      if (e.f) cv += wx * e.f[3] + ws * e.f[4] + wr * fGain(e, u) + wst * e.f[2];
+      if (wt && e.cls === 3) cv += wt * e.len;
+      if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); prev.set(v, [u, e]); h.push(cv + hEst(nv), v); }
+    }
+  }
+  if (!done.has(dst)) return null;
+  const steps = []; let v = dst;
+  while (v !== src) { const [u, e] = prev.get(v); steps.push([u, v, e]); v = u; }
+  return steps.reverse();
+}
+// 서울 횡단보도 표준 자료 점(보행등 유무). 신호 횡단을 셀 때만 쓴다.
+let STD = null;
+async function loadStd() {
+  if (STD) return STD;
+  const rows = await getJSON("crosswalks_std.json"), grid = new Map();
+  for (const [x, y, s] of rows) { const ll = fromQ(x, y), k = Math.floor(ll[0] * 2000) + "," + Math.floor(ll[1] * 2000); (grid.get(k) || grid.set(k, []).get(k)).push([ll, s]); }
+  return (STD = grid);
+}
+function stdNear(ll, R) {
+  const out = [], k0 = Math.floor(ll[0] * 2000), k1 = Math.floor(ll[1] * 2000);
+  if (!STD) return out;
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const p of STD.get((k0 + a) + "," + (k1 + b)) || []) if (distLL(ll, p[0]) <= R) out.push(p);
+  return out;
+}
+function rayBearing(e, at) {
+  const pts = edgePts(e, at).map(p => fromQ(...p)), a = pts[0];
+  let b = pts[pts.length - 1];
+  for (const q of pts.slice(1)) if (distLL(a, q) > 3) { b = q; break; }
+  return (Math.atan2((b[0] - a[0]) * Math.cos(a[1] * Math.PI / 180), b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+}
+// 횡단: 경로가 지나는 노드에서, 경로가 쓰지 않은 차도 두 가지가 한 줄을 이루고 들어오는·나가는 방향이 그 줄의 서로 다른 쪽이면 1회.
+// 또 지도(OSM)에 횡단보도로 그려진 간선(cls 5)을 지나면 횡단 1회. 25m 안에 이어진 횡단은 하나로 묶는다. 신호 횡단 = 그 지점 25m 안에 보행등 있는 횡단보도 점. 큰길 = 간선도로(cls 0).
+// T자 골목 입구는 어느 쪽 보도인지 몰라 세지 않는다(적게 세는 쪽).
+function routeCrossings(steps) {
+  const ev = []; let cum = 0;
+  for (let k = 0; k < steps.length - 1; k++) {
+    const [u0, v, e] = steps[k], eNext = steps[k + 1][2];
+    // 지도(OSM)에 횡단보도로 그려진 간선을 지나면 그 자체로 횡단 1회(차도와 노드를 공유하지 않는 경우가 많다)
+    if (e.cls === 5) { const p = edgePts(e, u0), m = p[p.length >> 1]; ev.push({ d: cum + e.len / 2, at: fromQ(m[0], m[1]), big: !!e.sig }); }
+    cum += e.len;
+    const roads = (G.adj.get(v) || []).filter(x => x !== e && x !== eNext && x.cls <= 1).map(x => [rayBearing(x, v), x]);
+    if (roads.length < 2) continue;
+    const bIn = rayBearing(e, v), bOut = rayBearing(eNext, v), pairs = [], used = new Set(), cand = [];
+    for (let i = 0; i < roads.length; i++) for (let j = i + 1; j < roads.length; j++) cand.push([Math.abs(((roads[i][0] - roads[j][0] + 540) % 360) - 180), i, j]);
+    cand.sort((p, q) => q[0] - p[0]);
+    for (const [diff, i, j] of cand) { if (diff < 140 || used.has(i) || used.has(j)) continue; used.add(i); used.add(j); pairs.push([roads[i], roads[j]]); }
+    const n = G.node.get(v);
+    for (const [[ba, ea], [, eb]] of pairs) {
+      const side = b => Math.sin((b - ba) * Math.PI / 180), si = side(bIn), so = side(bOut);
+      if (si * so < 0 && Math.abs(si) > 0.17 && Math.abs(so) > 0.17) ev.push({ d: cum, at: fromQ(n.x, n.y), big: ea.cls === 0 || eb.cls === 0 });
+    }
+  }
+  const last = steps[steps.length - 1];
+  if (last && last[2].cls === 5) { const p = edgePts(last[2], last[0]), m = p[p.length >> 1]; ev.push({ d: cum + last[2].len / 2, at: fromQ(m[0], m[1]), big: !!last[2].sig }); }
+  ev.sort((p, q) => p.d - q.d);
+  const groups = [];
+  for (const x of ev) { const g = groups[groups.length - 1]; if (g && x.d - g[g.length - 1].d <= 25) g.push(x); else groups.push([x]); }
+  let sig = 0, big = 0;
+  for (const g of groups) { if (g.some(x => stdNear(x.at, 25).some(p => p[1] === 1))) sig++; if (g.some(x => x.big)) big++; }
+  return { cross: groups.length, sig, big };
+}
+function routeMetrics(route, steps) {
+  let gain = 0, steep = 0;
+  for (const [u, , e] of steps) { gain += fGain(e, u); steep += fSteep(e); }
+  return { walk: route.length / SPEED, meters: route.length, stairs: route.stairs, gain, steep, ...routeCrossings(steps) };
+}
+function routeOverlap(a, b) {
+  const set = new Set(b.steps.map(s => s[2])); let shared = 0;
+  for (const s of a.steps) if (set.has(s[2])) shared += s[2].len;
+  return a.length ? shared / a.length : 1;
+}
+function altGains(alt, base) { return ALT_GAIN.filter(([k, thr]) => base.m[k] - alt.m[k] >= thr).map(([k]) => k); }
+function pickAlternative(base, cands, limit) {
+  let best = null;
+  for (const c of cands) {
+    const extra = c.m.walk - base.m.walk;
+    if (extra <= SAME_EXTRA || extra > limit || routeOverlap(c, base) >= SAME_OVERLAP) continue;
+    if (Object.entries(ALT_WORSE).some(([k, lim]) => c.m[k] - base.m[k] > lim)) continue;
+    if (!altGains(c, base).length) continue;
+    if (!best || extra < best.m.walk - base.m.walk) best = c;
+  }
+  return best;
+}
+// 한 줄 설명: "+25초로 신호 횡단 1개를 줄일 수 있어요"
+function hasBatchim(word) {
+  const ch = word.trim().slice(-1), code = ch.charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) return (code - 0xac00) % 28 !== 0;
+  if (/m$/.test(word)) return false;                        // 미터
+  if (/[0-9]$/.test(word)) return "013678".includes(ch);    // 영, 일, 삼, 육, 칠, 팔
+  return false;
+}
+const josa = (w, a, b) => w + (hasBatchim(w) ? a : b);
+function extraText(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "+" + (m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"); }
+function compareLine(base, alt) {
+  const g = altGains(alt, base), parts = [], b = base.m, a = alt.m;
+  let avoidAll = true;
+  for (const k of g) {
+    if (k === "sig") { parts.push(`신호 횡단 ${b.sig - a.sig}개`); avoidAll = avoidAll && a.sig === 0; }
+    if (k === "stairs") { parts.push(a.stairs === 0 ? "계단" : `계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
+    if (k === "steep") { parts.push(`급경사 구간 ${Math.round((b.steep - a.steep) / 10) * 10}m`); avoidAll = avoidAll && a.steep < 10; }
+    if (k === "gain") { parts.push(`오르막 ${Math.round(b.gain - a.gain)}m`); avoidAll = false; }
+  }
+  const list = parts.length === 1 ? parts[0] : parts.slice(0, -1).map((p, i) => i === parts.length - 2 ? josa(p, "과", "와") : p).join(", ") + " " + parts[parts.length - 1];
+  const joined = parts.length <= 2 ? (parts.length === 2 ? josa(parts[0], "과", "와") + " " + parts[1] : parts[0]) : list;
+  return `${josa(extraText(a.walk - b.walk), "으로", "로")} ${josa(joined, "을", "를")} ${avoidAll ? "피할" : "줄일"} 수 있어요`;
+}
 async function computeTrip() {
   const request = ++tripRequest;
   const key = tripKeyNow();
@@ -609,7 +745,7 @@ async function computeTrip() {
   try {
     const firstHour = Math.floor(BASE / 3600), horizon = Math.min(23, Math.ceil(d * 2 / SPEED / 3600) + 1);
     const hours = Array.from({length:horizon + 1}, (_, i) => firstHour + i);
-    const [, plans] = await Promise.all([Promise.all(cells.map(loadCell)), loadSignalPlans(hours).catch(() => ({signals:{},source_dates:[],date:null}))]);
+    const [, plans] = await Promise.all([Promise.all(cells.map(loadCell)), loadSignalPlans(hours).catch(() => ({signals:{},source_dates:[],date:null})), loadStd().catch(() => null)]);
     if (request !== tripRequest || key !== tripKeyNow()) return;
     REAL = plans;
   } catch (err) {
@@ -621,17 +757,32 @@ async function computeTrip() {
   if (a.id == null || b.id == null || a.d > 35 || b.d > 35) { state.error = { title: "출입구 가까이에서 골라 주세요", text: "보행로와 35m 넘게 떨어져 있어 임의로 연결하지 않았어요. 지도의 실제 출입구나 보행로를 출발·도착으로 선택해 주세요." }; return; }
   state.src = a.id; state.dst = b.id;
   const t0 = performance.now();
-  const short = routeFor("short", state.dep), jjuk = routeFor("jjuk", state.dep);
-  state.lastRouteMs = performance.now() - t0;
+  // 먼 길은 탐색 횟수를 줄인다(응답 시간)
+  const weights = d > 5000 ? FRICTION_WEIGHTS.filter((_, i) => [0, 2, 5, 8, 11, 14].includes(i)) : FRICTION_WEIGHTS;
+  const seen = new Set(), cands = [];
+  for (const w of weights) {
+    const steps = searchFriction(state.src, state.dst, w);
+    if (!steps) continue;
+    const key = steps.map(s => s[0] + "-" + s[1]).join(",");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const route = buildRoute(steps, state.src, state.from.ll, state.to.ll);
+    if (!Number.isFinite(route.length) || !route.coords.every(p => p.every(Number.isFinite))) continue;
+    route.steps = steps; route.m = routeMetrics(route, steps); cands.push(route);
+  }
+  const short = cands[0] || null;
+  const alt = short ? pickAlternative(short, cands.slice(1), Math.min(state.budget ?? ALT_MAX_EXTRA, ALT_MAX_EXTRA)) : null;
+  const jjuk = alt || short;
+  state.lastRouteMs = performance.now() - t0; state.candidateCount = cands.length;
   if (!short || !jjuk) { state.error = { title: "길을 못 찾았어요", text: readProfile().avoidSteps ? "확인된 계단을 제외한 연결 경로를 찾지 못했어요. 이동 조건이나 출입구를 확인해 주세요." : "보행 도로망에서 두 곳의 연결을 찾지 못했어요. 다른 출입구를 골라 주세요." }; return; }
-  state.routes = { short, jjuk, dep: state.dep, budget: null };
+  state.routes = { short, jjuk, dep: state.dep, budget: state.budget, alt: !!alt };
   refreshSims();
 }
 function refreshSims() {
   if (!state.routes) { state.sims = null; return; }
   if (state.fixedRoute) { state.routes[state.fixedFocus] = state.fixedRoute; state.routes.dep = state.dep; state.routes.budget = state.budget; state.fixedRoute = null; }
   // 출발 시각이 바뀌면 신호 위상이 달라지므로 두 길을 다시 찾는다
-  if (state.routes.dep !== state.dep || state.routes.budget !== state.budget) {
+  if (false) {   // 빠른 길 vs 쭉고 길 비교판에서는 출발 시각에 따라 길을 다시 고르지 않는다(신호 예측을 쓰지 않음)
     const cost = (r, s) => s.wait + s.assumedWait + s.stops * STOP_COST + r.stairMeters * 2 + r.rise * 8;
     const candidates = [routeFor("short", state.dep), routeFor("jjuk", state.dep), routeFor("gentle", state.dep)].filter(Boolean).map(r=>({r,s:simulate(r,state.dep)}));
     candidates.sort((a,b)=>a.s.total-b.s.total || a.r.length-b.r.length);
@@ -1131,6 +1282,13 @@ async function boot() {
   XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
   booted = true;
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
+  // 링크로 길을 바로 열기: ?from=위도,경도&to=위도,경도&fn=출발 이름&tn=도착 이름 (수동 QA·공유용)
+  const qs = new URLSearchParams(location.search), pt = v => { const [la, lo] = (v || "").split(",").map(Number); return Number.isFinite(la) && Number.isFinite(lo) && la > 37.3 && la < 37.8 && lo > 126.6 && lo < 127.3 ? [lo, la] : null; };
+  const qf = pt(qs.get("from")), qt = pt(qs.get("to"));
+  if (qf && qt) {
+    state.from = { name: qs.get("fn") || "출발", sub: "", ll: qf }; state.to = { name: qs.get("tn") || "도착", sub: "", ll: qt };
+    state.mode = "actual"; state.routes = null; state.tripKey = null; state.dep = 0; state.focus = "jjuk"; pendingScreen = "result";
+  }
   const target = pendingScreen || location.hash.slice(1);
   pendingScreen = target && target !== "splash" ? target : "home";
   splashTimer=setTimeout(()=>go(pendingScreen),Math.max(0,3200-(Date.now()-splashStarted)));

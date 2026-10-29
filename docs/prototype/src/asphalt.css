@@ -58,3 +58,7 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 .xw-panel small{font-size:11px;color:var(--muted)}
 .xw-pop .maplibregl-popup-content{background:#242A32;color:var(--zebra);border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;font-size:12px}.xw-pop b{font-size:20px;color:var(--lane)}.xw-pop .maplibregl-popup-tip{display:none}
 @media(max-height:690px){.xw-panel{padding:6px 12px 6px;gap:3px}.xw-panel small{display:none}}
+/* 빠른 길 vs 쭉고 길 비교 */
+.compare-line{margin:0;padding:12px 0 10px;border-top:1px solid var(--line);font-size:16px;font-weight:700;color:var(--lane);line-height:1.35}
+.metrics{margin:6px 0 4px;font-size:14px}.metrics .mrow{display:grid;grid-template-columns:38% 31% 31%;align-items:center;min-height:30px;border-bottom:1px solid var(--line)}.metrics.one .mrow{grid-template-columns:38% 62%}
+.metrics .mrow span:not(:first-child){text-align:right;padding-right:10px;color:#D3D7DC}.metrics .mrow span:first-child{color:var(--muted)}.metrics .mhead span{font-size:12px;color:var(--muted)!important}.metrics .better{color:var(--lane)!important;font-weight:700}

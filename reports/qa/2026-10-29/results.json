@@ -1,0 +1,565 @@
+[
+ {
+  "id": "flat-yeouido",
+  "kind": "평지",
+  "from": [
+   37.5216,
+   126.9243
+  ],
+  "to": [
+   37.5271,
+   126.9329
+  ],
+  "fn": "여의도역",
+  "tn": "여의나루역",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "route_ms": 24,
+  "fast": {
+   "walk_s": 1297,
+   "meters": 1297,
+   "sig": 3,
+   "cross": 3,
+   "big": 3,
+   "stairs": 0,
+   "gain_m": 4,
+   "steep8_m": 0
+  },
+  "jjuk": null,
+  "load_ms": 6146,
+  "page_errors": []
+ },
+ {
+  "id": "flat-gwanghwamun",
+  "kind": "평지",
+  "from": [
+   37.5759,
+   126.9769
+  ],
+  "to": [
+   37.5658,
+   126.9772
+  ],
+  "fn": "광화문",
+  "tn": "시청역",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 6,
+  "route_ms": 68,
+  "fast": {
+   "walk_s": 1217,
+   "meters": 1217,
+   "sig": 4,
+   "cross": 5,
+   "big": 5,
+   "stairs": 1,
+   "gain_m": 2,
+   "steep8_m": 0
+  },
+  "jjuk": null,
+  "load_ms": 6390,
+  "page_errors": []
+ },
+ {
+  "id": "hill-haebangchon",
+  "kind": "언덕",
+  "from": [
+   37.5346,
+   126.9867
+  ],
+  "to": [
+   37.542,
+   126.9855
+  ],
+  "fn": "녹사평역",
+  "tn": "해방촌 오거리",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 9,
+  "route_ms": 52,
+  "fast": {
+   "walk_s": 1010,
+   "meters": 1010,
+   "sig": 4,
+   "cross": 4,
+   "big": 4,
+   "stairs": 0,
+   "gain_m": 40,
+   "steep8_m": 216
+  },
+  "jjuk": null,
+  "load_ms": 6400,
+  "page_errors": []
+ },
+ {
+  "id": "hill-namsan",
+  "kind": "언덕",
+  "from": [
+   37.5609,
+   126.9863
+  ],
+  "to": [
+   37.5573,
+   126.9837
+  ],
+  "fn": "명동역",
+  "tn": "남산 케이블카 승강장",
+  "line": "+2분 50초로 급경사 구간 150m를 줄일 수 있어요",
+  "error": null,
+  "alt": true,
+  "candidates": 4,
+  "route_ms": 21,
+  "fast": {
+   "walk_s": 569,
+   "meters": 569,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 29,
+   "steep8_m": 203
+  },
+  "jjuk": {
+   "walk_s": 739,
+   "meters": 739,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 25,
+   "steep8_m": 58
+  },
+  "load_ms": 6267,
+  "page_errors": []
+ },
+ {
+  "id": "hill-sungbuk",
+  "kind": "언덕",
+  "from": [
+   37.5893,
+   127.0167
+  ],
+  "to": [
+   37.5935,
+   127.001
+  ],
+  "fn": "성신여대입구역",
+  "tn": "성북동",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 9,
+  "route_ms": 61,
+  "fast": {
+   "walk_s": 1912,
+   "meters": 1912,
+   "sig": 2,
+   "cross": 2,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 26,
+   "steep8_m": 17
+  },
+  "jjuk": null,
+  "load_ms": 122649,
+  "page_errors": [
+   "시간 초과"
+  ]
+ },
+ {
+  "id": "stairs-naksan",
+  "kind": "계단",
+  "from": [
+   37.5822,
+   127.0018
+  ],
+  "to": [
+   37.5806,
+   127.0074
+  ],
+  "fn": "혜화역",
+  "tn": "낙산공원",
+  "line": "+2분 29초로 계단을 피할 수 있어요",
+  "error": null,
+  "alt": true,
+  "candidates": 4,
+  "route_ms": 22,
+  "fast": {
+   "walk_s": 761,
+   "meters": 761,
+   "sig": 1,
+   "cross": 2,
+   "big": 1,
+   "stairs": 1,
+   "gain_m": 58,
+   "steep8_m": 309
+  },
+  "jjuk": {
+   "walk_s": 910,
+   "meters": 910,
+   "sig": 1,
+   "cross": 2,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 59,
+   "steep8_m": 336
+  },
+  "load_ms": 6244,
+  "page_errors": []
+ },
+ {
+  "id": "stairs-bukchon",
+  "kind": "계단",
+  "from": [
+   37.5765,
+   126.9854
+  ],
+  "to": [
+   37.5826,
+   126.983
+  ],
+  "fn": "안국역",
+  "tn": "북촌한옥마을",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "route_ms": 37,
+  "fast": {
+   "walk_s": 874,
+   "meters": 874,
+   "sig": 0,
+   "cross": 0,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 31,
+   "steep8_m": 171
+  },
+  "jjuk": null,
+  "load_ms": 5975,
+  "page_errors": []
+ },
+ {
+  "id": "junction-gangnam",
+  "kind": "대형 교차로",
+  "from": [
+   37.4979,
+   127.0276
+  ],
+  "to": [
+   37.5045,
+   127.025
+  ],
+  "fn": "강남역",
+  "tn": "신논현역",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "route_ms": 14,
+  "fast": {
+   "walk_s": 932,
+   "meters": 932,
+   "sig": 0,
+   "cross": 2,
+   "big": 1,
+   "stairs": 1,
+   "gain_m": 7,
+   "steep8_m": 0
+  },
+  "jjuk": null,
+  "load_ms": 6242,
+  "page_errors": []
+ },
+ {
+  "id": "junction-seoulstation",
+  "kind": "대형 교차로",
+  "from": [
+   37.556,
+   126.9725
+  ],
+  "to": [
+   37.5591,
+   126.9773
+  ],
+  "fn": "서울역 광장",
+  "tn": "남대문시장",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 5,
+  "route_ms": 23,
+  "fast": {
+   "walk_s": 733,
+   "meters": 733,
+   "sig": 0,
+   "cross": 2,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 21,
+   "steep8_m": 73
+  },
+  "jjuk": null,
+  "load_ms": 122660,
+  "page_errors": [
+   "시간 초과"
+  ]
+ },
+ {
+  "id": "bridge-nodeul",
+  "kind": "다리 주변",
+  "from": [
+   37.5128,
+   126.9535
+  ],
+  "to": [
+   37.5174,
+   126.9585
+  ],
+  "fn": "노들역",
+  "tn": "노들섬",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "route_ms": 8,
+  "fast": {
+   "walk_s": 724,
+   "meters": 724,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 3,
+   "steep8_m": 2
+  },
+  "jjuk": null,
+  "load_ms": 6250,
+  "page_errors": []
+ },
+ {
+  "id": "bridge-banpo",
+  "kind": "다리 주변",
+  "from": [
+   37.5048,
+   127.0049
+  ],
+  "to": [
+   37.5105,
+   126.9958
+  ],
+  "fn": "고속터미널역",
+  "tn": "반포한강공원",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 9,
+  "route_ms": 53,
+  "fast": {
+   "walk_s": 1370,
+   "meters": 1370,
+   "sig": 2,
+   "cross": 5,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 11,
+   "steep8_m": 46
+  },
+  "jjuk": null,
+  "load_ms": 5894,
+  "page_errors": []
+ },
+ {
+  "id": "alley-ikseon",
+  "kind": "골목길",
+  "from": [
+   37.5714,
+   126.9916
+  ],
+  "to": [
+   37.5741,
+   126.9893
+  ],
+  "fn": "종로3가역",
+  "tn": "익선동",
+  "line": "+1분 57초로 신호 횡단 1개를 피할 수 있어요",
+  "error": null,
+  "alt": true,
+  "candidates": 3,
+  "route_ms": 13,
+  "fast": {
+   "walk_s": 435,
+   "meters": 435,
+   "sig": 1,
+   "cross": 3,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 4,
+   "steep8_m": 0
+  },
+  "jjuk": {
+   "walk_s": 552,
+   "meters": 552,
+   "sig": 0,
+   "cross": 1,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 4,
+   "steep8_m": 0
+  },
+  "load_ms": 122653,
+  "page_errors": [
+   "시간 초과"
+  ]
+ },
+ {
+  "id": "alley-seongsu",
+  "kind": "골목길",
+  "from": [
+   37.5446,
+   127.0559
+  ],
+  "to": [
+   37.5444,
+   127.0374
+  ],
+  "fn": "성수역",
+  "tn": "서울숲",
+  "line": "+1분으로 신호 횡단 3개와 오르막 15m를 줄일 수 있어요",
+  "error": null,
+  "alt": true,
+  "candidates": 8,
+  "route_ms": 41,
+  "fast": {
+   "walk_s": 2057,
+   "meters": 2057,
+   "sig": 5,
+   "cross": 8,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 21,
+   "steep8_m": 80
+  },
+  "jjuk": {
+   "walk_s": 2117,
+   "meters": 2117,
+   "sig": 2,
+   "cross": 4,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 6,
+   "steep8_m": 0
+  },
+  "load_ms": 6349,
+  "page_errors": []
+ },
+ {
+  "id": "short-deoksugung",
+  "kind": "짧은 경로",
+  "from": [
+   37.5657,
+   126.9769
+  ],
+  "to": [
+   37.5658,
+   126.9752
+  ],
+  "fn": "시청역",
+  "tn": "덕수궁",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 2,
+  "route_ms": 16,
+  "fast": {
+   "walk_s": 539,
+   "meters": 539,
+   "sig": 0,
+   "cross": 0,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 5,
+   "steep8_m": 0
+  },
+  "jjuk": null,
+  "load_ms": 6224,
+  "page_errors": []
+ },
+ {
+  "id": "long-gwanghwamun-dongdaemun",
+  "kind": "긴 경로",
+  "from": [
+   37.5759,
+   126.9769
+  ],
+  "to": [
+   37.5711,
+   127.0095
+  ],
+  "fn": "광화문",
+  "tn": "동대문",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "error": null,
+  "alt": false,
+  "candidates": 10,
+  "route_ms": 185,
+  "fast": {
+   "walk_s": 3417,
+   "meters": 3417,
+   "sig": 7,
+   "cross": 10,
+   "big": 6,
+   "stairs": 3,
+   "gain_m": 10,
+   "steep8_m": 12
+  },
+  "jjuk": null,
+  "load_ms": 6606,
+  "page_errors": []
+ },
+ {
+  "id": "long-sinchon-hongdae",
+  "kind": "긴 경로",
+  "from": [
+   37.5551,
+   126.9368
+  ],
+  "to": [
+   37.5571,
+   126.9245
+  ],
+  "fn": "신촌역",
+  "tn": "홍대입구역",
+  "line": "+1분 32초로 신호 횡단 1개를 줄일 수 있어요",
+  "error": null,
+  "alt": true,
+  "candidates": 8,
+  "route_ms": 71,
+  "fast": {
+   "walk_s": 1270,
+   "meters": 1270,
+   "sig": 2,
+   "cross": 4,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 14,
+   "steep8_m": 15
+  },
+  "jjuk": {
+   "walk_s": 1362,
+   "meters": 1362,
+   "sig": 1,
+   "cross": 5,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 7,
+   "steep8_m": 14
+  },
+  "load_ms": 6457,
+  "page_errors": []
+ }
+]
