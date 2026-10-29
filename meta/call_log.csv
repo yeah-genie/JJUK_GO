@@ -333,3 +333,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-10-29T21:31:47,3558,2200,net_error,,TimeoutError
 2026-10-29T21:36:52,1619,2200,net_error,,TimeoutError
 2026-10-29T21:41:41,1619,2200,ok,,
+2026-10-29T21:46:46,1819,2200,ok,,
