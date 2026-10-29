@@ -30,11 +30,34 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 /* Native focus/keyboard semantics, road-yellow switch visuals. */
 .switch{appearance:none;flex:none;width:44px;height:26px;border:1px solid #8793A3;border-radius:20px;background:#303844;position:relative;margin:0}.switch:before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;background:#B7BEC8;border-radius:50%}.switch:checked{background:var(--lane);border-color:var(--lane)}.switch:checked:before{left:21px;background:#242A32}.searchbox,.btn-ghost,.settings-content select,.settings-content input[type=number]{border-color:#8793A3}.mapctl svg{stroke:#8CAEFF}.mapctl svg circle:last-of-type{fill:#8CAEFF}.route .mins{font-variant-numeric:tabular-nums}.map-legend{pointer-events:none}.m-sig.unk{border-style:dashed}.m-sig.unk:after{content:"?";font-size:10px;display:block;text-align:center;line-height:14px;color:var(--muted)}
 
+/* Center controls by their boxes, not the text baseline. */
+.mapctl button,.icon-btn{display:grid;place-items:center;padding:0;line-height:1}.mapctl svg{display:block;margin:0}.mapctl .solo{width:44px;height:44px}.mapctl svg{width:24px;height:24px}
+#sheet-home .sheet-body,#sheet-result .sheet-body{flex:none;overflow:visible}#sheet-home,#sheet-result{height:var(--h);max-height:calc(100% - 150px)}#sheet-home .sheet-footer,#sheet-result .sheet-footer{margin-top:auto}.route-details{display:block;width:100%;padding:6px 0;min-height:36px}.home-chips .text-action,#home-chips .text-action{min-height:36px}.recent-heading{margin-top:8px}#sheet-home .safety{font-size:12px}
+.splash-mark{text-align:center}.splash .logo-svg{width:120px;height:120px}.splash h1{font-size:42px;margin:18px 0 6px}.splash-mark p{color:var(--muted);font-size:15px}.logo-lane{stroke-dasharray:96;animation:lane-intro 1.2s ease-out both}.splash #splash-skip{position:absolute;bottom:24px;right:24px}@keyframes lane-intro{from{stroke-dashoffset:96}to{stroke-dashoffset:0}}
+.done{padding:0;justify-content:initial}.done header{display:flex;align-items:center;padding:10px 16px;flex:none;gap:8px}.walk-card-area{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 20px;overflow:auto}.walk-card-area #share-card{width:min(330px,100%);min-height:0;flex-shrink:1;aspect-ratio:330/460}.walk-card-area svg{display:block;width:100%;height:100%;max-height:100%}.done .hint{color:var(--muted);font-size:12px;margin:8px 0;flex:none}.done .sheet-footer{padding-top:8px}.done .btn{margin:0}.done .actions{width:100%}
+@media(max-height:690px){.walk-card-area #share-card{max-height:calc(100dvh - 195px)}.done header{padding:4px 12px}.done .hint{font-size:11px}.splash .logo-svg{width:100px;height:100px}}
+
+#sheet-home .sheet-body,#sheet-result .sheet-body{flex:1;overflow:auto}
+
+.done .actions .btn{flex:1}
 /* 승인 시안과의 차이를 줄이는 보강: 홈 검색·내 걸음 행·범례, 결과의 정보 없는 횡단 행·하단 두 버튼, 설정 행 링크·초기화 확인. */
 .searchbox{gap:10px}.searchbox .ico{width:20px;height:20px;flex:none}.pace-row{font-size:15px}.pace-row .ico{width:22px;height:22px;flex:none}.pace-row .go{margin-left:auto;color:var(--muted);font-size:14px}.map-legend{display:flex;align-items:center;padding:0;font-size:12px}.map-legend .lg{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 12px}.map-legend .lg+.lg{border-left:1px solid var(--line)}.lg-hist,.lg-unk{width:16px;height:16px;border-radius:50%;flex:none;position:relative}.lg-hist{border:2px solid var(--lane)}.lg-unk{border:2px dashed var(--muted)}.lg-unk:after{content:"?";position:absolute;inset:0;font-size:9px;line-height:12px;text-align:center;color:var(--muted)}
 .unknown-row{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--zebra);font-size:14px;text-align:left;padding:0}.unknown-row .go{margin-left:auto;color:var(--muted)}.unknown-row .ico{color:var(--muted)}#adjust-conditions{flex:0 0 36%}#start-walk{flex:1}
 .row-link{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:56px;padding:0;background:none;border:0;color:var(--zebra);font-size:16px;font-weight:600;text-align:left}.row-link.muted{color:var(--muted);font-weight:500}.row-section{padding:0 0 8px}.row-section p{margin:0 0 8px}.last-section{border-bottom:0}.reset-confirm{margin-top:4px}.reset-confirm p{margin:0 0 12px}.reset-confirm .btn{min-width:0}
 #s-settings .sheet-footer{border-top:1px solid var(--line)}
+
+/* 결과 경로 행: 승인 시안처럼 이름 | 시간 | 횡단 여유 세 칸을 세로 구분선으로 나눈다. */
+.route-head{border-top:1px solid var(--line);margin-top:2px;padding:12px 0 8px}
+.route-head .margin-label{max-width:none;font-size:15px;font-weight:700;color:var(--lane);line-height:1.2}
+.route-head small{margin-top:3px;font-size:12.5px;font-weight:400;color:var(--muted)}
+.route{grid-template-columns:31% 41% minmax(0,1fr);gap:0;padding:0;min-height:64px;align-items:stretch;box-shadow:none}
+.route>span{display:flex;align-items:center;min-width:0;padding:0 12px}
+.route .name{padding-left:14px;font-size:15px;font-weight:600;line-height:1.3}
+.route .mins{border-left:1px solid var(--line);font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1;gap:7px}
+.route .mins small{margin:0;padding-bottom:3px;align-self:flex-end;font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted)}
+.route .margin{border-left:1px solid var(--line);justify-content:flex-end;text-align:right;font-size:14px;line-height:1.3;color:var(--muted)}
+.route[aria-pressed=true]{box-shadow:none}
+.route[aria-pressed=true]::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:4px;border-radius:2px;background:var(--lane)}
 </style>
 
 <div class="phone" id="phone">
@@ -47,7 +70,7 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
   <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap · 지형 Mapzen / USGS</div>
 
   <!-- 0 로고 -->
-  <section class="screen splash" id="s-splash" hidden><h1>쭉고.</h1><p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p></section>
+  <section class="screen splash" id="s-splash" hidden><div class="splash-mark"><svg viewBox="0 0 120 120" class="logo-svg" aria-hidden="true"><rect width="120" height="120" rx="30" fill="#303844"/><g fill="#F4F2E9"><rect x="24" y="25" width="9" height="70" rx="2"/><rect x="43" y="25" width="9" height="70" rx="2"/><rect x="62" y="25" width="9" height="70" rx="2"/><rect x="81" y="25" width="9" height="70" rx="2"/></g><path class="logo-lane" d="M12 60h96" stroke="#F6C343" stroke-width="12" stroke-linecap="round"/></svg><h1>쭉고</h1><p>내 걸음으로, 쭉.</p></div><p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p><button class="text-action" id="splash-skip">건너뛰기</button></section>
 
   <!-- ① 홈 -->
   <section class="screen" id="s-home" hidden>
@@ -81,7 +104,8 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
  <section class="setting-section last-section"><button class="row-link muted" id="reset-learning"><span>학습 초기화</span><span aria-hidden="true">›</span></button>
  <div class="reset-confirm" id="reset-confirm" role="group" aria-label="학습 초기화 확인" hidden><p>맞춰 온 걸음 속도 요약만 지워요. 설문 답과 최근 장소는 그대로 둬요.</p><div class="actions"><button class="btn btn-ghost" id="reset-confirm-no">취소</button><button class="btn btn-secondary" id="reset-confirm-yes">속도 요약 지우기</button></div></div>
  <p class="settings-note" id="settings-message" role="status"></p></section>
- </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용</button></div>
+  <section class="setting-section" id="settings-location"><h2>위치 연결이 안 될 때</h2><p>브라우저의 이 사이트 위치 권한과 기기의 위치 서비스를 켜 주세요. 내장 브라우저에서 계속 실패하면 Chrome·Safari에서 같은 주소를 열어 주세요.</p><p id="location-environment"></p><button class="text-action" id="copy-app-link">앱 주소 복사</button></section>
+</div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용</button></div>
 </section>
 
   <!-- 검색 -->
@@ -183,25 +207,7 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
     </div>
   </section>
 
-  <!-- ⑤ 도착 공유 카드 -->
-  <section class="screen done" id="s-done" hidden>
-    <div class="card" id="share-card">
-      <span class="logo">쭉고</span>
-      <span class="date" id="card-date"></span>
-      <div id="card-shape"></div>
-      <div class="kind" id="card-kind"></div>
-      <div class="stats">
-        <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
-        <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span id="c-time-l">예상 소요 시간</span></div>
-      </div>
-      <p class="compare" id="c-compare"></p>
-    </div>
-    <p class="hint" id="done-hint">스크린샷을 찍어 공유해 보세요</p>
-    <div class="actions">
-      <button class="btn btn-ghost" data-go="result">다시 길 찾기</button>
-    </div>
-  </section>
+  <section class="screen done" id="s-done" hidden><header><button class="icon-btn" data-go="home" aria-label="홈으로">‹</button><span>오늘의 걸음</span></header><div class="walk-card-area"><div id="share-card"></div><p class="hint" id="done-hint"></p></div><div class="sheet-footer"><div class="actions"><button class="btn btn-ghost" data-go="home">홈으로</button><button class="btn btn-primary" id="save-walk-card">이미지 저장</button></div></div></section>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
@@ -303,6 +309,7 @@ function newTrack(kind, now = Date.now()) {
 }
 function trackAdd(tr, fix) {
   if (!fix || !Array.isArray(fix.ll) || !fix.ll.every(isNum) || !isNum(fix.timestamp) || !isNum(fix.accuracy) || fix.accuracy < 0) return tr;
+  appendTrace(tr,fix);
   if (tr.start == null) tr.start = fix.timestamp;
   if (tr.last && fix.timestamp <= tr.last.timestamp) return tr;
   tr.end = Math.max(tr.end, fix.timestamp);
@@ -348,7 +355,7 @@ function finishTrack(tr, info = {}, now = Date.now()) {
   }
   const saved=writeProfile(p);
   return { at:new Date(tr.start).toISOString(),kind:tr.kind,trip:info.trip||null,to:info.to||null,
-    arrived:info.routeLength ? tr.moveM >= info.routeLength*.9 : false,
+    trace:tr.trace||[], arrived:info.routeLength ? tr.moveM >= info.routeLength*.9 : false,
     elapsedS:Math.max(0,Math.round((now-tr.start)/1000)),moveS:tr.moveS,meters:Math.round(tr.moveM),speed,stops:tr.stops,unsaved:!saved };
 }
 function arrivalCopy(rec, {estimateS,fromName,toName}) {
@@ -716,7 +723,7 @@ function mapStyle() {
       label("water-label", "water_polygons_labels", ["has", "name"], 13, 12, "#9EBCCA", { layout: { "text-font": FONT } }),
       label("street-label-minor", "street_labels", kinds(MIN.concat("service", "pedestrian")), 15.5, 11, "#CBD0D1", { layout: { "symbol-placement": "line", "text-max-angle": 30 } }),
       label("street-label-major", "street_labels", kinds(MAJ.concat(HW)), 12, ["interpolate", ["linear"], ["zoom"], 12, 11, 16, 13.5], "#E4E5DE", { layout: { "symbol-placement": "line", "text-max-angle": 30 } }),
-      label("poi", "pois", ["has", "name"], 16.5, 10.5, "#C9CBC5", { layout: { "symbol-sort-key": 10 } }),
+      label("poi", "pois", ["has", "name"], 15.5, 11, "#C9CBC5", { layout: { "symbol-sort-key": 10 } }),
       label("place", "place_labels", kinds(["suburb", "quarter", "neighbourhood", "borough", "city", "town", "village"]), 10,
         ["match", ["get", "kind"], ["city", "borough"], 15, ["suburb", "town"], 13.5, 12], "#E5E8DF", { paint: { "text-halo-width": 2 } }),
       { id: "station", type: "circle", source: "osm", "source-layer": "public_transport", minzoom: 12.5, filter: kinds(["station", "halt"]), paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12.5, 3, 16, 6], "circle-color": "#2FA84F", "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } },
@@ -959,15 +966,26 @@ function readFix(p, maxAccuracy = 100) {
   if (accuracy > maxAccuracy) throw new Error(`위치 오차가 약 ${Math.round(accuracy)}m예요. 탁 트인 곳에서 다시 연결해 주세요`);
   return { ll: [longitude, latitude], accuracy, timestamp: p.timestamp };
 }
+function requestLocation(ok,fail) {
+ const request=gpsRequest;
+ const refine=(err,cached)=>{
+   if(request!==gpsRequest)return;
+   if(err?.code===1)return fail(err);
+   gpsStatus('정확한 위치로 다시 연결하고 있어요…');
+   navigator.geolocation.getCurrentPosition(ok,e=>cached&&cached.coords.accuracy<=1000?ok(cached):fail(e),{enableHighAccuracy:true,timeout:25000,maximumAge:0});
+ };
+ navigator.geolocation.getCurrentPosition(p=>p.coords.accuracy<=100?ok(p):refine(null,p),err=>refine(err),{enableHighAccuracy:false,timeout:8000,maximumAge:30000});
+}
 function gpsError(err) {
   gpsPending = false;
-  gpsStatus(err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 꺼져 있어요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.code === 3 ? "위치를 연결하지 못했어요. 연결이 늦어져요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.message || "위치를 연결하지 못했어요. 다시 시도하거나 지도에서 출발지를 골라 주세요");
+  const msg = err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 차단됐어요. 브라우저의 사이트 권한과 기기의 위치 설정을 확인해 주세요." : err.code === 3 ? "위치를 연결하지 못했어요. 기기에서 위치를 받지 못했어요. 내장 브라우저라면 Chrome·Safari에서 열거나 직접 선택해 주세요." : (err.code===2 ? "위치를 연결하지 못했어요. 위치 제공을 사용할 수 없어요. 기기의 위치 서비스를 켜거나 외부 브라우저에서 열어 주세요." : err.message || "위치를 연결하지 못했어요. 위치를 찾지 못했어요. 지도에서 골라 주세요");
+  gpsStatus(msg.includes("지도에서") ? msg : msg + " 지도에서 출발지를 골라도 돼요.");
 }
 function locate(useAsStart) {
   if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("위치 연결은 HTTPS에서 사용할 수 있어요. 지도에서 출발지를 골라 주세요"); return; }
   const request = ++gpsRequest, screen = current;
   gpsPending = true; gpsStatus("내 위치를 찾고 있어요…");
-  navigator.geolocation.getCurrentPosition(p => {
+  requestLocation(p => {
     if (request !== gpsRequest || current !== screen) return;
     try {
       gpsPending = false;
@@ -989,7 +1007,7 @@ function locate(useAsStart) {
         map.easeTo({ center: gpsFix.ll, zoom: 16.5 });
       }
     } catch (err) { gpsError(err); }
-  }, err => { if (request === gpsRequest && current === screen) gpsError(err); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }, err => { if (request === gpsRequest && current === screen) gpsError(err); });
 }
 function projectOnRoute(route, ll) {
   let best = { offset: Infinity, distance: 0 };
@@ -1199,7 +1217,7 @@ function renderWalk(demo = false, resume = false) {
       if (arrivalFixes>=2) { gpsStatus("도착지 근처예요. 걷기를 끝내면 기록을 볼 수 있어요"); return; }
       gpsStatus(gpsOk(gpsFix));
     } catch (err) { update(null); gpsError(err); }
-  }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 });
   gpsStaleTimer = setInterval(() => {
     if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 30초 넘게 갱신이 없어요. 다시 연결해 주세요"); }
   }, 5000);
@@ -1259,6 +1277,7 @@ let searchSeq = 0;
 async function renderSearchList() {
   const q = $("sq").value, seq = ++searchSeq, origin = (state.pick === "from" ? state.to?.ll : state.from?.ll) || ME.ll;
   $("sq-clear").hidden = !q;
+  setText("search-location", ""); $("search-location").hidden=true;
   $("search-for").textContent = state.pick === "from" ? "출발지를 골라요" : (state.from ? `도착지를 골라요 · 거리는 ${state.from.me ? "내 위치(GPS)" : state.from.name}에서 직선` : "도착지를 고른 다음 출발지를 확인해요");
   if (!q.trim()) {
     const recent = store.get("recent", []);
@@ -1278,7 +1297,8 @@ async function renderSearchList() {
   $("search-list").innerHTML = res.length ? res.map((p, i) => {
     const d = distLL(p.ll, origin);
     return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small><span class="km">${km(d)}</span></button>`;
-  }).join("") : `<p class="note">"${esc(q)}"에 맞는 곳이 없어요. 역 이름이나 동네 이름으로 찾아보거나, 지도를 눌러 골라 주세요.</p>`;
+  }).join("") : `<p class="note">기본 목록에 맞는 곳이 없어요. 공개 검색으로 더 찾아볼 수 있어요.</p>`;
+  $("search-list").insertAdjacentHTML("beforeend",`<button class="btn btn-secondary" id="external-search">공개 지도에서 더 찾아보기</button><p class="note">누르면 검색어를 Photon에 보내요. 현재 GPS 위치는 보내지 않아요.</p>`);
 }
 function choosePlace(p) {
   $("result-location").hidden = true;
@@ -1324,7 +1344,6 @@ function show(name) {
   $("mapctl").hidden = !MAP_SCREENS.includes(name); $("map-attrib").hidden = !MAP_SCREENS.includes(name);
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
   clearTimeout(splashTimer);
-  if (name === "splash" && booted) splashTimer = setTimeout(() => go("home"), 1600);
   gpsRequest++;
   if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); endWalk(); }
   gpsStatus("");
@@ -1387,6 +1406,7 @@ addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
 
 async function boot() {
+  const splashStarted=Date.now();
   show("splash");
   try {
     [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans().catch(() => ({signals:{},date:null,source_dates:[]}))]);
@@ -1404,7 +1424,8 @@ async function boot() {
   booted = true;
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   const target = pendingScreen || location.hash.slice(1);
-  if (target && target !== "splash") go(target); else go("home");
+  pendingScreen = target && target !== "splash" ? target : "home";
+  splashTimer=setTimeout(()=>go(pendingScreen),Math.max(0,3200-(Date.now()-splashStarted)));
 }
 // 화면 상태는 계산·GPS 엔진과 분리한다. 미확인 횡단 여유는 숫자로 만들지 않는다.
 let onboardingStep=1, onboardingHint=null, onboardingEquipment=[], onboardingEquipmentKnown=false, onboardingTarget='home', settingsReturn='home', settingsDraft=null;
@@ -1440,6 +1461,7 @@ function renderSettings() {
   setText('settings-pace-state',s.label+(s.speed?' · '+kmh(s.speed):''));
   setText('settings-pace-copy',s.speed?'길찾기의 소요 시간에 반영해요. 횡단별 신호 검증은 별도로 필요해요.':'측정 전에는 임시 속도로 소요 시간을 계산해요. 설문 응답은 측정값이 아니에요.');
   setText('equipment-summary',!p.equipmentAnswered?'이동 조건 아직 미응답':p.equipment.length?p.equipment.map(e=>EQUIPMENT_LABELS[e]).join(' · '):'선택한 이동 보조기 없음');
+  setText('location-environment',window.isSecureContext&&navigator.geolocation?'이 브라우저는 위치 요청 기능을 제공해요. 위치를 실제로 받을 수 있는지는 권한과 기기 설정에 따라 달라요.':'이 브라우저에서는 위치 기능을 사용할 수 없어요.');
   setText('settings-message',''); $('reset-confirm').hidden=true;
 }
 function updateManualOutput(){setText('manual-speed-value',Number($('manual-speed').value).toFixed(1)+' km/h');}
@@ -1453,7 +1475,14 @@ function applySettings() {
   if(!saved){setText('settings-message','설정을 저장하지 못했어요. 이번 접속 동안에는 적용돼요.');return;}
   go(settingsReturn);
 }
-function snaps(name){const H=phoneH(),mid=name==='result'?Math.min(320,H*.48):name==='walk'?Math.min(255,H*.42):Math.min(264,H*.43);return {peek:mid,mid,full:Math.max(mid,H-112)};}
+function snaps(name){
+ const H=phoneH(),sh=$('sheet-'+name),body=sh.querySelector('.sheet-body'),footer=sh.querySelector('.sheet-footer');
+ const last=body?[...body.children].filter(c=>!c.hidden&&c.offsetHeight>0).pop():null;
+ const content=last?last.offsetTop+last.offsetHeight-body.offsetTop+12:0;
+ const wanted=content+(footer?.offsetHeight||76)+2;
+ const mid=Math.min(H-(name==='home'?150:112),Math.max(name==='home'?210:230,wanted));
+ return {peek:mid,mid,full:mid};
+}
 function resetHomeSheet(){state.picked=null;if(pickMarker){pickMarker.remove();pickMarker=null;}$('home-intro').hidden=false;$('home-place').hidden=true;$('home-actions').innerHTML='<button class="btn btn-primary" data-locate>내 위치로 출발</button><button class="btn btn-ghost button-small" data-search="from">직접 선택</button>';}
 function renderHome(){
   if(!state.picked)resetHomeSheet();setSheet('home','mid');mountMap('map-home');clearDyn();setRoutes(null,null);if(gpsFix)addDyn(el('m-me','<i></i>'),gpsFix.ll);
@@ -1498,7 +1527,6 @@ async function renderResult(){
   if(state.fitted!==state.tripKey){fit([state.routes.jjuk.coords,state.routes.short.coords]);state.fitted=state.tripKey;}
 }
 function renderDetail(){if(!state.sims)return go('home');const xs=state.sims[state.focus].xings;setText('detail-title',`경로의 횡단 정보 ${xs.length}곳`);$('detail-list').innerHTML=xs.map(x=>`<div class="xing"><span>○</span><div><b>${esc(x.name)}</b><small>${x.known?'과거 신호 이력 있음':'신호 정보 미확인'} · 횡단 여유 미확인</small></div></div>`).join('')+'<p class="note">과거 신호 이력은 지금 켜진 불이 아니에요. 횡단 방향·길이·점멸 시간이 검증되기 전에는 남은 초나 건너도 된다는 안내를 하지 않아요.</p>';}
-function renderDone(){const r=state.lastWalk;$('s-done').innerHTML=`<h1>걷기를 마쳤어요.</h1><p>${r?`걸은 거리 ${km(r.meters)} · ${dur(r.elapsedS)}`:'위치 측정 기록이 없어요.'}</p><p class="note">${paceState().label} · 위치 경로는 저장하지 않았어요.</p><button class="btn btn-primary" data-go="home">홈으로</button>`;}
 document.addEventListener('click',e=>{
   const t=e.target,p=t.closest('[data-pace-hint]'),q=t.closest('[data-equipment]');
   if(p){onboardingHint=p.dataset.paceHint;renderOnboarding();}if(q){onboardingEquipment=selectEquipment(onboardingEquipment,q.dataset.equipment);onboardingEquipmentKnown=true;renderOnboarding();}
@@ -1508,6 +1536,10 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-go="settings"]'))settingsReturn=current==='result'?'result':'home';
   if(t.closest('#settings-back'))go(settingsReturn);
   if(t.closest('#settings-apply'))applySettings();
+  if(t.closest('#save-walk-card'))saveWalkCard();
+  if(t.closest('#splash-skip')){if(booted)go(pendingScreen||'home');else setText('splash-foot','지도를 준비하고 있어요. 잠시만 기다려 주세요.');}
+  if(t.closest('#copy-app-link'))navigator.clipboard?.writeText('https://jjukgo.vercel.app/').then(()=>setText('location-environment','주소를 복사했어요. Chrome·Safari 주소창에 붙여 넣어 주세요.')).catch(()=>setText('location-environment','https://jjukgo.vercel.app/ 주소를 외부 브라우저에서 열어 주세요.'));
+  if(t.closest('#external-search'))externalSearch();
   if(t.closest('#edit-onboarding')){const p=readProfile();onboardingHint=p.paceHint;onboardingEquipment=p.equipment;onboardingEquipmentKnown=p.equipmentAnswered;onboardingStep=1;onboardingTarget='settings';go('onboarding');}
   if(t.closest('#reset-learning')){$('reset-confirm').hidden=false;setText('settings-message','');$('reset-confirm').scrollIntoView({block:'nearest'});$('reset-confirm-no').focus();}
   if(t.closest('#reset-confirm-no')){$('reset-confirm').hidden=true;$('reset-learning').focus();}
@@ -1520,6 +1552,59 @@ $('manual-mode').addEventListener('change',()=>{if($('manual-mode').checked)$('a
 $('manual-speed').addEventListener('input',updateManualOutput);
 
 boot();
+
+// Coordinates remain in memory; only an explicit image-save action exports the card.
+function appendTrace(tr,fix){
+  if(fix.accuracy>PACE.ACC){tr.traceFix=null;return;}
+  tr.trace ||= [];const last=tr.traceFix,dt=last?(fix.timestamp-last.timestamp)/1000:0;
+  if(last&&dt<=0)return;
+  if(last&&distLL(last.ll,fix.ll)>Math.max(30,dt*3+last.accuracy+fix.accuracy)){tr.traceFix=null;return;}
+  if(!last||dt>PACE.GAP){tr.trace.push([[...fix.ll]]);}
+  else if(distLL(last.ll,fix.ll)>=3){tr.trace[tr.trace.length-1].push([...fix.ll]);}else return;
+  tr.traceFix=fix;
+  if(tr.trace.reduce((n,s)=>n+s.length,0)>2000)tr.trace=tr.trace.map(s=>s.filter((_,i)=>i===0||i===s.length-1||i%2===0));
+}
+function walkCardSVG(rec,route){
+  const segments=rec?.trace?.filter(s=>s.length>1)||[],actual=segments.length>0;
+  const lines=actual?segments:(route?.coords?.length?[route.coords]:[]),pts=lines.flat();
+  const xs=pts.map(p=>p[0]*Math.cos(37.55*Math.PI/180)),ys=pts.map(p=>-p[1]);
+  const x0=Math.min(...xs),y0=Math.min(...ys),dx=Math.max(...xs)-x0,dy=Math.max(...ys)-y0,scale=pts.length?250/Math.max(dx,dy,1e-7):1;
+  const project=p=>[(p[0]*Math.cos(37.55*Math.PI/180)-x0)*scale+40+(250-dx*scale)/2,(-p[1]-y0)*scale+95+(250-dy*scale)/2];
+  const paths=lines.map(s=>`<polyline points="${s.map(p=>project(p).map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="#F6C343" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+  const endpoints=pts.length?[project(pts[0]),project(pts[pts.length-1])].map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="6" fill="${i?'#F6C343':'#F4F2E9'}" stroke="#242A32" stroke-width="2"/>`).join(''):'';
+  const date=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric'}).format(rec?.at?new Date(rec.at):new Date());
+  const title=actual?'오늘도 내 걸음으로.':'이 길을 걸어볼까요?';
+  const label=actual?'GPS로 기록한 이동 구간':(state.mode==='example'?'예시 경로 · 실제 이동 기록 아님':'계획 경로 · 실제 이동 기록 아님');
+  const distance=actual?km(rec.meters):(route?km(route.length):'—');
+  const time=actual?dur(rec.elapsedS):state.sims?mins(state.sims[state.focus].total):'—';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="330" height="460" viewBox="0 0 330 460" role="img" aria-label="${label}"><rect width="330" height="460" rx="16" fill="#242A32"/><path d="M24 24h30" stroke="#F6C343" stroke-width="5"/><g font-family="sans-serif" fill="#F4F2E9"><text x="24" y="58" font-size="23" font-weight="700">${title}</text><text x="24" y="80" fill="#B7BEC8" font-size="11">${label}</text>${paths}${endpoints}<path d="M24 368h282" stroke="#46505D"/><text x="24" y="395" font-size="12" fill="#B7BEC8">${actual?'걸은 거리':'경로 거리'}</text><text x="190" y="395" font-size="12" fill="#B7BEC8">${actual?'기록 시간':'예상 시간'}</text><text x="24" y="426" font-size="26" font-weight="700">${distance}</text><text x="190" y="426" font-size="26" font-weight="700">${time}</text><text x="24" y="450" font-size="11" fill="#B7BEC8">${date}</text><text x="265" y="450" font-size="13" font-weight="700">쭉고.</text></g></svg>`;
+}
+function renderDone(){
+  const route=state.routes?.[state.focus],rec=state.lastWalk;
+  $('share-card').innerHTML=walkCardSVG(rec,route);
+  setText('done-hint',rec?.trace?.some(s=>s.length>1)?'위치가 끊긴 구간은 이어 그리지 않았어요.':'GPS 이동 기록이 없어 계획한 경로만 표시해요.');
+}
+async function saveWalkCard(){
+  const svg=$('share-card').querySelector('svg');if(!svg)return;
+  const url=URL.createObjectURL(new Blob([svg.outerHTML],{type:'image/svg+xml;charset=utf-8'}));
+  try{const img=new Image();img.src=url;await img.decode();const canvas=document.createElement('canvas');canvas.width=990;canvas.height=1380;canvas.getContext('2d').drawImage(img,0,0,990,1380);const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));if(!blob)throw new Error('export');const download=URL.createObjectURL(blob),a=document.createElement('a');a.href=download;a.download='쭉고-오늘의-걸음.png';a.click();setTimeout(()=>URL.revokeObjectURL(download),10000);setText('done-hint','인증 이미지를 저장했어요.');}catch{setText('done-hint','이미지를 저장하지 못했어요. 카드 화면을 캡처해 주세요.');}finally{URL.revokeObjectURL(url);}
+}
+
+let externalRequest=0;
+async function externalSearch(){
+  const q=$('sq').value.trim(),ticket=++externalRequest,seq=searchSeq;
+  if(q.length<2)return;
+  const b=$('external-search');if(b){b.disabled=true;b.textContent='더 찾는 중…';}
+  try{
+    const r=await fetch('/api/places?q='+encodeURIComponent(q));const data=await r.json();
+    if(ticket!==externalRequest||seq!==searchSeq||current!=='search')return;
+    if(!r.ok)throw new Error(data.error||'공개 검색을 연결하지 못했어요.');
+    const local=$('search-list').results||[],all=[...local];
+    for(const p of data.places||[])if(!all.some(x=>x.name===p.name&&distLL(x.ll,p.ll)<30))all.push(p);
+    $('search-list').results=all;
+    $('search-list').innerHTML=all.map((p,i)=>`<button class="res-item" data-res="${i}"><b>${esc(p.name)}</b><small>${esc(p.address||p.kind||'장소')}</small></button>`).join('')+`<p class="note">${all.length?'검색한 장소를 골라 주세요.':'공개 검색에서도 찾지 못했어요. 주소로 검색하거나 지도에서 골라 주세요.'} Photon · © OpenStreetMap contributors. 보행로 연결은 별도로 확인해요.</p>`;
+  }catch(err){if(seq!==searchSeq||current!=='search')return;if(b){b.disabled=false;b.textContent='공개 검색 다시 시도';}setText('search-location',err.message);$('search-location').hidden=false;}
+}
 
 </script>
 

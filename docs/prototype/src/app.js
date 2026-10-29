@@ -381,7 +381,7 @@ function mapStyle() {
       label("water-label", "water_polygons_labels", ["has", "name"], 13, 12, "#9EBCCA", { layout: { "text-font": FONT } }),
       label("street-label-minor", "street_labels", kinds(MIN.concat("service", "pedestrian")), 15.5, 11, "#CBD0D1", { layout: { "symbol-placement": "line", "text-max-angle": 30 } }),
       label("street-label-major", "street_labels", kinds(MAJ.concat(HW)), 12, ["interpolate", ["linear"], ["zoom"], 12, 11, 16, 13.5], "#E4E5DE", { layout: { "symbol-placement": "line", "text-max-angle": 30 } }),
-      label("poi", "pois", ["has", "name"], 16.5, 10.5, "#C9CBC5", { layout: { "symbol-sort-key": 10 } }),
+      label("poi", "pois", ["has", "name"], 15.5, 11, "#C9CBC5", { layout: { "symbol-sort-key": 10 } }),
       label("place", "place_labels", kinds(["suburb", "quarter", "neighbourhood", "borough", "city", "town", "village"]), 10,
         ["match", ["get", "kind"], ["city", "borough"], 15, ["suburb", "town"], 13.5, 12], "#E5E8DF", { paint: { "text-halo-width": 2 } }),
       { id: "station", type: "circle", source: "osm", "source-layer": "public_transport", minzoom: 12.5, filter: kinds(["station", "halt"]), paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12.5, 3, 16, 6], "circle-color": "#2FA84F", "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 } },
@@ -624,15 +624,26 @@ function readFix(p, maxAccuracy = 100) {
   if (accuracy > maxAccuracy) throw new Error(`위치 오차가 약 ${Math.round(accuracy)}m예요. 탁 트인 곳에서 다시 연결해 주세요`);
   return { ll: [longitude, latitude], accuracy, timestamp: p.timestamp };
 }
+function requestLocation(ok,fail) {
+ const request=gpsRequest;
+ const refine=(err,cached)=>{
+   if(request!==gpsRequest)return;
+   if(err?.code===1)return fail(err);
+   gpsStatus('정확한 위치로 다시 연결하고 있어요…');
+   navigator.geolocation.getCurrentPosition(ok,e=>cached&&cached.coords.accuracy<=1000?ok(cached):fail(e),{enableHighAccuracy:true,timeout:25000,maximumAge:0});
+ };
+ navigator.geolocation.getCurrentPosition(p=>p.coords.accuracy<=100?ok(p):refine(null,p),err=>refine(err),{enableHighAccuracy:false,timeout:8000,maximumAge:30000});
+}
 function gpsError(err) {
   gpsPending = false;
-  gpsStatus(err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 꺼져 있어요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.code === 3 ? "위치를 연결하지 못했어요. 연결이 늦어져요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.message || "위치를 연결하지 못했어요. 다시 시도하거나 지도에서 출발지를 골라 주세요");
+  const msg = err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 차단됐어요. 브라우저의 사이트 권한과 기기의 위치 설정을 확인해 주세요." : err.code === 3 ? "위치를 연결하지 못했어요. 기기에서 위치를 받지 못했어요. 내장 브라우저라면 Chrome·Safari에서 열거나 직접 선택해 주세요." : (err.code===2 ? "위치를 연결하지 못했어요. 위치 제공을 사용할 수 없어요. 기기의 위치 서비스를 켜거나 외부 브라우저에서 열어 주세요." : err.message || "위치를 연결하지 못했어요. 위치를 찾지 못했어요. 지도에서 골라 주세요");
+  gpsStatus(msg.includes("지도에서") ? msg : msg + " 지도에서 출발지를 골라도 돼요.");
 }
 function locate(useAsStart) {
   if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("위치 연결은 HTTPS에서 사용할 수 있어요. 지도에서 출발지를 골라 주세요"); return; }
   const request = ++gpsRequest, screen = current;
   gpsPending = true; gpsStatus("내 위치를 찾고 있어요…");
-  navigator.geolocation.getCurrentPosition(p => {
+  requestLocation(p => {
     if (request !== gpsRequest || current !== screen) return;
     try {
       gpsPending = false;
@@ -654,7 +665,7 @@ function locate(useAsStart) {
         map.easeTo({ center: gpsFix.ll, zoom: 16.5 });
       }
     } catch (err) { gpsError(err); }
-  }, err => { if (request === gpsRequest && current === screen) gpsError(err); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }, err => { if (request === gpsRequest && current === screen) gpsError(err); });
 }
 function projectOnRoute(route, ll) {
   let best = { offset: Infinity, distance: 0 };
@@ -864,7 +875,7 @@ function renderWalk(demo = false, resume = false) {
       if (arrivalFixes>=2) { gpsStatus("도착지 근처예요. 걷기를 끝내면 기록을 볼 수 있어요"); return; }
       gpsStatus(gpsOk(gpsFix));
     } catch (err) { update(null); gpsError(err); }
-  }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 });
   gpsStaleTimer = setInterval(() => {
     if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 30초 넘게 갱신이 없어요. 다시 연결해 주세요"); }
   }, 5000);
@@ -924,6 +935,7 @@ let searchSeq = 0;
 async function renderSearchList() {
   const q = $("sq").value, seq = ++searchSeq, origin = (state.pick === "from" ? state.to?.ll : state.from?.ll) || ME.ll;
   $("sq-clear").hidden = !q;
+  setText("search-location", ""); $("search-location").hidden=true;
   $("search-for").textContent = state.pick === "from" ? "출발지를 골라요" : (state.from ? `도착지를 골라요 · 거리는 ${state.from.me ? "내 위치(GPS)" : state.from.name}에서 직선` : "도착지를 고른 다음 출발지를 확인해요");
   if (!q.trim()) {
     const recent = store.get("recent", []);
@@ -943,7 +955,8 @@ async function renderSearchList() {
   $("search-list").innerHTML = res.length ? res.map((p, i) => {
     const d = distLL(p.ll, origin);
     return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small><span class="km">${km(d)}</span></button>`;
-  }).join("") : `<p class="note">"${esc(q)}"에 맞는 곳이 없어요. 역 이름이나 동네 이름으로 찾아보거나, 지도를 눌러 골라 주세요.</p>`;
+  }).join("") : `<p class="note">기본 목록에 맞는 곳이 없어요. 공개 검색으로 더 찾아볼 수 있어요.</p>`;
+  $("search-list").insertAdjacentHTML("beforeend",`<button class="btn btn-secondary" id="external-search">공개 지도에서 더 찾아보기</button><p class="note">누르면 검색어를 Photon에 보내요. 현재 GPS 위치는 보내지 않아요.</p>`);
 }
 function choosePlace(p) {
   $("result-location").hidden = true;
@@ -989,7 +1002,6 @@ function show(name) {
   $("mapctl").hidden = !MAP_SCREENS.includes(name); $("map-attrib").hidden = !MAP_SCREENS.includes(name);
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
   clearTimeout(splashTimer);
-  if (name === "splash" && booted) splashTimer = setTimeout(() => go("home"), 1600);
   gpsRequest++;
   if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); endWalk(); }
   gpsStatus("");
@@ -1052,6 +1064,7 @@ addEventListener("hashchange", () => show(location.hash.slice(1)));
 addEventListener("resize", () => { for (const n of Object.keys(sheets)) setSheet(n); });
 
 async function boot() {
+  const splashStarted=Date.now();
   show("splash");
   try {
     [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans().catch(() => ({signals:{},date:null,source_dates:[]}))]);
@@ -1069,7 +1082,8 @@ async function boot() {
   booted = true;
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   const target = pendingScreen || location.hash.slice(1);
-  if (target && target !== "splash") go(target); else go("home");
+  pendingScreen = target && target !== "splash" ? target : "home";
+  splashTimer=setTimeout(()=>go(pendingScreen),Math.max(0,3200-(Date.now()-splashStarted)));
 }
 /*ASPHALT_UI*/
 boot();

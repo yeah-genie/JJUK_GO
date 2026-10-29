@@ -21,7 +21,7 @@
   <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap · 지형 Mapzen / USGS</div>
 
   <!-- 0 로고 -->
-  <section class="screen splash" id="s-splash" hidden><h1>쭉고.</h1><p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p></section>
+  <section class="screen splash" id="s-splash" hidden><div class="splash-mark"><svg viewBox="0 0 120 120" class="logo-svg" aria-hidden="true"><rect width="120" height="120" rx="30" fill="#303844"/><g fill="#F4F2E9"><rect x="24" y="25" width="9" height="70" rx="2"/><rect x="43" y="25" width="9" height="70" rx="2"/><rect x="62" y="25" width="9" height="70" rx="2"/><rect x="81" y="25" width="9" height="70" rx="2"/></g><path class="logo-lane" d="M12 60h96" stroke="#F6C343" stroke-width="12" stroke-linecap="round"/></svg><h1>쭉고</h1><p>내 걸음으로, 쭉.</p></div><p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p><button class="text-action" id="splash-skip">건너뛰기</button></section>
 
   <!-- ① 홈 -->
   <section class="screen" id="s-home" hidden>
@@ -55,7 +55,8 @@
  <section class="setting-section last-section"><button class="row-link muted" id="reset-learning"><span>학습 초기화</span><span aria-hidden="true">›</span></button>
  <div class="reset-confirm" id="reset-confirm" role="group" aria-label="학습 초기화 확인" hidden><p>맞춰 온 걸음 속도 요약만 지워요. 설문 답과 최근 장소는 그대로 둬요.</p><div class="actions"><button class="btn btn-ghost" id="reset-confirm-no">취소</button><button class="btn btn-secondary" id="reset-confirm-yes">속도 요약 지우기</button></div></div>
  <p class="settings-note" id="settings-message" role="status"></p></section>
- </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용</button></div>
+  <section class="setting-section" id="settings-location"><h2>위치 연결이 안 될 때</h2><p>브라우저의 이 사이트 위치 권한과 기기의 위치 서비스를 켜 주세요. 내장 브라우저에서 계속 실패하면 Chrome·Safari에서 같은 주소를 열어 주세요.</p><p id="location-environment"></p><button class="text-action" id="copy-app-link">앱 주소 복사</button></section>
+</div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용</button></div>
 </section>
 
   <!-- 검색 -->
@@ -157,25 +158,7 @@
     </div>
   </section>
 
-  <!-- ⑤ 도착 공유 카드 -->
-  <section class="screen done" id="s-done" hidden>
-    <div class="card" id="share-card">
-      <span class="logo">쭉고</span>
-      <span class="date" id="card-date"></span>
-      <div id="card-shape"></div>
-      <div class="kind" id="card-kind"></div>
-      <div class="stats">
-        <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
-        <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span id="c-time-l">예상 소요 시간</span></div>
-      </div>
-      <p class="compare" id="c-compare"></p>
-    </div>
-    <p class="hint" id="done-hint">스크린샷을 찍어 공유해 보세요</p>
-    <div class="actions">
-      <button class="btn btn-ghost" data-go="result">다시 길 찾기</button>
-    </div>
-  </section>
+  <section class="screen done" id="s-done" hidden><header><button class="icon-btn" data-go="home" aria-label="홈으로">‹</button><span>오늘의 걸음</span></header><div class="walk-card-area"><div id="share-card"></div><p class="hint" id="done-hint"></p></div><div class="sheet-footer"><div class="actions"><button class="btn btn-ghost" data-go="home">홈으로</button><button class="btn btn-primary" id="save-walk-card">이미지 저장</button></div></div></section>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>

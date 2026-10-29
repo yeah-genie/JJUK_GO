@@ -47,6 +47,8 @@ async function untilTrue(page, fn, arg, what, ms = 30000) {
   while (Date.now() - t0 < ms) { if (await page.evaluate(fn, arg)) return; await wait(250); }
   throw new Error('시간 초과: ' + what);
 }
+// 시작 로고 화면이 끝나고 홈이 그려질 때까지 기다린다(고정 대기는 로고 화면 길이에 따라 흔들린다).
+const homeReady = (page, what = '홈') => untilTrue(page, () => current === 'home' && !!document.getElementById('home-pace') && document.getElementById('home-pace').textContent.trim().length > 0, null, what, 40000).then(() => wait(600));
 const resultReady = (page, what) => untilTrue(page, () => current === 'result' && !document.getElementById('result-content').hidden && !!state.sims, null, what);
 async function openTrip(page, a, b) {
   await page.evaluate(async ([a, b]) => {
@@ -69,6 +71,9 @@ async function assertNoOverflow(page, tag, what) {
   assert.deepEqual(o.bad, [], `${tag} ${what} 스크롤바가 보여요`);
 }
 async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
+  // 타일이 다 올라온 뒤에 찍는다. 올라오기 전 캡처는 지도가 비어 보여 거짓 실패가 난다.
+  await page.waitForFunction(() => map && map.loaded() && !map.isMoving(), null, { timeout: 30000 }).catch(() => {});
+  await wait(400);
   const shot = await page.screenshot(), mp = await page.evaluate(() => { const r = map.getContainer().getBoundingClientRect(); return { t: r.top, h: r.height }; });
   const sheetTop = (await rectOf(page, sheetSel)).y, seg = (sheetTop - mp.t) / 3, w = page.viewportSize().width;
   for (let i = 0; i < 3; i++) {
@@ -89,7 +94,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       // ---- A. 홈 지도: 사용자 재현 절차 그대로(설문 건너뛰기 → 8초) 곧바로 캡처해도 위·가운데·아래가 모두 그려진다.
       // rAF 폴링 같은 대기는 화면을 다시 그리게 해 문제를 가리므로 고정 시간만 기다린다.
       let page = await newPage(browser, w, h, errors);
-      await page.goto(BASE + '#home'); await wait(2500);
+      await page.goto(BASE + '#home'); await untilTrue(page, () => current === 'onboarding', null, '첫 설문', 40000); await wait(300);
       await page.click('#onboarding-skip'); await wait(8000);
       const dims = await page.evaluate(() => { const c = map.getCanvas().getBoundingClientRect(), m = document.getElementById('map-home').getBoundingClientRect(); return { c: [c.top, c.height, c.width], m: [m.top, m.height, m.width], tr: [map.transform.width, map.transform.height] }; });
       await mapDraw(helper, page, '#sheet-home', tag, '홈');
@@ -99,7 +104,8 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       await page.click('[data-trip="demo"]'); await resultReady(page, '예시 길'); await wait(5000);
       await mapDraw(helper, page, '#sheet-result', tag, '결과');
       await page.evaluate(() => go('home')); await wait(5000);
-      await mapDraw(helper, page, '#sheet-home', tag, '결과에서 돌아온 홈');
+      // 결과 경로 범위로 맞춰진 작은 화면 홈은 넓은 녹지·땅 면이 위쪽을 채워 64%까지 나온다(직접 눈으로 확인). 비어 있는 지도는 100%에 가까우므로 이 확인만 기준을 0.8로 둔다.
+      await mapDraw(helper, page, '#sheet-home', tag, '결과에서 돌아온 홈', 0.8);
       ok(`A ${tag} 결과·홈 왕복 뒤에도 지도 렌더`);
       await assertNoOverflow(page, tag, '홈');
       await assertInViewport(page, '#home-actions .btn-primary', tag, '홈 주 행동');
@@ -171,7 +177,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
 
       // ---- C. 결과: 같은 후보(예시 길)는 한 행, 서로 다른 후보는 두 행+점선 대안.
       page = await newPage(browser, w, h, errors, DONE);
-      await page.goto(BASE + '#home'); await wait(2500);
+      await page.goto(BASE + '#home'); await homeReady(page);
       await page.click('[data-trip="demo"]'); await resultReady(page, '예시 길'); await wait(600);
       assert(await page.evaluate(() => state.same), '예시 길은 두 후보가 같은 길(시험 전제)');
       assert(await visible(page, '#card-jjuk')); assert(!(await visible(page, '#card-short')), `${tag} 같은 후보인데 두 번째 행이 보여요`);
@@ -228,7 +234,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
 
       // ---- E3. 학습 부족 결과 / E5 직접 조절 / E6 초기화 확인
       page = await newPage(browser, w, h, errors, LEARNING);
-      await page.goto(BASE + '#home'); await wait(2500);
+      await page.goto(BASE + '#home'); await homeReady(page);
       assert.equal(await text(page, '#home-pace'), '내 걸음을 알아가는 중');
       await page.click('[data-trip="demo"]'); await resultReady(page, '예시 길'); await wait(500);
       assert.equal(await text(page, '#result-pace'), '내 걸음을 알아가는 중'); assert.equal(await text(page, '#card-jjuk .margin'), '계산 준비 중');
@@ -258,7 +264,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
 
       // ---- E2/E4. 위치 권한 거부(홈·걷기)와 측정 중지·다시 연결
       page = await newPage(browser, w, h, errors, DONE, { permissions: [] });
-      await page.goto(BASE + '#home'); await wait(2500);
+      await page.goto(BASE + '#home'); await homeReady(page);
       await page.click('[data-locate]'); await untilTrue(page, () => /위치를 연결하지 못했어요/.test(document.getElementById('location-status').textContent), null, '홈 권한 거부 문구');
       assert.match(await text(page, '#location-status'), /지도에서/, `${tag} 홈 거부 문구에 다음 행동`);
       assert(await visible(page, '#home-actions [data-search="from"]'), `${tag} 지도에서 출발 선택 버튼`); assert(await visible(page, '#home-actions [data-locate]'), `${tag} 다시 시도 버튼`);

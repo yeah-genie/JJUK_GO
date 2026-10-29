@@ -31,3 +31,7 @@
 최종 판정: 확인한 범위의 미해결 P0/P1/P2 없음. [시안/구현 비교](ui/asphalt-implementation/comparison.png), [360 상세 수정 후](ui/asphalt-implementation/360-details.png). 실기기·데이터 검증 제한은 별도 남는다.
 
 운영 확인: `https://jjukgo.vercel.app/`에서 동일 설문/미측정 홈/예시 경로·실제 지도 확인, 오류 로그 0건. [운영 증거](ui/asphalt-implementation/production.png).
+
+## 후속 사용자 수정 검증
+
+인증 카드/로고는 삭제 상태를 유지하지 않고 최신 요청대로 복원했다. 홈 최근 두 곳과 CTA의 내용 높이를 맞춰 360×640에서도 잘리지 않으며, 현재 위치 SVG 중심은 버튼 중심과 약0px 차이다. 횡단 토글 제거·계산 기준 설정 이동, 공개 장소검색과 카드 PNG 저장을 브라우저에서 확인했다. [후속 보고서](WALK_CARD_LOCATION_SEARCH.md), [360 홈](ui/walk-card-location/360-home.png), [운영 인증 카드 예시](ui/walk-card-location/production-card.png). 확인한 화면 범위의 미해결 P0/P1/P2 없음. 실제 GPS 수신·야외 정확도는 별도 기능 검증 한계이며 완료로 세지 않는다.
