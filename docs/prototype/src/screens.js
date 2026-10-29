@@ -69,9 +69,10 @@ function paceRowText(ps){return ps.kind==='before'?'내 걸음 · '+ps.label:ps.
 function unknownXingText(sim){const n=sim.xings.filter(x=>!x.known).length;return n?`정보 없는 횡단 ${n}곳`:'';}
 // 시트 높이는 내용에 맞추되 지도가 일정 이상 남도록 제한한다. 지도는 시트 위 영역에만 놓인다.
 function fitResultSheet(){
-  const H=phoneH(),foot=$('result-footer');let need=2+(foot.hidden?0:foot.offsetHeight);
-  for(const c of $('sheet-result').querySelector('.sheet-body').children)if(!c.hidden)need+=c.offsetHeight;
-  const open=!$('result-options').hidden;setSheet('result',open?'full':'mid',Math.round(Math.min(Math.max(need,190),open?H-112:H*.62)));
+  // 내용 높이는 여백까지 포함해 재야 마지막 줄이 버튼 아래로 숨지 않는다(scrollHeight + 손잡이)
+  const H=phoneH(),foot=$('result-footer'),sh=$('sheet-result'),grip=sh.querySelector('.grip-area'),body=sh.querySelector('.sheet-body');
+  const prev=body.style.flex;body.style.flex='none';let need=2+(foot.hidden?0:foot.offsetHeight)+(grip?grip.offsetHeight:0)+body.scrollHeight;body.style.flex=prev;
+  const open=!$('result-options').hidden;setSheet('result',open?'full':'mid',Math.round(Math.min(Math.max(need,190),open?H*.74:H*.62)));   // 펼쳐도 지도가 보이게: 시트는 화면의 74%까지, 나머지는 시트 안에서 스크롤
 }
 function setBasisOpen(open){$('result-options').hidden=!open;$('calc-basis').setAttribute('aria-expanded',String(open));}
 async function renderResult(){
@@ -87,21 +88,31 @@ async function renderResult(){
   status.hidden=true;content.hidden=false;$('result-footer').hidden=false;
   const S=state.sims,ps=paceState(),R=state.routes,B=R.short.m,J=R.jjuk.m;setText('result-pace',paceRowText(ps));
   // 빠른 길 vs 쭉고 길: 걷는 시간과 이동 마찰 원시값만 보여 준다(점수 없음). 쭉고 길은 의미 있는 대안이 있을 때만.
-  for(const k of ['jjuk','short']){const c=$('card-'+k),m=R[k].m;c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.focus===k));
-    const extra=k==='jjuk'&&!state.same?extraText(m.walk-B.walk):'';
-    c.innerHTML=`<span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span><span class="mins">${mins(m.walk)}</span><span class="margin">${extra||(state.same?'':'가장 빠름')}</span>`;}
+  const WALK=`<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="4" r="2"/><path d="M10 21l2.4-6.2L15 17v4M8 12l2-4.2 4 1.2 2.4 3.4 2.6.6M12.4 14.8 11 9.4"/></svg>`;
+  $('route-cards').classList.toggle('one',state.same);
+  for(const k of ['jjuk','short']){const c=$('card-'+k),m=R[k].m;c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.same||state.focus===k));c.setAttribute('role','tab');c.setAttribute('aria-selected',String(state.same||state.focus===k));
+    c.innerHTML=`${WALK}<span class="tl"><span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span><span class="mins">${mins(m.walk)}</span></span>`;}
   setText('compare-line',state.same?'비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요':compareLine(R.short,R.jjuk));
+  {const sm=routeSummary(R.short,state.same?R.short:R.jjuk,state.same?'jjuk':state.focus);$('route-badge').hidden=!sm.badge;setText('route-badge-text',sm.badge);$('route-badge-ico').setAttribute('d',{stairs:'M4 19h4v-4h4v-4h4V7h4',sig:'M9 3h6a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3',steep:'M3 20 10 8l4 6 2-3 5 9z',gain:'M3 20 10 8l4 6 2-3 5 9z'}[sm.kind]||'M4 19h4v-4h4v-4h4V7h4');setText('route-headline',sm.headline);setText('route-sub',sm.sub);}
+  // 지표 아이콘(선 아이콘, 글자색을 따름)
+  const ic=d=>`<svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const MICO={walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>')};
   const rows=[['걷는 시간',m=>mins(m.walk),'walk'],['신호 횡단',m=>m.sig+'곳','sig'],['계단',m=>m.stairs+'구간','stairs'],['오르막',m=>Math.round(m.gain)+'m','gain'],['급경사(8% 이상)',m=>Math.round(m.steep/10)*10+'m','steep']];
-  const cell=(m,o,k)=>{const v=m[k],w=o?o[k]:v,better=o&&(k==='walk'?v<w-0.5:v<w-(k==='gain'?0.5:k==='steep'?5:0.5));return `<span${better?' class="better"':''}>`;};
-  $('route-metrics').innerHTML=`<div class="mrow mhead"><span></span><span>빠른 길</span>${state.same?'':'<span>쭉고 길</span>'}</div>`+rows.map(([label,f,k])=>`<div class="mrow"><span>${label}</span>${cell(B,state.same?null:J,k)}${f(B)}</span>${state.same?'':`${cell(J,B,k)}${f(J)}</span>`}</div>`).join('');
+  const cell=(m,o,k)=>{const v=m[k],w=o?o[k]:v,better=o&&(k==='walk'?v<w-30:v<w-(k==='gain'?5:k==='steep'?50:0.5));return `<span${better?' class="better"':''}>`;};
+  $('route-metrics').innerHTML=`<div class="mrow mhead"><span></span>${state.same?'':`<span class="mh-j">${WALK}쭉고 길</span>`}<span>${WALK}빠른 길</span></div>`+rows.map(([label,f,k])=>`<div class="mrow"><span>${MICO[k]}${label}</span>${state.same?'':`${cell(J,B,k)}${f(J)}</span>`}${cell(B,state.same?null:J,k)}${f(B)}</span></div>`).join('');
   $('route-metrics').classList.toggle('one',state.same);
   const sim=S[state.focus],r=state.routes[state.focus];
   $('unknown-xings').hidden=true;
-  setText('result-note',`${ps.kind==='learned'||ps.kind==='manual'?'내 걸음':'임시 걸음'} 기준 · 신호 기다림은 시간에 넣지 않았어요`);
+  setText('result-note','예상 도보 시간 · 신호 대기 제외');
   setText('route-facts',`거리 ${km(r.length)} · 시간은 걷는 시간만(신호 기다림 제외) · 추가 ${Math.min(state.budget,180)/60}분 이내의 길만 비교`);
   $('cov-note').hidden=true;
   setText('result-safety',`신호 횡단은 서울시 횡단보도 자료(보행등 있음)로 세며 일부만 확인돼 실제보다 적을 수 있어요. 오르막·급경사는 서울시 등고선으로 계산한 추정이고, 계단은 지도에 표시된 곳만 세요. 실제 신호·턱·출입구는 현장에서 확인해 주세요.${readProfile().avoidSteps?' 계단은 제외했어요.':''}`);
-  setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(null,state.focus,false);fitResultSheet();
+  setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(null,state.focus,false);
+  // 회색 길 위에 이름표: 두 길이 가장 멀리 떨어진 지점(겹치지 않는 곳)에 붙인다
+  if(!state.same){const ok=state.focus==='jjuk'?'short':'jjuk',oc=state.routes[ok].coords,fc=r.coords;let best=null,bd=-1;
+    const ends=[fc[0],fc[fc.length-1]];for(let i=0;i<oc.length;i++){if(ends.some(e=>distLL(e,oc[i])<90))continue;let m=Infinity;for(let j=0;j<fc.length;j+=Math.max(1,fc.length>>7))m=Math.min(m,distLL(oc[i],fc[j]));if(m>bd){bd=m;best=oc[i];}}
+    if(best&&bd>15)addDyn(el('m-label',`<b>${ok==='jjuk'?'쭉고 길':'빠른 길'}</b><span>${mins(state.routes[ok].m.walk)}</span>`),best,{anchor:'bottom',offset:[0,-8]});}
+  fitResultSheet();
   if(state.fitted!==state.tripKey){fit([state.routes.jjuk.coords,state.routes.short.coords]);state.fitted=state.tripKey;}
 }
 function renderDetail(){if(!state.sims)return go('home');const xs=state.sims[state.focus].xings;setText('detail-title',`경로의 횡단 정보 ${xs.length}곳`);$('detail-list').innerHTML=xs.map(x=>`<div class="xing"><span>○</span><div><b>${esc(x.name)}</b><small>${x.known?'과거 신호 이력 있음':'신호 정보 미확인'} · 횡단 여유 미확인</small></div></div>`).join('')+'<p class="note">과거 신호 이력은 지금 켜진 불이 아니에요. 횡단 방향·길이·점멸 시간이 검증되기 전에는 남은 초나 건너도 된다는 안내를 하지 않아요.</p>';}

@@ -192,7 +192,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert.match(await text(page, '#card-jjuk'), /\d+분/); assert.doesNotMatch(await text(page, '#card-jjuk'), /\+\d+분/, `${tag} 같은 후보에 거짓 추가 시간`);
       assert.equal(await page.evaluate(() => map.getSource('rs')._data.features.length), 0, `${tag} 같은 후보에 점선 대안이 그려져요`);
       assert.equal(await text(page, '#result-pace'), '내 걸음 · 아직 측정 전');
-      assert(await visible(page, '#calc-basis')); assert.match(await text(page, '#calc-basis'), /^계산 기준/);
+      assert(await visible(page, '#calc-basis')); assert.match(await text(page, '#calc-basis'), /^자세히 비교/);
       assert.equal(await page.getAttribute('#calc-basis', 'aria-expanded'), 'false'); assert(!(await visible(page, '#result-options')));
       assert.equal(await text(page, '#compare-line'), '비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요', `${tag} 대안 없음 문구`);
       assert.equal(await text(page, '#card-jjuk .name'), '빠른 길', `${tag} 대안이 없으면 빠른 길 한 행`);
@@ -200,7 +200,9 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       for (const w of ['걷는 시간', '신호 횡단', '계단', '오르막', '급경사']) assert(metricText.includes(w), `${tag} 원시 지표 ${w}`);
       assert(await page.evaluate(() => document.getElementById('route-metrics').classList.contains('one')), `${tag} 대안 없으면 한 열`);
       assert(!(await visible(page, '#unknown-xings')), `${tag} 비교판에서는 미확인 횡단 행을 숨김`);
-      assert.equal(await text(page, '#adjust-conditions'), '조건 조정'); assert.equal(await text(page, '#start-walk'), '걷기 시작');
+      assert.equal(await text(page, '#adjust-conditions'), '조건 조정'); assert.equal(await text(page, '#start-walk'), '이 길로 걷기');
+      assert.equal(await text(page, '#route-headline'), '가장 빨리 가는 길'); assert.equal(await text(page, '#route-sub'), '비슷한 시간 안에 더 편한 길이 없어요'); assert(!(await visible(page, '#route-badge')), `${tag} 대안 없으면 배지 없음`);
+      assert.equal(await text(page, '#result-note'), '예상 도보 시간 · 신호 대기 제외'); await assertInViewport(page, '#result-note', tag, '도보 시간 안내');
       await assertInViewport(page, '#adjust-conditions', tag, '조건 조정'); await assertInViewport(page, '#start-walk', tag, '걷기 시작');
       const vis = await page.evaluate(() => document.querySelector('#s-result').innerText); assert.doesNotMatch(vis, /\d+\s*초|뛰세요|안전|~\s*12/, `${tag} 결과에 숫자 초·금지 문구`); assert.doesNotMatch(vis, /보장(?!하지)/);
       await mapDraw(helper, page, '#sheet-result', tag, '결과(같은 후보)');
@@ -217,9 +219,10 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       await openLL(page, [37.5551, 126.9368], [37.5571, 126.9245]);   // 신촌역 → 홍대입구역(QA에서 쭉고 길이 나온 길, 서울숲처럼 큰 공원 때문에 지도 검사가 흔들리지 않는 곳)
       assert(!(await page.evaluate(() => state.same)), '신촌역→홍대입구역은 쭉고 길이 있는 길(시험 전제)');
       assert(await visible(page, '#card-jjuk')); assert(await visible(page, '#card-short'));
-      const rows = await page.evaluate(() => ['jjuk', 'short'].map(k => { const c = document.getElementById('card-' + k); return { name: c.querySelector('.name').textContent, t: c.querySelector('.mins').textContent, margin: c.querySelector('.margin').textContent, pressed: c.getAttribute('aria-pressed') }; }));
+      const rows = await page.evaluate(() => ['jjuk', 'short'].map(k => { const c = document.getElementById('card-' + k), r = c.getBoundingClientRect(), n = c.querySelector('.mins').getBoundingClientRect(); return { name: c.querySelector('.name').textContent, t: c.querySelector('.mins').textContent, pressed: c.getAttribute('aria-pressed'), w: r.width, h: r.height, base: n.bottom - r.top }; }));
       assert.equal(rows[0].name, '쭉고 길'); assert.equal(rows[1].name, '빠른 길');
-      assert.match(rows[0].margin, /^\+\d/, `${tag} 쭉고 길 추가 시간 ${JSON.stringify(rows[0])}`); assert.equal(rows[1].margin, '가장 빠름');
+      assert(Math.abs(rows[0].w - rows[1].w) < 1 && Math.abs(rows[0].h - rows[1].h) < 1, `${tag} 두 탭 크기 50:50 ${JSON.stringify(rows)}`); assert(Math.abs(rows[0].base - rows[1].base) < 1.5, `${tag} 두 시간 글자 기준선 ${JSON.stringify(rows)}`);
+      assert.match(await text(page, '#route-headline'), /(피하는|줄이는) 길$/); assert(await visible(page, '#route-badge')); assert.match(await text(page, '#route-sub'), /^약 .+ 추가/);
       assert(/\d+분/.test(rows[0].t) && /\d+분/.test(rows[1].t)); assert.deepEqual(rows.map(r => r.pressed), ['true', 'false']);
       assert.match(await text(page, '#compare-line'), /^\+.+(줄일|피할) 수 있어요$/, `${tag} 한 줄 설명`);
       assert(!(await page.evaluate(() => document.getElementById('route-metrics').classList.contains('one'))), `${tag} 두 열 비교`);
@@ -227,7 +230,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert(ex.ok && ex.extra > 10 && ex.extra <= 180, `${tag} 쭉고 길 추가 시간 10초 초과 3분 이하 ${JSON.stringify(ex)}`);
       const feat = () => page.evaluate(() => ({ sel: map.getSource('rj')._data.features[0].geometry.coordinates.length, alt: map.getSource('rs')._data.features[0].geometry.coordinates.length, want: state.routes[state.focus].coords.length, other: state.routes[state.focus === 'jjuk' ? 'short' : 'jjuk'].coords.length }));
       let f = await feat(); assert.equal(f.sel, f.want, `${tag} 선택 후보와 강조 경로가 달라요`); assert.equal(f.alt, f.other, `${tag} 점선 대안이 다른 후보가 아니에요`);
-      assert(await page.evaluate(() => map.getStyle().layers.find(l => l.id === 'route-short').paint['line-dasharray'].length > 0));
+      assert.equal(await page.evaluate(() => map.getStyle().layers.find(l => l.id === 'route-short').paint['line-color']), '#959EAC', `${tag} 빠른 길은 회색 실선`);
       await assertInViewport(page, '#card-short', tag, '두 번째 경로 행'); await assertInViewport(page, '#start-walk', tag, '걷기 시작'); await assertInViewport(page, '#adjust-conditions', tag, '조건 조정');
       await page.click('#card-short'); await wait(500);
       assert.deepEqual(await page.evaluate(() => ['jjuk', 'short'].map(k => document.getElementById('card-' + k).getAttribute('aria-pressed'))), ['false', 'true']);
@@ -245,7 +248,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       await page.goto(BASE + '#home'); await homeReady(page);
       assert.equal(await text(page, '#home-pace'), '내 걸음을 알아가는 중');
       await page.click('[data-trip="demo"]'); await resultReady(page, '예시 길'); await wait(500);
-      assert.equal(await text(page, '#result-pace'), '내 걸음을 알아가는 중'); assert(await visible(page, '#route-metrics'));
+      assert.equal(await text(page, '#result-pace'), '내 걸음을 알아가는 중'); assert(await visible(page, '#route-headline'));
       assert.doesNotMatch(await page.evaluate(() => document.querySelector('#s-result').innerText), /\d+\s*초/);
       await assertInViewport(page, '#start-walk', tag, '학습 부족 결과의 걷기 시작');
       ok(`E ${tag} 학습 부족 결과: 내 걸음을 알아가는 중 · 원시 지표`);

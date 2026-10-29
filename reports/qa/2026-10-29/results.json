@@ -16,7 +16,7 @@
   "error": null,
   "alt": false,
   "candidates": 4,
-  "route_ms": 24,
+  "route_ms": 35,
   "fast": {
    "walk_s": 1297,
    "meters": 1297,
@@ -28,7 +28,7 @@
    "steep8_m": 0
   },
   "jjuk": null,
-  "load_ms": 6146,
+  "load_ms": 6377,
   "page_errors": []
  },
  {
@@ -48,7 +48,7 @@
   "error": null,
   "alt": false,
   "candidates": 6,
-  "route_ms": 68,
+  "route_ms": 59,
   "fast": {
    "walk_s": 1217,
    "meters": 1217,
@@ -60,7 +60,7 @@
    "steep8_m": 0
   },
   "jjuk": null,
-  "load_ms": 6390,
+  "load_ms": 6114,
   "page_errors": []
  },
  {
@@ -80,7 +80,7 @@
   "error": null,
   "alt": false,
   "candidates": 9,
-  "route_ms": 52,
+  "route_ms": 61,
   "fast": {
    "walk_s": 1010,
    "meters": 1010,
@@ -92,7 +92,7 @@
    "steep8_m": 216
   },
   "jjuk": null,
-  "load_ms": 6400,
+  "load_ms": 6742,
   "page_errors": []
  },
  {
@@ -112,7 +112,7 @@
   "error": null,
   "alt": true,
   "candidates": 4,
-  "route_ms": 21,
+  "route_ms": 24,
   "fast": {
    "walk_s": 569,
    "meters": 569,
@@ -133,7 +133,7 @@
    "gain_m": 25,
    "steep8_m": 58
   },
-  "load_ms": 6267,
+  "load_ms": 6241,
   "page_errors": []
  },
  {
@@ -153,7 +153,7 @@
   "error": null,
   "alt": false,
   "candidates": 9,
-  "route_ms": 61,
+  "route_ms": 58,
   "fast": {
    "walk_s": 1912,
    "meters": 1912,
@@ -165,10 +165,8 @@
    "steep8_m": 17
   },
   "jjuk": null,
-  "load_ms": 122649,
-  "page_errors": [
-   "시간 초과"
-  ]
+  "load_ms": 6429,
+  "page_errors": []
  },
  {
   "id": "stairs-naksan",
@@ -187,7 +185,7 @@
   "error": null,
   "alt": true,
   "candidates": 4,
-  "route_ms": 22,
+  "route_ms": 51,
   "fast": {
    "walk_s": 761,
    "meters": 761,
@@ -208,7 +206,7 @@
    "gain_m": 59,
    "steep8_m": 336
   },
-  "load_ms": 6244,
+  "load_ms": 6887,
   "page_errors": []
  },
  {
@@ -228,7 +226,7 @@
   "error": null,
   "alt": false,
   "candidates": 4,
-  "route_ms": 37,
+  "route_ms": 41,
   "fast": {
    "walk_s": 874,
    "meters": 874,
@@ -240,7 +238,7 @@
    "steep8_m": 171
   },
   "jjuk": null,
-  "load_ms": 5975,
+  "load_ms": 6080,
   "page_errors": []
  },
  {
@@ -272,7 +270,7 @@
    "steep8_m": 0
   },
   "jjuk": null,
-  "load_ms": 6242,
+  "load_ms": 6423,
   "page_errors": []
  },
  {
@@ -292,7 +290,7 @@
   "error": null,
   "alt": false,
   "candidates": 5,
-  "route_ms": 23,
+  "route_ms": 21,
   "fast": {
    "walk_s": 733,
    "meters": 733,
@@ -304,10 +302,8 @@
    "steep8_m": 73
   },
   "jjuk": null,
-  "load_ms": 122660,
-  "page_errors": [
-   "시간 초과"
-  ]
+  "load_ms": 6415,
+  "page_errors": []
  },
  {
   "id": "bridge-nodeul",
@@ -338,7 +334,7 @@
    "steep8_m": 2
   },
   "jjuk": null,
-  "load_ms": 6250,
+  "load_ms": 6090,
   "page_errors": []
  },
  {
@@ -358,7 +354,7 @@
   "error": null,
   "alt": false,
   "candidates": 9,
-  "route_ms": 53,
+  "route_ms": 57,
   "fast": {
    "walk_s": 1370,
    "meters": 1370,
@@ -370,7 +366,7 @@
    "steep8_m": 46
   },
   "jjuk": null,
-  "load_ms": 5894,
+  "load_ms": 5994,
   "page_errors": []
  },
  {
@@ -390,7 +386,7 @@
   "error": null,
   "alt": true,
   "candidates": 3,
-  "route_ms": 13,
+  "route_ms": 11,
   "fast": {
    "walk_s": 435,
    "meters": 435,
@@ -411,7 +407,7 @@
    "gain_m": 4,
    "steep8_m": 0
   },
-  "load_ms": 122653,
+  "load_ms": 122665,
   "page_errors": [
    "시간 초과"
   ]
@@ -433,7 +429,7 @@
   "error": null,
   "alt": true,
   "candidates": 8,
-  "route_ms": 41,
+  "route_ms": 34,
   "fast": {
    "walk_s": 2057,
    "meters": 2057,
@@ -454,7 +450,7 @@
    "gain_m": 6,
    "steep8_m": 0
   },
-  "load_ms": 6349,
+  "load_ms": 6561,
   "page_errors": []
  },
  {
@@ -486,7 +482,7 @@
    "steep8_m": 0
   },
   "jjuk": null,
-  "load_ms": 6224,
+  "load_ms": 6109,
   "page_errors": []
  },
  {
@@ -506,7 +502,7 @@
   "error": null,
   "alt": false,
   "candidates": 10,
-  "route_ms": 185,
+  "route_ms": 150,
   "fast": {
    "walk_s": 3417,
    "meters": 3417,
@@ -518,7 +514,7 @@
    "steep8_m": 12
   },
   "jjuk": null,
-  "load_ms": 6606,
+  "load_ms": 6549,
   "page_errors": []
  },
  {
@@ -538,7 +534,7 @@
   "error": null,
   "alt": true,
   "candidates": 8,
-  "route_ms": 71,
+  "route_ms": 55,
   "fast": {
    "walk_s": 1270,
    "meters": 1270,
@@ -559,7 +555,7 @@
    "gain_m": 7,
    "steep8_m": 14
   },
-  "load_ms": 6457,
+  "load_ms": 6117,
   "page_errors": []
  }
 ]

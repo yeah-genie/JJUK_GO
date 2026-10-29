@@ -93,29 +93,33 @@
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
         <div id="result-content">
-          <div class="result-state"><span class="pace-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="result-pace">내 걸음 · 아직 측정 전</span></span><button class="basis-btn" id="calc-basis" aria-expanded="false" aria-controls="result-options">계산 기준<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.1"/></svg></button></div>
+          <div class="rtabs" id="route-cards" role="tablist" aria-label="길 비교">
+            <button class="rtab" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+            <button class="rtab" data-route="short" aria-pressed="false" id="card-short"></button>
+          </div>
+          <p class="rbadge" id="route-badge" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path id="route-badge-ico" d="M4 19h4v-4h4v-4h4V7h4"/></svg><span id="route-badge-text"></span></p>
+          <h2 class="rhead" id="route-headline"></h2>
+          <p class="rsub" id="route-sub"></p>
+          <p class="compare-line" id="compare-line" hidden></p>
+          <button class="detail-toggle" id="calc-basis" aria-expanded="false" aria-controls="result-options">자세히 비교<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="result-options" id="result-options" hidden>
-            <p class="safety" id="basis-signal">신호는 과거 이력이며 실시간이 아니에요. 요일·날짜별 차이는 확인하지 못했어요.</p>
+            <div class="metrics" id="route-metrics"></div>
+            <p class="safety" id="result-pace">내 걸음 · 아직 측정 전</p>
+            <p class="safety" id="basis-signal">신호 대기와 실시간 신호는 이 비교에 쓰지 않아요.</p>
             <p class="safety" id="route-facts"></p>
             <p class="cov" id="cov-note" hidden><span id="cov-text"></span></p>
             <p class="safety" id="result-safety"></p>
             <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
           </div>
-          <p class="compare-line" id="compare-line"></p>
-          <div id="route-cards">
-            <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
-            <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
-          </div>
-          <div class="metrics" id="route-metrics"></div>
           <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
-          <p class="safety" id="result-note"></p>
+          <p class="rfoot" id="result-note"></p>
           <p class="safety" id="result-location" role="status" hidden></p>
         </div>
       </div>
       <div class="sheet-footer" id="result-footer">
         <div class="actions" id="result-actions">
           <button class="btn btn-ghost" id="adjust-conditions" data-go="settings">조건 조정</button>
-          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">이 길로 걷기</button>
         </div>
       </div>
     </div>

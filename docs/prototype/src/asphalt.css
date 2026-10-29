@@ -62,3 +62,43 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 .compare-line{margin:0;padding:12px 0 10px;border-top:1px solid var(--line);font-size:16px;font-weight:700;color:var(--lane);line-height:1.35}
 .metrics{margin:6px 0 4px;font-size:14px}.metrics .mrow{display:grid;grid-template-columns:38% 31% 31%;align-items:center;min-height:30px;border-bottom:1px solid var(--line)}.metrics.one .mrow{grid-template-columns:38% 62%}
 .metrics .mrow span:not(:first-child){text-align:right;padding-right:10px;color:#D3D7DC}.metrics .mrow span:first-child{color:var(--muted)}.metrics .mhead span{font-size:12px;color:var(--muted)!important}.metrics .better{color:var(--lane)!important;font-weight:700}
+/* 결과 시트: 빠른 길·쭉고 길 탭(정확한 2열), 배지·제목·부제, 자세히 비교 — 색은 기존 토큰(--lane, --asphalt, --panel, --line, --muted, --zebra)만 */
+#map-result{bottom:calc(var(--sheet-h) - 20px)}
+#sheet-result{border-radius:20px 20px 0 0;border-top:1px solid var(--line)}
+#sheet-result .grip-area{display:flex;justify-content:center;align-items:center;height:20px;padding:0;cursor:grab}
+#sheet-result .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0}
+#sheet-result .sheet-body{padding:0 20px}
+.rtabs{display:grid;grid-template-columns:1fr 1fr;margin:0 -20px;border-bottom:1px solid var(--line)}
+.rtabs.one{grid-template-columns:1fr}
+.rtab{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;height:60px;padding:0 20px;border:0;background:none;color:var(--muted);min-width:0}
+.rtab .ti{width:24px;height:24px;flex:none}
+.rtab .tl{display:inline-flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap}
+.rtab .name{font-size:17px;font-weight:600;line-height:1}
+.rtab .mins{font-size:22px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.rtab[aria-pressed=true] .ti,.rtab[aria-pressed=true] .mins{color:var(--lane)}
+.rtab[aria-pressed=true] .name{color:var(--zebra)}
+.rtab[aria-pressed=true]::after{content:"";position:absolute;left:20px;right:20px;bottom:-1px;height:3px;border-radius:2px;background:var(--lane)}
+.rbadge{display:inline-flex;align-items:center;gap:8px;margin:16px 0 0;padding:7px 12px 7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--lane);font-size:14px;font-weight:600;line-height:1.2}
+.rbadge .ico{width:18px;height:18px;flex:none}
+.rhead{margin:12px 0 6px;font-size:24px;font-weight:700;line-height:1.3;letter-spacing:-.4px;color:var(--zebra)}
+.rsub{margin:0 0 14px;font-size:15px;color:var(--muted);line-height:1.45}
+.detail-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;padding:0;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:none;color:var(--zebra);font-size:17px;font-weight:600}
+.detail-toggle .ico{width:22px;height:22px;transition:transform .2s}
+.detail-toggle[aria-expanded=true] .ico{transform:rotate(180deg)}
+#result-options{padding-top:6px}
+.rfoot{margin:12px 0 4px;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.detail-toggle .ico{transition:none}}
+/* 탭 글자: 이름과 시간을 같은 크기로 맞춰 기준선과 세로 가운데가 함께 맞게 */
+.rtab .tl{align-items:baseline}
+.rtab .name,.rtab .mins{font-size:20px;line-height:24px}
+.rtab .name{font-weight:600}.rtab .mins{font-weight:800}
+.rtab .ti{width:22px;height:22px}
+/* 지도 위 회색 길 이름표 */
+.m-label{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);font-size:12px;line-height:1.25;pointer-events:none}
+.m-label b{font-weight:600}.m-label span{font-weight:700;color:var(--zebra)}
+/* 자세히 비교 표 아이콘 */
+.metrics .mrow span:first-child{display:flex;align-items:center;gap:10px}
+.metrics .mi{width:20px;height:20px;flex:none;color:var(--muted)}
+.metrics .mhead span{display:inline-flex;align-items:center;justify-content:flex-end;gap:5px}
+.metrics .mhead .ti{width:16px;height:16px;flex:none}
+.metrics .mhead .mh-j{color:var(--lane)!important}

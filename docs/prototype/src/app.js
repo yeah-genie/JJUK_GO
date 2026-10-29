@@ -409,7 +409,8 @@ function mapStyle() {
       st("major", kinds(MAJ), 9, { "line-color": "#343D43", "line-width": W([[9, .5], [12, 2], [14, 5], [16, 12], [18, 27]]) }),
       st("hw", kinds(HW), 8, { "line-color": "#FFD58C", "line-width": W([[8, .7], [12, 2.4], [14, 5.6], [16, 13], [18, 29]]) }),
       // 경로
-      { id: "route-short", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#6E7889", "line-width": W([[12, 3], [18, 7]]), "line-dasharray": [.6, 1.6] } },
+      { id: "route-short-case", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#2A3140", "line-opacity": .55, "line-width": W([[12, 6], [18, 12]]) } },
+      { id: "route-short", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#959EAC", "line-width": W([[12, 3.5], [18, 7]]) } },
       { id: "route-jjuk-case", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#2A3140", "line-opacity": .55, "line-width": W([[12, 7], [18, 14]]) } },
       { id: "route-jjuk", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#F6C343", "line-width": W([[12, 4.5], [18, 9]]) } },
       { id: "route-jjuk-under", type: "line", source: "rj", filter: ["has", "u"], paint: { "line-color": "#2A3140", "line-width": W([[12, 1.5], [18, 3]]), "line-dasharray": [1, 1.5] } },
@@ -731,6 +732,30 @@ function compareLine(base, alt) {
   const list = parts.length === 1 ? parts[0] : parts.slice(0, -1).map((p, i) => i === parts.length - 2 ? josa(p, "과", "와") : p).join(", ") + " " + parts[parts.length - 1];
   const joined = parts.length <= 2 ? (parts.length === 2 ? josa(parts[0], "과", "와") + " " + parts[1] : parts[0]) : list;
   return `${josa(extraText(a.walk - b.walk), "으로", "로")} ${josa(joined, "을", "를")} ${avoidAll ? "피할" : "줄일"} 수 있어요`;
+}
+// 결과 시트 머리말: 배지·제목·부제(원시값으로만, 점수 없음)
+function aboutText(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "약 " + (m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"); }
+function routeSummary(base, alt, focus) {
+  const b = base.m, a = alt.m;
+  if (!alt || alt === base) return { badge: "", headline: "가장 빨리 가는 길", sub: "비슷한 시간 안에 더 편한 길이 없어요" };
+  if (focus === "short") return { badge: "", headline: "가장 빨리 가는 길", sub: `쭉고 길보다 ${aboutText(a.walk - b.walk)} 빨라요` };
+  const g = altGains(alt, base), order = ["stairs", "sig", "steep", "gain"].filter(k => g.includes(k)), parts = [];
+  let avoidAll = true;
+  for (const k of order) {
+    if (k === "stairs") { parts.push(`계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
+    if (k === "sig") { parts.push(`신호 횡단 ${b.sig - a.sig}곳`); avoidAll = avoidAll && a.sig === 0; }
+    if (k === "steep") { parts.push(`급경사 ${Math.round((b.steep - a.steep) / 10) * 10}m`); avoidAll = avoidAll && a.steep < 10; }
+    if (k === "gain") { parts.push(`오르막 ${Math.round(b.gain - a.gain)}m`); avoidAll = false; }
+  }
+  const joined = parts.length === 1 ? parts[0] : josa(parts[0], "과", "와") + " " + parts.slice(1).join(", ");
+  const first = order[0];
+  const badge = first === "stairs" ? (a.stairs === 0 ? "계단 없이 더 편하게 걸어요" : "계단을 줄여 더 편하게 걸어요")
+    : first === "sig" ? "덜 멈추고 걸어요" : first === "steep" ? "가파른 길을 덜 걸어요" : "오르막을 덜 올라요";
+  const more = [`${aboutText(a.walk - b.walk)} 추가`];
+  if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
+  if (a.gain - b.gain >= 1) more.push(`오르막 약 ${Math.round(a.gain - b.gain)}m 증가`);
+  if (a.steep - b.steep >= 10) more.push(`급경사 약 ${Math.round((a.steep - b.steep) / 10) * 10}m 증가`);
+  return { badge, kind: first, headline: `${josa(joined, "을", "를")} ${avoidAll ? "피하는" : "줄이는"} 길`, sub: more.join(" · ") };
 }
 async function computeTrip() {
   const request = ++tripRequest;
