@@ -1,4 +1,4 @@
-> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md), [HANDOFF](HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
+> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](../PRODUCT_SPEC.md), [DESIGN_SYSTEM](../DESIGN_SYSTEM.md), [HANDOFF](../HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
 
 # Walking 1차 데모 구현 계획
 

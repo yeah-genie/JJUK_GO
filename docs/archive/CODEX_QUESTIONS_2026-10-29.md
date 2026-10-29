@@ -5,7 +5,7 @@
 ## 먼저 알아야 할 상황 (3줄)
 
 1. 사용자가 **작업 기준을 Claude 브랜치 `ccr-94bac9df-i81579`로 옮겼다.** Codex 브랜치 내용은 참고용이다. 사용자는 Codex가 한 것을 "영 별로"라고 했고 이유는 아직 말하지 않았다.
-2. 제품 정의를 BMAD 팀(분석·PM·UX·아키텍트)과 다시 정했다. 통합본: [`docs/PRODUCT_DEFINITION.md`](PRODUCT_DEFINITION.md). 원문: `reports/team-2026-10-29/05~08_*.md`.
+2. 제품 정의를 BMAD 팀(분석·PM·UX·아키텍트)과 다시 정했다. 통합본: [`docs/PRODUCT_DEFINITION.md`](../PRODUCT_DEFINITION.md). 원문: `reports/team-2026-10-29/05~08_*.md`.
 3. 새 정의의 숫자(멈춤 횟수·건널 여유)가 **신호 방향 대응·요일·횡단보도 길이**라는 약한 가정 위에 서 있다는 것이 측정으로 드러났다(`reports/team-2026-10-29/08_Architect_Winston_plan.md` §2, §4). 이 중 일부는 Codex만 답할 수 있다. Codex는 공식 이력 14일을 처리했고 T Data·Release 자산에 접근했다.
 
 > **우선순위 갱신(같은 날 오후):** 사용자가 핵심을 "신호 놓칠까 뛰지 않아도 되는 길 — 내 걸음으로 초록불 안에 건널 수 있는지 숫자로"로 확인했다. 머리 숫자가 '멈춤 횟수'에서 '건널 여유'로 바뀌었으므로 **Q2(점멸·보행 신호 기준)와 Q4(횡단보도 길이)가 Q1(방향 코드)과 함께 가장 중요하다.** 통합 정의: `docs/PRODUCT_DEFINITION.md`.
@@ -64,6 +64,6 @@
 
 사용자가 이 파일을 Codex에게 붙여 주면 된다. 붙여넣기용 한 줄:
 
-> `docs/CODEX_QUESTIONS_2026-10-29.md`를 읽고, 안내대로 `reports/answers/CODEX_ANSWERS_2026-10-29.md`에 답해서 `codex/refine-time-results`에 push해 주세요. 앱 코드는 수정하지 마세요.
+> `docs/archive/CODEX_QUESTIONS_2026-10-29.md`를 읽고, 안내대로 `reports/answers/CODEX_ANSWERS_2026-10-29.md`에 답해서 `codex/refine-time-results`에 push해 주세요. 앱 코드는 수정하지 마세요.
 
 (Codex가 PR/이슈 댓글로만 일할 수 있다면, 같은 문장을 PR에 `@codex`로 남기는 방법이 있다. 이슈 댓글의 동일 지원은 Codex 문서에서 확인되지 않았다. Claude는 유료 작업을 일으킬 수 있어 댓글을 올리지 않았다.)

@@ -6,10 +6,10 @@
 
 ## 다음 작업자가 먼저 알아야 할 사항
 
-- **현재 기준 (2026-10-29 오후, Claude 정리):** 작업 기준 브랜치는 **`ccr-94bac9df-i81579`**다. 사용자가 Codex 결과물은 참고만 하고 Claude 브랜치에서 이어가라고 했다(Codex가 한 것은 "영 별로", 이유는 미확인). 아래의 이전 항목들은 Codex 시기 기록이라 이 브랜치의 코드 상태와 다르다. Codex 시기 인수인계 원문은 [`docs/reference/CODEX_HANDOFF_2026-10-29.md`](reference/CODEX_HANDOFF_2026-10-29.md).
-- **제품 정의 통합본:** [`docs/PRODUCT_DEFINITION.md`](PRODUCT_DEFINITION.md). BMAD 팀(Mary·John·Sally·Winston) 보고서는 `reports/team-2026-10-29/05~08_*.md`. 사용자는 정의 질문 Q1~Q3에 모두 A로 답했다(대상은 걸음 느린 사람 등 '참고 정보' 수준, 그냥 걷기·기록 삭제, 숫자 중심에 출발 시각은 보조). 홈 주 버튼은 "내 위치로 출발".
+- **현재 기준 (2026-10-29 오후, Claude 정리):** 작업 기준 브랜치는 **`ccr-94bac9df-i81579`**다. 사용자가 Codex 결과물은 참고만 하고 Claude 브랜치에서 이어가라고 했다(Codex가 한 것은 "영 별로", 이유는 미확인). 아래의 이전 항목들은 Codex 시기 기록이라 이 브랜치의 코드 상태와 다르다. Codex 시기 인수인계 원문은 [`docs/reference/CODEX_HANDOFF_2026-10-29.md`](CODEX_HANDOFF_2026-10-29.md).
+- **제품 정의 통합본:** [`docs/PRODUCT_DEFINITION.md`](../PRODUCT_DEFINITION.md). BMAD 팀(Mary·John·Sally·Winston) 보고서는 `reports/team-2026-10-29/05~08_*.md`. 사용자는 정의 질문 Q1~Q3에 모두 A로 답했다(대상은 걸음 느린 사람 등 '참고 정보' 수준, 그냥 걷기·기록 삭제, 숫자 중심에 출발 시각은 보조). 홈 주 버튼은 "내 위치로 출발".
 - **지금 막혀 있는 것(코드보다 데이터):** 신호 방향 대응·요일(주말 패턴 30% 혼입)·횡단보도 길이(차선 환산)가 약하다. 측정은 Winston 보고서 §2·§4. 앱을 더 만들기 전에 확인할지 사용자 결정 대기.
-- **Codex에게 묻는 것:** [`docs/CODEX_QUESTIONS_2026-10-29.md`](CODEX_QUESTIONS_2026-10-29.md). Codex는 답을 자기 브랜치의 `reports/answers/CODEX_ANSWERS_2026-10-29.md`에 써서 push한다. 답이 오면 Claude가 읽고 이 문서와 PRODUCT_DEFINITION을 갱신한다.
+- **Codex에게 묻는 것:** [`docs/archive/CODEX_QUESTIONS_2026-10-29.md`](../archive/CODEX_QUESTIONS_2026-10-29.md). Codex는 답을 자기 브랜치의 `reports/answers/CODEX_ANSWERS_2026-10-29.md`에 써서 push한다. 답이 오면 Claude가 읽고 이 문서와 PRODUCT_DEFINITION을 갱신한다.
 - **이 브랜치의 앱 코드는 구버전이다:** 신호 데이터 4곳뿐, 내 걸음·GPS 걷기·공식 이력 연결 없음. 엔진은 `git checkout origin/codex/refine-time-results -- <파일>`로 가져오는 안(Winston §1-3, 충돌 0)이 제안돼 있으나 **가져오기 전 사용자 확인 대기**. 초안 PR #3(codex→ccr)은 방향이 바뀌어 병합 대상이 아니다.
 - **BMAD 6.12.4 설치됨:** `_bmad/`, `.claude/skills/`(분석가 Mary·PM John·UX Sally·아키텍트 Winston·개발자 Amelia 등). 보고서 작성 방식: 각 역할을 별도 에이전트로 실행하고 결과를 `reports/team-2026-10-29/`에 저장.
 - **미완료·미확인:** 서울시 공공데이터(OA-21209/15554) 실제 수령, 방향 코드 정의, 점멸 정의, 실제 휴대전화 보행, 현장 신호 확인, 14일 교차 시험(Release 자산 접근 필요).
@@ -31,7 +31,7 @@
 - **계단/경사 조사:** 서울시 OA-21207 계단도로 공간파일·passWeak API 존재 확인. API 속성 명세에 geometry가 없어 파일 확인이 우선. 국토지리정보원 실제 공개DEM 제공 경로(15059920) 확인, 로그인/다운로더 필요, 서울 해상도·파일은 미검증. S-MAP 화면과 공개 외부 수치API를 혼동하지 않는다.
 - **차별화 주의:** 네이버는 현재 계단회피를 제공한다. 카카오는 역사적 계단제외 자료와 유료 제휴 도보API 공식 답변이 존재한다. ‘네이버/카카오는 계단을 모른다’ 또는 ‘카카오 도보API가 전혀 없다’고 주장하지 않는다. 시간 예산 내 신호·경사·계단의 교환관계와 출발 시각을 설명하는 선택 도구로 검증한다.
 
-- **최신 방향 정정:** 쭉고는 ‘비슷하게 걸리면, 덜 힘든 길’. 신호+오르막/경사+계단을 함께 고려하는 Walking 서비스로 확장한다. 지하철·버스는 후순위. 사용자 이전 채팅과 Threads에서 확인했다. [현재 제품 방향](PRODUCT_DIRECTION.md)을 먼저 읽고, 신호 출발시각 추천만으로 목표를 좁히지 않는다.
+- **최신 방향 정정:** 쭉고는 ‘비슷하게 걸리면, 덜 힘든 길’. 신호+오르막/경사+계단을 함께 고려하는 Walking 서비스로 확장한다. 지하철·버스는 후순위. 사용자 이전 채팅과 Threads에서 확인했다. [현재 제품 방향](../archive/PRODUCT_DIRECTION.md)을 먼저 읽고, 신호 출발시각 추천만으로 목표를 좁히지 않는다.
 
 - 저장소: https://github.com/yeah-genie/JJUK_GO
 - 작업 브랜치: `codex/refine-time-results`.
@@ -88,7 +88,7 @@ python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype
 
 제품 확장 작업의 우선순위는 `PRODUCT_DIRECTION.md`의 **계단·경사 데이터 점검→우회시간 예산별 대안 경로 실험→사용자 선택 검증**이다. 아래는 기존 신호 프로토타입의 개선 항목이며 전체 제품 로드맵을 대체하지 않는다.
 
-자세한 근거·스크린샷: `docs/PRODUCT_REVIEW.md`.
+자세한 근거·스크린샷: `docs/archive/PRODUCT_REVIEW.md`.
 
 1. **계산 가능한 신호 범위를 숫자 옆에 표시.** ‘멈춤 0번’에는 모르는 신호 5곳이 빠져 있다. ‘예측 가능한 2곳에서 0번, 나머지 5곳 미확인’처럼 결과 범위를 보여야 한다. 도착 예상도 그 5곳의 대기를 제외한다.
 2. **시연 모드 분명히 표시.** `BASE=08:40`, 예시 내 위치, 9초짜리 걷기 애니메이션을 실제 현재 시각·GPS 안내처럼 보이지 않게 한다.

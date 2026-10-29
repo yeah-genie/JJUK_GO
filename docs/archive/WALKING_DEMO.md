@@ -1,4 +1,4 @@
-> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md), [HANDOFF](HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
+> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](../PRODUCT_SPEC.md), [DESIGN_SYSTEM](../DESIGN_SYSTEM.md), [HANDOFF](../HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
 
 # 기존 쭉고 프로토타입의 Walking 확장
 
@@ -33,8 +33,6 @@
 - `node scripts/check_walk_browser.cjs`: 실제 서울 그래프·지형 파일을 로드하고 가상 GPS로 진행·이탈·권한 거절·추적 해제·좌표 비저장·반응형 화면 검사. 재현에 로컬8766 서버와 Playwright 필요.
 - 실제 휴대전화 GPS 센서, 야외 보행, 실제 계단/경사, 현장 신호와의 일치는 아직 검증하지 않았다.
 
-![기존 경로 카드에 걷기 정보 추가](assets/walking-demo-2026-10-28/walking-result.png)
-![GPS 걷기 화면 — 가상 위치 테스트](assets/walking-demo-2026-10-28/walking-gps.png)
 
 ## 실행·배포
 

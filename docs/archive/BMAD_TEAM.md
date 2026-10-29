@@ -8,7 +8,7 @@
 
 - 설치된 BMAD toolbox 6.13.0-next의 party-mode 지침을 읽었다. 프로젝트 `_bmad` 및 설치 역할 명단은 초기화되지 않았다. 정식 BMAD 프로젝트 등록 완료라고 표현하지 않는다.
 - 이번에는 사용자가 명시한 팀 실행 요청에 따라 실제 별도 에이전트 3개에 기획 기준, UX 검토, 개발·QA 검토를 분담했다. 주 에이전트는 코드 통합·브라우저 검증·배포를 담당했다.
-- 결과: [기획 기준](PRODUCT_TEAM_BRIEF.md), [디자인 검토](../reports/COMFORT_DESIGN_REVIEW_2026-10-29.md), [QA 검토](../reports/COMFORT_QA_REVIEW_2026-10-29.md).
+- 결과: [기획 기준](PRODUCT_TEAM_BRIEF.md), [디자인 검토](../../reports/COMFORT_DESIGN_REVIEW_2026-10-29.md), [QA 검토](../../reports/COMFORT_QA_REVIEW_2026-10-29.md).
 - 후속 경쟁사 조사 분담은 에이전트 사용량 제한으로 실행되지 않았다. 공식 문서 조사는 주 에이전트가 수행했다. 존재하지 않는 독립 조사나 역할 실행을 완료로 쓰지 않는다.
 
 ## 다음 작업 운영

@@ -1,4 +1,4 @@
-> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md), [HANDOFF](HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
+> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](../PRODUCT_SPEC.md), [DESIGN_SYSTEM](../DESIGN_SYSTEM.md), [HANDOFF](../HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
 
 # 쭉고 (JJUK GO) — 기획서
 
@@ -16,7 +16,7 @@
 
 도보 길찾기는 거리(또는 보행시간)만 최소화한다. 하지만 도심에서 실제로 시간을 잡아먹고 짜증을 만드는 건 **신호대기**다. 지도앱이 알려준 최단경로가 빨간불 세 번에 걸려 결국 더 늦게 도착하는 일이 흔하다.
 
-2026년 9월 서울시가 C-ITS 기반 **보행신호 실시간 잔여시간 API**와 **교차로–횡단보도 매핑 데이터**를 공개하면서, 처음으로 "어느 횡단보도가 언제 초록불인지"를 프로그램이 알 수 있게 됐다. 과거 신호이력 파일은 공식적으로 확인되지 않지만, 실시간 API 응답에 *잔여시간*이 들어 있어 듬성듬성 호출해도 신호 패턴을 복원할 수 있다. 그래서 이력은 **자동 수집기로 직접 쌓는다** ([DATA_COLLECTION.md](DATA_COLLECTION.md)).
+2026년 9월 서울시가 C-ITS 기반 **보행신호 실시간 잔여시간 API**와 **교차로–횡단보도 매핑 데이터**를 공개하면서, 처음으로 "어느 횡단보도가 언제 초록불인지"를 프로그램이 알 수 있게 됐다. 과거 신호이력 파일은 공식적으로 확인되지 않지만, 실시간 API 응답에 *잔여시간*이 들어 있어 듬성듬성 호출해도 신호 패턴을 복원할 수 있다. 그래서 이력은 **자동 수집기로 직접 쌓는다** ([DATA_COLLECTION.md](../DATA_COLLECTION.md)).
 
 ## 2. 제품 정의
 
@@ -171,7 +171,7 @@ E[W] = P(적색 도착) · E[대기 | 적색] = (R/C) · (R/2) = R² / (2C)
 
 ## 7. 화면 설계
 
-최신 화면 기획은 [UX.md](DESIGN_SYSTEM.md)와 [프로토타입](prototype/index.html)을 따른다. 아래는 초기 안이다.
+최신 화면 기획은 [UX.md](../DESIGN_SYSTEM.md)와 [프로토타입](../prototype/index.html)을 따른다. 아래는 초기 안이다.
 
 
 1. **검색**
@@ -241,7 +241,7 @@ D4 실제 이력을 "정답 신호"로 재생한다.
 ## 12. 리포 구조 (제안)
 
 ```
-docs/PROPOSAL.md      # 이 기획서
+docs/archive/PROPOSAL.md      # 이 기획서
 docs/DATA_COLLECTION.md  # 신호 수집 자동화·호출 전략
 config/collector.toml    # 수집기 설정 (예산, 대상 지역)
 src/jjukgo/collect.py …  # 신호 수집기 (구현됨)

@@ -1,4 +1,4 @@
-> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md), [HANDOFF](HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
+> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](../PRODUCT_SPEC.md), [DESIGN_SYSTEM](../DESIGN_SYSTEM.md), [HANDOFF](../HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
 
 # 현재 제품 방향: 비슷하게 걸리면, 덜 힘든 길
 
@@ -6,7 +6,7 @@
 
 ## 사용자 확인 사항
 
-서비스 전체를 설명하는 포지셔닝 후보는 [POSITIONING.md](PRODUCT_DEFINITION.md)의 ‘내 페이스를 지키는 길찾기’다. 이는 이번에 추가한 에이전트 제안이며 사용자 최종 확정은 아니다. 아래의 신호+경사+계단 Walking 확장 방향과 구분한다.
+서비스 전체를 설명하는 포지셔닝 후보는 [POSITIONING.md](../PRODUCT_DEFINITION.md)의 ‘내 페이스를 지키는 길찾기’다. 이는 이번에 추가한 에이전트 제안이며 사용자 최종 확정은 아니다. 아래의 신호+경사+계단 Walking 확장 방향과 구분한다.
 
 쭉고는 신호 대기를 줄이는 기능에서 출발했지만, 목표를 **작은 시간 차이 안에서 덜 끊기고 덜 힘든 도보 경로를 고르는 서비스**로 확장한다.
 

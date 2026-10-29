@@ -110,7 +110,7 @@ BMAD 팀(Mary 분석·John PM·Sally UX·Winston 아키텍트)의 보고서를 �
 
 ## 10. Codex 답변 반영 (2026-10-29 저녁, `reports/answers/CODEX_ANSWERS_2026-10-29.md`)
 
-Codex가 질문서(`docs/CODEX_QUESTIONS_2026-10-29.md`)에 답했다. 이 문서의 숫자와 가정을 아래처럼 고친다. 표기는 Codex 원문의 [직접 확인]/[문서 근거]/[추정]/[모름]을 따른다.
+Codex가 질문서(`docs/archive/CODEX_QUESTIONS_2026-10-29.md`)에 답했다. 이 문서의 숫자와 가정을 아래처럼 고친다. 표기는 Codex 원문의 [직접 확인]/[문서 근거]/[추정]/[모름]을 따른다.
 
 | 항목 | 이전 서술 | 정정·추가 |
 |---|---|---|

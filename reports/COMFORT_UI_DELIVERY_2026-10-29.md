@@ -23,7 +23,7 @@
 
 ## 관련 기록
 
-[팀 방향](../docs/PRODUCT_TEAM_BRIEF.md), [역할 실행 범위](../docs/BMAD_TEAM.md), [디자인 검토](COMFORT_DESIGN_REVIEW_2026-10-29.md), [QA 검토](COMFORT_QA_REVIEW_2026-10-29.md), [속도와 Threads 반응](WALKING_PACE_AND_EARLY_RESPONSE_2026-10-29.md).
+[팀 방향](../docs/archive/PRODUCT_TEAM_BRIEF.md), [역할 실행 범위](../docs/archive/BMAD_TEAM.md), [디자인 검토](COMFORT_DESIGN_REVIEW_2026-10-29.md), [QA 검토](COMFORT_QA_REVIEW_2026-10-29.md), [속도와 Threads 반응](WALKING_PACE_AND_EARLY_RESPONSE_2026-10-29.md).
 
 GitHub 및 공개 배포 확인 결과는 최신 HANDOFF의 배포 식별자를 따른다.
 
