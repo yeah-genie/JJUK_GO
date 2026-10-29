@@ -18,3 +18,14 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 
 /* Native focus/keyboard semantics, road-yellow switch visuals. */
 .switch{appearance:none;flex:none;width:44px;height:26px;border:1px solid #8793A3;border-radius:20px;background:#303844;position:relative;margin:0}.switch:before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;background:#B7BEC8;border-radius:50%}.switch:checked{background:var(--lane);border-color:var(--lane)}.switch:checked:before{left:21px;background:#242A32}.searchbox,.btn-ghost,.settings-content select,.settings-content input[type=number]{border-color:#8793A3}.mapctl svg{stroke:#8CAEFF}.mapctl svg circle:last-of-type{fill:#8CAEFF}.route .mins{font-variant-numeric:tabular-nums}.map-legend{pointer-events:none}.m-sig.unk{border-style:dashed}.m-sig.unk:after{content:"?";font-size:10px;display:block;text-align:center;line-height:14px;color:var(--muted)}
+
+/* Center controls by their boxes, not the text baseline. */
+.mapctl button,.icon-btn{display:grid;place-items:center;padding:0;line-height:1}.mapctl svg{display:block;margin:0}.mapctl .solo{width:44px;height:44px}.mapctl svg{width:24px;height:24px}
+#sheet-home .sheet-body,#sheet-result .sheet-body{flex:none;overflow:visible}#sheet-home,#sheet-result{height:var(--h);max-height:calc(100% - 150px)}#sheet-home .sheet-footer,#sheet-result .sheet-footer{margin-top:auto}.route-details{display:block;width:100%;padding:6px 0;min-height:36px}.home-chips .text-action,#home-chips .text-action{min-height:36px}.recent-heading{margin-top:8px}#sheet-home .safety{font-size:12px}
+.splash-mark{text-align:center}.splash .logo-svg{width:120px;height:120px}.splash h1{font-size:42px;margin:18px 0 6px}.splash-mark p{color:var(--muted);font-size:15px}.logo-lane{stroke-dasharray:96;animation:lane-intro 1.2s ease-out both}.splash #splash-skip{position:absolute;bottom:24px;right:24px}@keyframes lane-intro{from{stroke-dashoffset:96}to{stroke-dashoffset:0}}
+.done{padding:0;justify-content:initial}.done header{display:flex;align-items:center;padding:10px 16px;flex:none;gap:8px}.walk-card-area{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 20px;overflow:auto}.walk-card-area #share-card{width:min(330px,100%);min-height:0;flex-shrink:1;aspect-ratio:330/460}.walk-card-area svg{display:block;width:100%;height:100%;max-height:100%}.done .hint{color:var(--muted);font-size:12px;margin:8px 0;flex:none}.done .sheet-footer{padding-top:8px}.done .btn{margin:0}.done .actions{width:100%}
+@media(max-height:690px){.walk-card-area #share-card{max-height:calc(100dvh - 195px)}.done header{padding:4px 12px}.done .hint{font-size:11px}.splash .logo-svg{width:100px;height:100px}}
+
+#sheet-home .sheet-body,#sheet-result .sheet-body{flex:1;overflow:auto}
+
+.done .actions .btn{flex:1}

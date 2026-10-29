@@ -71,6 +71,7 @@ function newTrack(kind, now = Date.now()) {
 }
 function trackAdd(tr, fix) {
   if (!fix || !Array.isArray(fix.ll) || !fix.ll.every(isNum) || !isNum(fix.timestamp) || !isNum(fix.accuracy) || fix.accuracy < 0) return tr;
+  appendTrace(tr,fix);
   if (tr.start == null) tr.start = fix.timestamp;
   if (tr.last && fix.timestamp <= tr.last.timestamp) return tr;
   tr.end = Math.max(tr.end, fix.timestamp);
@@ -116,7 +117,7 @@ function finishTrack(tr, info = {}, now = Date.now()) {
   }
   const saved=writeProfile(p);
   return { at:new Date(tr.start).toISOString(),kind:tr.kind,trip:info.trip||null,to:info.to||null,
-    arrived:info.routeLength ? tr.moveM >= info.routeLength*.9 : false,
+    trace:tr.trace||[], arrived:info.routeLength ? tr.moveM >= info.routeLength*.9 : false,
     elapsedS:Math.max(0,Math.round((now-tr.start)/1000)),moveS:tr.moveS,meters:Math.round(tr.moveM),speed,stops:tr.stops,unsaved:!saved };
 }
 function arrivalCopy(rec, {estimateS,fromName,toName}) {

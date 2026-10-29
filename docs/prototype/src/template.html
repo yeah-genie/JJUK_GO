@@ -21,7 +21,7 @@
   <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap · 지형 Mapzen / USGS</div>
 
   <!-- 0 로고 -->
-  <section class="screen splash" id="s-splash" hidden><h1>쭉고.</h1><p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p></section>
+  <section class="screen splash" id="s-splash" hidden><div class="splash-mark"><svg viewBox="0 0 120 120" class="logo-svg" aria-hidden="true"><rect width="120" height="120" rx="30" fill="#303844"/><g fill="#F4F2E9"><rect x="24" y="25" width="9" height="70" rx="2"/><rect x="43" y="25" width="9" height="70" rx="2"/><rect x="62" y="25" width="9" height="70" rx="2"/><rect x="81" y="25" width="9" height="70" rx="2"/></g><path class="logo-lane" d="M12 60h96" stroke="#F6C343" stroke-width="12" stroke-linecap="round"/></svg><h1>쭉고</h1><p>내 걸음으로, 쭉.</p></div><p class="splash-foot" id="splash-foot">서울 지도 불러오는 중…</p><button class="text-action" id="splash-skip">건너뛰기</button></section>
 
   <!-- ① 홈 -->
   <section class="screen" id="s-home" hidden>
@@ -29,7 +29,6 @@
  <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span style="color:var(--lane)">.</span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
  <button class="searchbox" data-search="to">어디로 걸어갈까요? <span style="margin-left:auto">⌕</span></button>
  <div class="home-origin"><span id="home-origin">출발지를 정해 주세요</span><button data-search="from">변경</button></div></div>
- <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 정보 표시 켜짐</button>
  <div class="map-legend">노랑 · 이력 있음　회색 · 신호 정보 미확인</div>
  <div class="sheet" id="sheet-home"><div class="grip-area"><div class="grip"></div></div><div class="sheet-body">
  <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" data-go="settings"><span>내 걸음</span><b id="home-pace"></b><small id="home-pace-sub">아직 측정 전</small><span>›</span></button>
@@ -51,7 +50,15 @@
  <details id="settings-manual"><summary>속도를 직접 정하기</summary><label class="setting-row" for="manual-mode">직접 정한 속도 사용<input class="switch" id="manual-mode" type="checkbox"></label><label for="manual-speed">걷는 속도 (km/h)</label><input id="manual-speed" type="range" min="0.72" max="7.92" step="0.01"><output id="manual-speed-value" for="manual-speed"></output><p>자동 맞춤을 켜면 다시 측정한 걸음을 사용해요.</p></details></section>
  <section class="setting-section"><h2>이동 조건</h2><p id="equipment-summary"></p><label class="setting-row" for="avoid-steps">확인된 계단 피하기<input class="switch" id="avoid-steps" type="checkbox"></label><label class="setting-row" for="budget-select">더 걸어도 괜찮은 시간<select id="budget-select"><option value="0">추가 없이</option><option value="120">2분</option><option value="180">3분</option><option value="300">5분</option><option value="600">10분</option></select></label><p>지도에 없는 턱·계단과 엘리베이터 운영은 확인할 수 없어요. 무장애 경로를 보장하지 않아요.</p></section>
  <section class="setting-section"><label class="setting-row" for="save-summary">학습한 걸음을 이 기기에 저장<input class="switch" id="save-summary" type="checkbox"></label><p>끄면 다음 접속에 학습 결과를 남기지 않아요. 위치 경로는 저장하지 않아요.</p><button class="text-action" id="reset-learning">학습한 걸음 초기화</button><p class="settings-note" id="settings-message" role="status"></p></section>
- </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용하기</button></div>
+ <section class="setting-section">        <details class="result-options" id="calculation-info">
+          <summary>경로 계산 기준</summary><p class="safety">공개 보행 도로망에서 신호·계단·오르막을 비교해요. 허용한 추가 시간 안에서 후보를 고르며, 미확인 신호에는 45초의 대기를 가정해요. 횡단 여유는 실제 방향·길이·점멸 정보가 확인되어야 표시해요.</p><p id="budget-label" class="safety"></p>
+          <div class="option-body">
+            <p class="safety" id="route-facts"></p>
+            <p class="cov" id="cov-note" hidden><span id="cov-text"></span></p>
+
+            <p class="safety" id="result-safety"></p>
+          </div>
+        </details></section><section class="setting-section" id="settings-location"><h2>위치 연결이 안 될 때</h2><p>브라우저의 이 사이트 위치 권한과 기기의 위치 서비스를 켜 주세요. 내장 브라우저에서 계속 실패하면 Chrome·Safari에서 같은 주소를 열어 주세요.</p><p id="location-environment"></p><button class="text-action" id="copy-app-link">앱 주소 복사</button></section></div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용하기</button></div>
 </section>
 
   <!-- 검색 -->
@@ -93,16 +100,7 @@
         <p class="safety" id="result-note"></p>
 
         <p class="safety" id="result-location" role="status" hidden></p>
-        <details class="result-options" id="result-options">
-          <summary>계산 기준 <span id="budget-label">+2분까지</span></summary>
-          <div class="option-body">
-            <p class="safety" id="route-facts"></p>
-            <p class="cov" id="cov-note" hidden><span id="cov-text"></span></p>
-            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
-
-            <p class="safety" id="result-safety"></p>
-          </div>
-        </details>
+        <button class="link-btn route-details" data-go="detail">횡단 정보 보기</button>
       </div>
       <div class="sheet-footer" id="result-footer">
         <div class="actions" id="result-actions">
@@ -152,25 +150,7 @@
     </div>
   </section>
 
-  <!-- ⑤ 도착 공유 카드 -->
-  <section class="screen done" id="s-done" hidden>
-    <div class="card" id="share-card">
-      <span class="logo">쭉고</span>
-      <span class="date" id="card-date"></span>
-      <div id="card-shape"></div>
-      <div class="kind" id="card-kind"></div>
-      <div class="stats">
-        <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
-        <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span id="c-time-l">예상 소요 시간</span></div>
-      </div>
-      <p class="compare" id="c-compare"></p>
-    </div>
-    <p class="hint" id="done-hint">스크린샷을 찍어 공유해 보세요</p>
-    <div class="actions">
-      <button class="btn btn-ghost" data-go="result">다시 길 찾기</button>
-    </div>
-  </section>
+  <section class="screen done" id="s-done" hidden><header><button class="icon-btn" data-go="home" aria-label="홈으로">‹</button><span>오늘의 걸음</span></header><div class="walk-card-area"><div id="share-card"></div><p class="hint" id="done-hint"></p></div><div class="sheet-footer"><div class="actions"><button class="btn btn-ghost" data-go="home">홈으로</button><button class="btn btn-primary" id="save-walk-card">이미지 저장</button></div></div></section>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>

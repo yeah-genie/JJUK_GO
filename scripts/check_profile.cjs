@@ -1,6 +1,6 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const saved=new Map();const ctx=vm.createContext({console,Date,Math,Number,Set,store:{get:(k,d)=>saved.get(k)??d,set:(k,v)=>{saved.set(k,JSON.parse(JSON.stringify(v)));return true;}},distLL:(a,b)=>Math.abs(b[0]-a[0]),SPEED:1,clock:()=>'',km:()=>'',document:{getElementById:()=>null}});
-vm.runInContext(fs.readFileSync('docs/prototype/src/walking-profile.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('docs/prototype/src/walk-card.js','utf8')+'\n'+fs.readFileSync('docs/prototype/src/walking-profile.js','utf8'),ctx);
 const run=s=>vm.runInContext(s,ctx);
 assert.equal(run('paceState().kind'),'before');
 run("completeOnboarding('behind',['walker'])");assert.equal(run('readProfile().avoidSteps'),true);assert.equal(run('paceState().speed'),null);
@@ -20,3 +20,14 @@ assert.equal(run('cleanProfile({manualSpeed:"fast",learned:{speed:99},equipment:
 assert.equal(run('cleanProfile({learned:{speed:99}}).learned.speed'),null);
 run('var gap=newTrack("route",0);trackAdd(gap,{ll:[0,0],accuracy:1,timestamp:0});trackAdd(gap,{ll:[200,0],accuracy:1,timestamp:200000});');assert.equal(run('gap.moveM'),0);
 console.log('PASS profile: cold start, equipment, 0.25m/s, outliers, stationary, gaps, manual/paused modes, privacy, reset and validation');
+
+run('var traceTest=newTrack("route",0);for(let t=0;t<=60;t+=10)trackAdd(traceTest,{ll:[t,0],accuracy:1,timestamp:t*1000});trackAdd(traceTest,{ll:[150,0],accuracy:1,timestamp:150000});');
+assert.equal(run('traceTest.trace.length'),2);assert(run('traceTest.trace[0].length')>1);
+assert(!JSON.stringify(saved.get('profile')).includes('trace'));
+console.log('PASS walk trace: disconnected GPS segments stay disconnected and are never persisted');
+
+run('var mins=n=>Math.ceil(n/60)+"분",dur=n=>n+"초";var state={mode:"example",focus:"jjuk",sims:{jjuk:{total:300}}};');
+assert(run('walkCardSVG(null,{coords:[[126.97,37.56],[126.971,37.561]],length:100})').includes('예시 경로 · 실제 이동 기록 아님'));
+const actualCard=run('walkCardSVG({trace:[[[126.97,37.56],[126.971,37.561]],[[126.972,37.562],[126.973,37.563]]],meters:200,elapsedS:180},null)');
+assert(actualCard.includes('GPS로 기록한 이동 구간'));assert.equal((actualCard.match(/<polyline/g)||[]).length,2);assert(!actualCard.includes('NaN'));
+console.log('PASS card: actual/schematic labels and separate SVG paths');
