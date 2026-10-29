@@ -102,4 +102,39 @@ vm.runInContext(`(async()=>{
   getJSON=async()=>{attempts++;throw new Error('offline')};
   await assert.rejects(loadCell('retry-cell'));await assert.rejects(loadCell('retry-cell'));
   assert.equal(attempts,2);getJSON=original;
-})()`,context).then(()=>console.log('PASS: walking budgets, unknown waits/arrival phase, GPS cancellation/coarse fix, endpoint projection, network retry')).catch(err=>{console.error(err);process.exitCode=1;});
+})()`,context);
+vm.runInContext(`
+  // 걸음 속도: 1.25m/s로 3분 걷고 20초 서고 다시 1분. 위치는 2초마다, 오차 8m, 좌우로 3m 흔들림.
+  const kx=111320*Math.cos(37.56*Math.PI/180), t0=1700000000000;
+  const at=(m,s,jit=0)=>({ll:[126.97+m/kx,37.56+jit/110540],accuracy:8,timestamp:t0+s*1000});
+  let tr=newTrack('free',t0), m=0, s=0, k=0;
+  const walk=(secs,v)=>{for(let i=0;i<secs;i+=2){s+=2;m+=v*2;trackAdd(tr,at(m,s,(k++%2?3:-3)));}};
+  walk(180,1.25); walk(20,0); walk(60,1.25);
+  const v=trackSpeed(tr);
+  assert(Math.abs(v-1.25)<0.06,'speed '+v);
+  assert.equal(tr.stops,1);
+  assert(Math.abs(trackMeters(tr)-300)<15,'moved '+trackMeters(tr));
+  // 서 있을 때 GPS가 흔들려도 걸은 거리로 세지 않는다
+  let still=newTrack('free',t0);
+  for(let i=1;i<=60;i++) trackAdd(still,at(i%2?5:-5,i*2));
+  assert.equal(still.moveM,0); assert.equal(trackSpeed(still),null);
+  // 오차가 큰 위치, 차량 속도(8m/s)는 빼고, 너무 짧은 걷기는 속도를 내지 않는다
+  let car=newTrack('free',t0);
+  for(let i=1;i<=60;i++) trackAdd(car,at(i*16,i*2));
+  assert.equal(car.moveM,0); assert(car.skipped>0);
+  let fuzzy=newTrack('free',t0); trackAdd(fuzzy,{...at(0,1),accuracy:60}); assert.equal(fuzzy.anchor,null);
+  let brief=newTrack('free',t0); for(let i=1;i<=20;i++) trackAdd(brief,at(i*2.5,i*2)); assert.equal(trackSpeed(brief),null);
+  // 새 기록은 걸은 시간만큼 섞이고, 범위를 벗어나지 않는다
+  const p0={mode:'auto',speed:null,moveS:0,walks:0};
+  const p1=learnPace(p0,1.0,600); assert.equal(p1.speed,1); assert.equal(p1.walks,1);
+  const p2=learnPace(p1,1.4,600); assert.equal(p2.speed,1.2);
+  assert.equal(learnPace(p0,9,600).speed,PACE.MAX);
+  assert.equal(walkSpeed({mode:'auto',speed:null}),1.2); assert.equal(walkSpeed({mode:0.9}),0.9); assert.equal(walkSpeed(p2),1.2);
+  assert.equal(paceText(1.2),String.fromCharCode(49,51,39,53,51,34)); assert.equal(paceText(null),'—');
+  // 기록에는 좌표가 없다
+  const rec=finishTrack(tr,{to:'청계광장',trip:'k'});
+  assert(rec && !JSON.stringify(rec).includes('126.9')); assert.equal(rec.stops,1);
+  const short=finishTrack(brief); assert(short && short.speed===null);  // 40초 걷기: 기록은 남기되 속도는 모른다
+  assert.equal(finishTrack(newTrack('free',t0)),null);
+`,context);
+vm.runInContext(`(async()=>{})()`,context).then(()=>console.log('PASS: walking budgets, unknown waits/arrival phase, GPS cancellation/coarse fix, endpoint projection, network retry, pace estimation and walk records')).catch(err=>{console.error(err);process.exitCode=1;});

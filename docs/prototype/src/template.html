@@ -79,10 +79,8 @@ body {
 .sheet.dragging { transition: none; }
 .grip-area { flex: none; padding: 9px 0 7px; display: grid; place-items: center; cursor: grab; touch-action: none; border: 0; background: none; width: 100%; color: inherit; }
 .grip { width: 38px; height: 4px; border-radius: 4px; background: #B9C0CB; }
-.sheet-body { flex: 1 1 0; min-height: 0; overflow-y: auto; touch-action: pan-y; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #B9C0CB transparent; padding: 2px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
+.sheet-body { flex: 1 1 0; min-height: 0; overflow-y: auto; touch-action: pan-y; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding: 2px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
 .sheet-body > * { flex-shrink: 0; }
-.sheet-body::-webkit-scrollbar { display: block; width: 3px; }
-.sheet-body::-webkit-scrollbar-thumb { background: #B9C0CB; border-radius: 3px; }
 .sheet-footer { flex: none; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--zebra); border-top: 1px solid var(--line); }
 .sheet.peek .sheet-footer { display: none; }
 .comfort-hero { background: var(--asphalt); color: var(--zebra); padding: 18px; border-radius: 17px; border-top: 4px solid var(--lane); }
@@ -279,6 +277,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .progress div { display: flex; flex-direction: column; }
 .progress span { color: var(--muted); font-size: 12px; }
 .progress strong { font-family: var(--display); font-size: 24px; font-weight: 400; }
+/* 내 걸음 */
+.pace-row { display: grid; grid-template-columns: auto auto 1fr auto; align-items: baseline; gap: 8px; width: 100%; margin-top: 10px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; font: inherit; color: var(--asphalt); text-align: left; cursor: pointer; }
+.pace-row .pr-l { font-size: 13px; color: var(--muted); }
+.pace-row b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.pace-row small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pace-row .pr-go { color: var(--muted); font-size: 18px; }
+.pace-hero { background: var(--asphalt); color: var(--zebra); border-radius: 18px; border-top: 4px solid var(--lane); padding: 18px; display: flex; flex-direction: column; gap: 2px; }
+.pace-hero strong { font-family: var(--display); font-weight: 400; font-size: 40px; line-height: 1.1; color: var(--lane); font-variant-numeric: tabular-nums; }
+.pace-hero span { font-size: 15px; font-weight: 600; }
+.pace-hero small { font-size: 12.5px; color: #A7B0C0; margin-top: 4px; }
+.pace-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 6px; }
+.pace-chips .chip { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; }
+.pace-chips .chip small { font-size: 11px; opacity: .75; font-variant-numeric: tabular-nums; }
+.wrec { display: grid; grid-template-columns: 1fr repeat(4, auto); gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.wrec > div, .wrec > span { display: flex; flex-direction: column; min-width: 0; }
+.wrec > span { align-items: flex-end; }
+.wrec b { font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wrec small { font-size: 11.5px; color: var(--muted); }
 /* 도착 공유 카드 */
 .done { background: #1E2430; color: var(--zebra); align-items: stretch; justify-content: center; gap: clamp(8px, 1.6vh, 16px); padding: 24px 22px 18px; overflow: hidden; }
 .card {
@@ -387,6 +403,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
         <div id="home-intro">
           <div class="row-label"><h2>비슷한 시간이면, 덜 힘들게.</h2></div>
           <p class="safety" style="font-size:13px;margin-top:4px">신호 · 계단 · 오르막을 함께 비교해요.</p>
+          <button class="pace-row" data-go="me"><span class="pr-l">내 걸음</span><b id="home-pace">4.3km/h</b><small id="home-pace-sub"></small><span class="pr-go" aria-hidden="true">›</span></button>
           <div class="deadline-row">
             <span id="deadline-label">도착 마감</span>
             <fieldset class="time-picker" id="deadline" aria-labelledby="deadline-label">
@@ -514,7 +531,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
   <section class="screen" id="s-walk" hidden>
     <div class="map" id="map-walk"></div>
     <div class="next" aria-live="polite">
-      <p style="font-size:13px;color:#A7B0C0">다음 신호 횡단보도</p>
+      <p style="font-size:13px;color:#A7B0C0" id="next-label">다음 안내</p>
       <div class="dist" id="next-dist">—</div>
       <p id="next-state"></p>
       <p class="say" id="next-say"></p>
@@ -524,16 +541,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="progress">
-          <div><span>지나온 거리</span><strong id="w-stops">—</strong></div>
-          <div><span>남은 거리</span><strong id="w-left">—</strong></div>
-          <div><span>걷기만 약</span><strong id="w-eta">—</strong></div>
+          <div><span>시간</span><strong id="w-time">—</strong></div>
+          <div><span id="w-left-l">남은 거리</span><strong id="w-left">—</strong></div>
+          <div><span>페이스/km</span><strong id="w-pace">—</strong></div>
         </div>
         <button class="btn btn-primary" id="walk-reroute" data-reroute hidden>내 위치에서 다시 찾기</button>
         <p class="safety" id="walk-location" role="status">위치 연결 대기</p>
         <div class="chips"><button class="chip" data-gps-retry>위치 다시 연결</button><button class="chip" data-walk-demo>움직임 시연</button></div>
         <div class="actions">
-          <button class="btn btn-ghost" data-go="result">그만 걷기</button>
-          <button class="btn btn-primary" data-go="done">경로 요약 보기</button>
+          <button class="btn btn-ghost" id="walk-end">그만 걷기</button>
+          <button class="btn btn-primary" id="walk-done">걷기 끝내기</button>
         </div>
       </div>
     </div>
@@ -574,6 +591,27 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     </div>
   </section>
 
+  <!-- 내 걸음: 속도와 걷기 기록 -->
+  <section class="screen detail" id="s-me" hidden>
+    <header>
+      <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
+      <h1>내 걸음</h1>
+    </header>
+    <div class="list">
+      <div class="pace-hero">
+        <strong id="me-speed"></strong>
+        <span id="me-pace"></span>
+        <small id="me-src"></small>
+      </div>
+      <p class="sec-title">길찾기에 쓸 속도</p>
+      <div class="chips pace-chips" id="pace-chips"></div>
+      <button class="btn btn-primary" data-free-walk style="margin-top:14px;flex:none">그냥 걷기 시작</button>
+      <p class="sec-title" style="margin-top:20px">걷기 기록</p>
+      <div id="walk-list"></div>
+      <p class="note">이 기기에만 저장해요. 위치 좌표는 남기지 않아요. <button class="link-btn" id="walks-clear">기록 지우기</button></p>
+    </div>
+  </section>
+
   <!-- ⑤ 도착 공유 카드 -->
   <section class="screen done" id="s-done" hidden>
     <div class="card" id="share-card">
@@ -584,7 +622,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="stats">
         <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
         <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span>예상 소요 시간</span></div>
+        <div class="stat-big"><strong id="c-time"></strong><span id="c-time-l">예상 소요 시간</span></div>
       </div>
       <p class="compare" id="c-compare"></p>
     </div>

@@ -2,8 +2,8 @@
 // scripts/build_seoul_map.py가 만들어 seoul/ 아래에 둔다. 신호 위치는 서울 C-ITS 교차로 + OSM 신호 표시.
 const $ = id => document.getElementById(id);
 const DATA = new URL("seoul/", document.baseURI).href;
-const SPEED = 1.2;
-let BASE = 8 * 3600 + 40 * 60;      // 걷는 속도 m/s, 기준 출발 08:40
+let SPEED = 1.2;                    // 걷는 속도 m/s. 내 걸음 설정(applyPace)으로 바뀐다
+let BASE = 8 * 3600 + 40 * 60;      // 기준 출발 08:40
 const UNKNOWN_SIG_COST = 45;                        // 패턴을 모르는 신호를 지날 때 쭉고가 치는 비용(초): 평균 대기 근사
 const STOP_COST = 15;                               // 멈춤 한 번에 더하는 비용(초): 같은 대기라도 덜 멈추는 길을 고른다
 // '내 위치'는 아직 GPS를 쓰지 않는 예시 위치다. 신호 패턴을 아는 광화문 일대(서울광장)에 둔다.
@@ -21,6 +21,94 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("jjukgo:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem("jjukgo:" + k, JSON.stringify(v)); } catch {} },
 };
+
+// ---------- 내 걸음: 속도 추정과 걷기 기록 ----------
+// 위치 좌표는 저장하지 않는다. 기기에는 속도 숫자와 기록 요약(시간·거리·멈춤)만 남긴다.
+const PACE = {
+  DEFAULT: 1.2, MIN: 0.5, MAX: 2.2,  // m/s. MAX보다 빠른 구간은 걷기가 아니라고 보고(차량 등) 기록에서 뺀다
+  STOPV: 0.3,                        // 이보다 느리면 멈춘 것
+  ACC: 25,                           // 위치 오차가 이보다 크면 속도 계산에 쓰지 않는다(m)
+  STEP: 8,                           // 이보다 덜 움직이면 GPS 흔들림으로 본다(m)
+  WINDOW: 20,                        // 속도를 재는 구간 길이(초)
+  GAP: 30,                           // 위치가 이보다 오래 끊기면 그 사이는 세지 않는다(초)
+};
+const PACE_PRESETS = [{ v: 0.9, label: "천천히" }, { v: 1.2, label: "보통" }, { v: 1.4, label: "빠르게" }];
+function newTrack(kind, now = Date.now()) {
+  return { kind, start: now, end: now, anchor: null, moveM: 0, moveS: 0, stopS: 0, stops: 0, moving: false, skipped: 0 };
+}
+// 위치 하나를 더한다. 앞 점을 붙잡아 두었다가 충분한 시간이 지나면 한 구간(걸음 또는 멈춤)으로 센다.
+function trackAdd(tr, fix) {
+  tr.end = Math.max(tr.end, fix.timestamp);
+  if (!(fix.accuracy <= PACE.ACC)) { tr.skipped++; return tr; }
+  tr.last = fix;
+  const a = tr.anchor;
+  if (!a) { tr.anchor = fix; return tr; }
+  const dt = (fix.timestamp - a.timestamp) / 1000;
+  if (dt <= 0) return tr;
+  if (dt > PACE.GAP) { tr.anchor = fix; return tr; }
+  const d = distLL(a.ll, fix.ll), noise = Math.max(PACE.STEP, (a.accuracy + fix.accuracy) / 2), v = d / dt;
+  // 속도는 20초 단위로 잰다. 2초 간격으로 재면 옆으로 흔들린 오차까지 걸은 거리로 더해져 빠르게 나온다.
+  // 오차 원 안에 머물면 0.8m/s로 걷는 사람도 벗어났을 시간(10~20초)이 지난 뒤 멈춤으로 본다.
+  const stopWin = Math.min(PACE.WINDOW, Math.max(10, noise / 0.8));
+  if (dt < (d < noise ? stopWin : PACE.WINDOW)) return tr;
+  tr.anchor = fix;
+  if (v > PACE.MAX) { tr.skipped++; return tr; }
+  if (d < noise || v < PACE.STOPV) {
+    tr.stopS += dt;
+    if (tr.moving) { tr.stops++; tr.moving = false; }  // 걷다가 오차 원 안에 머물면 멈춤 한 번
+    return tr;
+  }
+  tr.moveM += d; tr.moveS += dt; tr.moving = true;
+  return tr;
+}
+// 아직 구간으로 세지 않은 마지막 걸음. 끝낼 때와 거리 표시에만 쓴다.
+function trackTail(tr) {
+  const a = tr?.anchor, b = tr?.last;
+  if (!a || !b || b === a) return null;
+  const dt = (b.timestamp - a.timestamp) / 1000, d = distLL(a.ll, b.ll);
+  const v = d / dt;
+  return dt >= 4 && d >= Math.max(PACE.STEP, (a.accuracy + b.accuracy) / 2) && v >= PACE.STOPV && v <= PACE.MAX ? { d, dt } : null;
+}
+const trackMeters = tr => tr ? tr.moveM + (trackTail(tr)?.d || 0) : 0;
+function trackFlush(tr) {
+  const t = trackTail(tr);
+  if (t) { tr.moveM += t.d; tr.moveS += t.dt; tr.anchor = tr.last; }
+  return tr;
+}
+// 1분, 50m 넘게 걸어야 속도를 낸다. 그 전에는 모른다고 둔다.
+const trackSpeed = tr => tr && tr.moveS >= 60 && tr.moveM >= 50 ? tr.moveM / tr.moveS : null;
+const clampSpeed = v => Math.min(PACE.MAX, Math.max(PACE.MIN, v));
+function paceProfile() {
+  const p = store.get("pace", null);
+  return p && typeof p === "object" ? { mode: "auto", speed: null, moveS: 0, walks: 0, ...p } : { mode: "auto", speed: null, moveS: 0, walks: 0 };
+}
+// 새 기록을 지금까지의 걸음 속도에 섞는다. 걸은 시간만큼 무게를 두되, 한 번의 기록이 30분, 예전 값이 1시간 넘는 무게를 갖지 않게 한다.
+function learnPace(p, speed, moveS) {
+  const w0 = p.speed ? Math.min(p.moveS, 3600) : 0, w1 = Math.min(moveS, 1800);
+  const s = (p.speed || 0) * w0 / (w0 + w1) + speed * w1 / (w0 + w1);
+  return { ...p, speed: Math.round(clampSpeed(s) * 100) / 100, moveS: p.moveS + moveS, walks: p.walks + 1 };
+}
+const walkSpeed = (p = paceProfile()) => p.mode === "auto" ? (p.speed || PACE.DEFAULT) : clampSpeed(+p.mode || PACE.DEFAULT);
+function paceText(v) {
+  if (!v) return "—";
+  const s = Math.round(1000 / v);
+  return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, "0")}"`;
+}
+const kmh = v => (v * 3.6).toFixed(1) + "km/h";
+// 걷기를 마친다. 30초·30m 넘게 걸었을 때만 기록하고, 속도를 낼 만큼 걸었으면 내 걸음 속도에 반영한다.
+function finishTrack(tr, info = {}) {
+  if (!tr) return null;
+  trackFlush(tr);
+  if (tr.moveS < 30 || tr.moveM < 30) return null;
+  const speed = trackSpeed(tr);
+  const rec = { at: new Date(tr.start).toISOString(), kind: tr.kind, to: info.to || null, trip: info.trip || null,
+    elapsedS: Math.round((tr.end - tr.start) / 1000), moveS: Math.round(tr.moveS), meters: Math.round(tr.moveM), speed, stops: tr.stops };
+  store.set("walks", [rec, ...store.get("walks", [])].slice(0, 30));
+  if (speed) store.set("pace", learnPace(paceProfile(), speed, tr.moveS));
+  return rec;
+}
+// 걸음 속도가 바뀌면 tripKeyNow가 달라져 다음 결과 화면에서 길을 다시 계산한다.
+function applyPace() { SPEED = walkSpeed(); }
 
 // ---------- 좌표 ----------
 const Q = 1e5, LON0 = 126.58, LAT0 = 37.35;
@@ -547,7 +635,7 @@ function initSheet(name) {
 const state = { deadline: 9 * 3600 + 600, budget: 120, from: null, to: null, mode: "actual", dep: 0, focus: "jjuk", routes: null, sims: null, src: null, dst: null, pick: "to", tripKey: null, error: null };
 let current = null;
 const setStatus = (title, text) => { if (current === "result") { $("result-status").hidden = false; $("result-status").innerHTML = `<b>${esc(title)}</b>${esc(text)}`; } };
-const tripKeyNow = () => `${state.mode}|${BASE}|${state.from?.ll.join()}|${state.to?.ll.join()}`;
+const tripKeyNow = () => `${state.mode}|${BASE}|${SPEED}|${state.from?.ll.join()}|${state.to?.ll.join()}`;
 let tripRequest = 0, resultRequest = 0;
 const nowSeconds = () => { const n = new Date(); return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(); };
 async function computeTrip() {
@@ -736,6 +824,9 @@ function renderHome() {
   setRoutes(null, null);
   if (gpsFix) addDyn(el("m-me", "<i></i>"), gpsFix.ll);
   if (!state.picked) resetHomeSheet();
+  const pp = paceProfile();
+  $("home-pace").textContent = kmh(SPEED);
+  $("home-pace-sub").textContent = pp.mode === "auto" ? (pp.speed ? `기록 ${pp.walks}번으로 잰 속도` : "걸으면 내 속도를 재요") : PACE_PRESETS.find(x => x.v === +pp.mode)?.label + "으로 설정";
   const recent = store.get("recent", []);
   const chips = [...recent.slice(0, 2).map(p => ({ ...p, recent: true })), ...EXAMPLES];
   $("home-chips").innerHTML = chips.map((p, i) => `<button class="chip" data-chip="${i}">${p.recent ? "최근 · " + esc(p.name) : esc(p.from) + " → " + esc(p.to)}</button>`).join("");
@@ -743,7 +834,7 @@ function renderHome() {
   setSheet("home", state.picked ? "mid" : sheets.home?.pos || "mid");
   // 처음엔 신호 패턴을 아는 구간(노란 테두리)이 다 보이게
   ready(() => {
-    if (state.homeView) return;
+    if (state.homeView || current !== "home") return;
     const c = corridor();
     if (c.geometry) map.fitBounds(c.geometry.coordinates[0].slice(0, 4).reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(c.geometry.coordinates[0][0], c.geometry.coordinates[0][0])), { padding: { top: 130, bottom: sheetH() + 30, left: 30, right: 60 }, duration: 0 });
     else map.jumpTo({ center: ME.ll, zoom: 16.2, bearing: 0 });
@@ -803,7 +894,7 @@ async function renderResult() {
   $("budget-label").textContent = state.budget ? `+${state.budget / 60}분까지` : "같은 시간";
   const selected = S[state.focus], selectedRoute = state.routes[state.focus];
   $("route-facts").innerHTML = `${statLine(selected)}<br>검출 계단 ${selectedRoute.stairs}구간 · 지형 상승 약 ${Math.round(selectedRoute.rise)}m${selectedRoute.under.length ? " · 입체구간 미확인" : ""}${state.same ? `<br>추가 ${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : ""}`;
-  $("result-note").textContent = `${state.mode === "example" ? "08:40 예시" : clock(BASE) + " 출발 기준"} · 이력 추정 · 미확인 신호45초/곳 포함`;
+  $("result-note").textContent = `${state.mode === "example" ? "08:40 예시" : clock(BASE) + " 출발 기준"} · 걸음 ${kmh(SPEED)} · 이력 추정 · 미확인 신호45초/곳 포함`;
   $("result-mode").textContent = state.mode === "example" ? "예시" : "이력 추정";
   $("start-walk").textContent = "이 길로 걷기";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
@@ -852,35 +943,72 @@ function routeGuidance(route, distance) {
   }
   return hints.sort((a,b)=>a.d-b.d)[0] || null;
 }
-let walkTimer = null;
+let walkTimer = null, walkTrack = null, walkClock = null;
+// 걷기 화면을 떠나면 기록을 마무리한다(버튼·뒤로 가기 모두).
+function endWalk() {
+  clearInterval(walkClock); walkClock = null;
+  if (!walkTrack) return;
+  const tr = walkTrack; walkTrack = null;
+  state.lastWalk = finishTrack(tr, { to: state.freeWalk ? null : state.to?.name, trip: state.freeWalk ? null : state.tripKey });
+  if (state.lastWalk) applyPace();
+}
+function walkStats(update) {
+  const tr = walkTrack;
+  $("w-time").textContent = tr ? mmss(Math.max(0, (Date.now() - tr.start) / 1000)) : "—";
+  const v = trackSpeed(tr);
+  $("w-pace").textContent = v ? paceText(v) : "—";
+  if (update) update();
+}
 function renderWalk(demo = false) {
-  if (!state.sims) return go("result");
-  stopGPS(); cancelAnimationFrame(walkTimer);
+  const free = !!state.freeWalk;
+  if (!free && !state.sims) return go("result");
+  endWalk(); stopGPS(); cancelAnimationFrame(walkTimer);
   $("walk-reroute").hidden = true;
   const session = ++gpsRequest;
-  const k = state.same ? "jjuk" : state.focus, sim = state.sims[k], route = state.routes[k];
-  mountMap("map-walk"); setRoutes(route, null); markTrip({ [k]: sim }, k, false);
-  setSheet("walk", "mid"); fit([route.coords], { top: 170 });
+  const k = state.same ? "jjuk" : state.focus, sim = free ? null : state.sims[k], route = free ? null : state.routes[k];
+  mountMap("map-walk"); clearDyn();
+  if (free) setRoutes(null, null); else { setRoutes(route, null); markTrip({ [k]: sim }, k, false); }
+  setSheet("walk", "mid");
+  if (route) fit([route.coords], { top: 170 });
+  $("next-label").textContent = free ? "그냥 걷기" : "다음 안내";
+  $("w-left-l").textContent = free ? "걸은 거리" : "남은 거리";
+  $("walk-end").hidden = free;
+  $("walk-done").textContent = "걷기 끝내기";
   let markerAdded = false;
   const update = (dist, ll) => {
     if (current !== "walk" || session !== gpsRequest) return;
     if (ll) {
-      if (!markerAdded) { walker = new maplibregl.Marker({ element: el("m-me", "<i></i>") }).setLngLat(ll).addTo(map); markerAdded = true; }
-      else walker.setLngLat(ll);
+      if (!markerAdded) {
+        walker = new maplibregl.Marker({ element: el("m-me", "<i></i>") }).setLngLat(ll).addTo(map); markerAdded = true;
+        if (free) ready(() => map.jumpTo({ center: walker ? walker.getLngLat() : ll, zoom: 16.5 }));
+      } else {
+        walker.setLngLat(ll);
+        if (free) map.easeTo({ center: ll, duration: 400 });
+      }
     }
-    const left = Math.max(0, route.length - dist);
-    $("w-stops").textContent = dist == null ? "—" : km(dist);
-    $("w-left").textContent = dist == null ? "—" : km(left);
-    $("w-eta").textContent = dist == null ? "—" : left < 10 ? "도착 근처" : mins(left / SPEED);
-    setPeek("walk", `<span>${demo ? "움직임 시연" : "GPS 걷기"} · 남은 ${$("w-left").textContent}</span><small>실제 신호 확인</small>`);
+    if (free) {
+      const walked = walkTrack ? trackMeters(walkTrack) : null;
+      $("w-left").textContent = walked == null ? "—" : km(walked);
+      $("next-dist").textContent = walked == null ? "위치 연결" : km(walked);
+      $("next-state").textContent = "목적지 없이 내 걸음을 기록해요";
+      $("next-say").textContent = "멈춰도 괜찮아요. 걷는 동안만 속도를 재요.";
+      setPeek("walk", `<span>그냥 걷기 · ${$("w-time").textContent}</span><small>페이스 ${$("w-pace").textContent}/km</small>`);
+      return;
+    }
+    const left = dist == null ? null : Math.max(0, route.length - dist);
+    $("w-left").textContent = left == null ? "—" : km(left);
+    const eta = left == null ? "—" : left < 10 ? "도착 근처" : "약 " + mins(left / (trackSpeed(walkTrack) || SPEED));
+    setPeek("walk", `<span>${demo ? "움직임 시연" : "GPS 걷기"} · 남은 ${$("w-left").textContent}</span><small>${eta}</small>`);
     const next = dist == null ? null : routeGuidance(route, dist);
     $("next-dist").textContent = next ? Math.round(next.d - dist) + "m" : dist == null ? "위치 연결" : "도착 방향";
     $("next-state").textContent = next ? next.label : "지도를 보며 천천히 걸어요";
     $("next-say").textContent = "실시간 신호는 제공하지 않아요. 건널 때 실제 신호를 확인하세요.";
   };
-  update(null);
+  walkStats(); update(null);
   if (demo) {
+    $("w-time").textContent = "시연"; $("w-pace").textContent = "—";
     gpsStatus("움직임 시연 · 실제 위치나 걷기 기록이 아니에요");
+    if (free) return;
     const start = performance.now(), reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const step = now => {
       if (current !== "walk" || session !== gpsRequest) return;
@@ -892,11 +1020,16 @@ function renderWalk(demo = false) {
   }
   if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("HTTPS에서 위치 연결이 가능해요. 움직임 시연으로 먼저 볼 수 있어요"); return; }
   gpsStatus("GPS 연결 중 · 위치를 허용해 주세요");
+  walkTrack = newTrack(free ? "free" : "route");
+  walkClock = setInterval(() => { if (current === "walk" && session === gpsRequest) walkStats(free ? () => update(null) : null); }, 1000);
   let lastFix = null, previous = null, arrivalFixes = 0;
   gpsWatch = navigator.geolocation.watchPosition(p => {
     if (current !== "walk" || session !== gpsRequest) return;
     try {
       gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
+      if (walkTrack) trackAdd(walkTrack, gpsFix);
+      walkStats();
+      if (free) { update(null, gpsFix.ll); gpsStatus(`GPS 연결 · 오차 약 ${Math.round(gpsFix.accuracy)}m`); return; }
       const progress = projectOnRoute(route, gpsFix.ll);
       if (progress.offset > Math.max(40, gpsFix.accuracy * 2)) {
         update(null, gpsFix.ll);
@@ -913,7 +1046,7 @@ function renderWalk(demo = false) {
       const nearEnd = route.length-progress.distance < 20 && distLL(gpsFix.ll,route.coords[route.coords.length-1]) < 25 && gpsFix.accuracy <= 25;
       arrivalFixes = nearEnd && (!previous || gpsFix.timestamp > (state.arrivalTimestamp || 0)) ? arrivalFixes+1 : 0;
       state.arrivalTimestamp=gpsFix.timestamp;
-      if (arrivalFixes>=2) { gpsStatus("도착지 근처예요. 실제 출입구를 확인한 뒤 경로 요약을 볼 수 있어요"); return; }
+      if (arrivalFixes>=2) { gpsStatus("도착지 근처예요. 걷기를 끝내면 기록을 볼 수 있어요"); return; }
       gpsStatus(`GPS 연결 · 오차 약 ${Math.round(gpsFix.accuracy)}m · ${new Date(lastFix).toLocaleTimeString("ko-KR")} 갱신`);
     } catch (err) { update(null); gpsError(err); }
   }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
@@ -933,18 +1066,26 @@ function renderDone() {
   if (!state.sims) return go("result");
   const k = state.same ? "jjuk" : state.focus, o = k === "jjuk" ? "short" : "jjuk";
   const sim = state.sims[k], other = state.sims[o], route = state.routes[k];
-  const kn = sim.knownN > 0;
+  const kn = sim.knownN > 0, rec = state.lastWalk && state.lastWalk.kind === "route" && state.lastWalk.trip === state.tripKey ? state.lastWalk : null;
+  $("c-time-l").textContent = "예상 소요 시간";
+  $("card-kind").textContent = `걷기 · ${tripLabel(state.from)} → ${state.to.name}`;
+  if (rec) {
+    $("c-stops").textContent = rec.stops + "번"; $("c-stops-l").textContent = "멈춘 횟수";
+    $("c-wait").textContent = rec.speed ? paceText(rec.speed) : km(rec.meters); $("c-wait-l").textContent = rec.speed ? "평균 페이스/km" : "걸은 거리";
+    $("c-time").textContent = mmss(rec.elapsedS); $("c-time-l").textContent = "걸린 시간";
+    $("c-compare").textContent = `예상 ${mmss(sim.total)} · 실제 ${mmss(rec.elapsedS)} · ${km(rec.meters)}`;
+  } else {
   $("c-stops").textContent = kn ? sim.stops + "번" : (sim.unknownN) + "곳";
   $("c-stops-l").textContent = kn ? "예측 멈춤" : "경로상 신호";
   $("c-wait").textContent = kn ? mmss(sim.wait) : km(sim.meters);
   $("c-wait-l").textContent = kn ? "예측 대기" : "경로 거리";
   $("c-time").textContent = mmss(sim.total);
-  $("card-kind").textContent = `걷기 · ${tripLabel(state.from)} → ${state.to.name}`;
   if (state.same) $("c-compare").textContent = "오늘은 최단 시간 길이 곧 쭉고 길이었어요";
   else if (kn) $("c-compare").textContent = other.stops <= sim.stops && other.wait <= sim.wait + 5 ? "오늘은 다른 길로 갔어도 비슷했을 거예요" : `${o === "short" ? "최단 시간 길" : "쭉고 길"}으로 갔다면 ${other.stops}번 멈추고 ${mmss(other.wait)} 기다렸을 거예요`;
   else $("c-compare").textContent = other.unknownN > sim.unknownN ? `${o === "short" ? "최단 시간 길" : "쭉고 길"} 길보다 신호를 ${other.unknownN - sim.unknownN}곳 덜 지났어요` : "신호 수는 다른 길과 같았어요";
+  }
   $("card-date").textContent = `${state.mode === "example" ? "예시" : new Date().toLocaleDateString("ko-KR")} ${clock(BASE + state.dep)}`;
-  $("done-hint").textContent = "경로 예상 요약 · GPS 이동·신호 대기 실측 기록이 아니에요";
+  $("done-hint").textContent = rec ? "GPS 걷기 기록 · 10~20초 넘게 제자리면 멈춤 한 번으로 셌어요" : "경로 예상 요약 · GPS 걷기 기록이 아니에요";
   const kx = 111320 * Math.cos(37.55 * Math.PI / 180), pts = route.coords.map(c => [c[0] * kx, -c[1] * 110540]);
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
   const s = 150 / Math.max(maxX - minX, maxY - minY, 1), ox = (190 - (maxX - minX) * s) / 2, oy = (190 - (maxY - minY) * s) / 2;
@@ -954,6 +1095,20 @@ function renderDone() {
   h += `<circle cx="${sx}" cy="${sy}" r="6" fill="#262D3B" stroke="var(--lane)" stroke-width="3"/><circle cx="${ex}" cy="${ey}" r="7" fill="var(--lane)"/>`;
   sim.xings.forEach(x => { const [px, py] = proj(x.at); const col = !x.known ? "#8C93A3" : x.wait > 2 ? "var(--stop)" : null; if (col) h += `<circle cx="${px}" cy="${py}" r="${x.known ? 7 : 4.5}" fill="${col}" stroke="#262D3B" stroke-width="2.5"/>`; });
   $("card-shape").innerHTML = h + "</svg>";
+}
+function renderMe() {
+  const pp = paceProfile(), walks = store.get("walks", []);
+  $("me-speed").textContent = kmh(SPEED);
+  $("me-pace").textContent = `페이스 ${paceText(SPEED)}/km`;
+  $("me-src").textContent = pp.mode === "auto" ? (pp.speed ? `걷기 기록 ${pp.walks}번 · ${mins(pp.moveS)} 걸은 속도` : "아직 기록이 없어 보통 속도로 계산해요") : "직접 고른 속도";
+  $("pace-chips").innerHTML = [{ v: "auto", label: "내 기록" }, ...PACE_PRESETS].map(x =>
+    `<button class="chip" data-pace="${x.v}" aria-pressed="${String(pp.mode) === String(x.v)}">${x.label}<small>${kmh(x.v === "auto" ? (pp.speed || PACE.DEFAULT) : x.v)}</small></button>`).join("");
+  $("walk-list").innerHTML = walks.length ? walks.map(w => {
+    const d = new Date(w.at);
+    return `<div class="wrec"><div><b>${w.to ? esc(w.to) + "까지" : "그냥 걷기"}</b><small>${d.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })} ${d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</small></div>
+      <span><b>${km(w.meters)}</b><small>거리</small></span><span><b>${mmss(w.elapsedS)}</b><small>시간</small></span><span><b>${w.speed ? paceText(w.speed) : "—"}</b><small>페이스</small></span><span><b>${w.stops}</b><small>멈춤</small></span></div>`;
+  }).join("") : `<p class="note" style="margin:6px 0 0">아직 기록이 없어요.</p>`;
+  $("walks-clear").hidden = !walks.length;
 }
 function renderDepart() {
   if (!state.sims) return go("result");
@@ -1103,7 +1258,7 @@ async function exampleTrip(ex) {
 }
 
 // ---------- 화면 전환 ----------
-const SCREENS = ["splash", "home", "search", "result", "detail", "walk", "done", "depart", "signal"];
+const SCREENS = ["splash", "home", "search", "result", "detail", "walk", "done", "depart", "signal", "me"];
 const MAP_SCREENS = ["home", "result", "walk"];
 let splashTimer = null, booted = false;
 function show(name) {
@@ -1118,7 +1273,7 @@ function show(name) {
   clearTimeout(splashTimer);
   if (name === "splash" && booted) splashTimer = setTimeout(() => go("home"), 1600);
   gpsRequest++;
-  if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); }
+  if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); endWalk(); }
   gpsStatus("");
   if (name === "home") renderHome();
   if (name === "search") { renderSearchList(); setTimeout(() => $("sq").focus(), 50); }
@@ -1128,6 +1283,7 @@ function show(name) {
   if (name === "done") renderDone();
   if (name === "depart") renderDepart();
   if (name === "signal") renderSignal();
+  if (name === "me") renderMe();
 }
 let pendingScreen = null;
 function go(name) { if (location.hash === "#" + name) show(name); else location.hash = name; }
@@ -1150,6 +1306,13 @@ document.addEventListener("click", e => {
   if (t.closest("[data-reroute]")) { rerouteFromGPS(); return; }
   if (t.closest("[data-route-retry]")) { state.routes = null; state.error = null; state.tripKey = null; state.fixedRoute = null; renderResult(); return; }
   if (t.closest("[data-gps-retry]")) { renderWalk(); return; }
+  if (t.closest("#start-walk")) { state.freeWalk = false; go("walk"); return; }
+  if (t.closest("[data-free-walk]")) { state.freeWalk = true; go("walk"); return; }
+  if (t.closest("#walk-end")) { go("result"); return; }
+  if (t.closest("#walk-done")) { const free = state.freeWalk; endWalk(); go(free ? "me" : "done"); return; }
+  const pc = t.closest("[data-pace]");
+  if (pc) { store.set("pace", { ...paceProfile(), mode: pc.dataset.pace === "auto" ? "auto" : +pc.dataset.pace }); applyPace(); renderMe(); return; }
+  if (t.closest("#walks-clear")) { store.set("walks", []); store.set("pace", { ...paceProfile(), speed: null, moveS: 0, walks: 0 }); applyPace(); renderMe(); return; }
   if (t.closest("[data-walk-demo]")) { renderWalk(true); return; }
   const budget = t.closest("[data-budget]");
   if (budget) { state.budget = +budget.dataset.budget; renderResult(); return; }
@@ -1216,6 +1379,7 @@ async function boot() {
   }
   ["home", "result", "walk"].forEach(n => { sheets[n] = { pos: "mid", h: 0 }; initSheet(n); });
   setDeadline(store.get(DEADLINE_KEY, 9 * 3600 + 600));
+  applyPace();
   booted = true;
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   const target = pendingScreen || location.hash.slice(1);
