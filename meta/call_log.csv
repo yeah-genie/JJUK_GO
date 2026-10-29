@@ -262,3 +262,6 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-10-29T15:30:52,2217,2200,net_error,,TimeoutError
 2026-10-29T15:35:57,2217,2200,net_error,,TimeoutError
 2026-10-29T15:41:02,2217,2200,net_error,,TimeoutError
+2026-10-29T15:46:07,2975,2200,net_error,,TimeoutError
+2026-10-29T15:51:12,2975,2200,net_error,,TimeoutError
+2026-10-29T15:56:18,2975,2200,net_error,,TimeoutError
