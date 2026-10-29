@@ -63,23 +63,37 @@ const assert = require('node:assert/strict');
       $('result-options').open = true;
       $('from-name').textContent = '서대문역';
       $('to-name').textContent = '청계광장';
-      state.sims = { jjuk: { knownN: 2 }, short: { knownN: 2 } };
-      // Fixture isolates rendering from routing and real signal data.
-      planDeparture = () => ({
-        now: { d: 0, arr: 33010, s: { stops: 2, knownN: 2, unknownN: 5 } },
-        best: { d: 55, arr: 32980, s: { stops: 0, wait: 0 } }, latest: null,
-      });
+      state.sims = {jjuk:{knownN:2,unknownN:5,total:600,wait:20},short:{knownN:2,unknownN:5,total:600,wait:20}};
+      state.focus='jjuk';state.same=false;
       renderGoCard();
+      $('departure-options').open=true;
     });
     const card = await page.locator('#go-card').innerText();
-    assert.match(card, /도착 여유 30초 미만/);
-    assert.doesNotMatch(card, /늦음/);
-    assert.match(await page.locator('#go-foot').innerText(), /5곳 대기시간 미반영/);
-    await page.evaluate(() => { state.deadline = 32000; renderGoCard(); });
-    assert.match(await page.locator('#go-card').innerText(), /늦음/);
-    await page.evaluate(() => { state.deadline = null; renderGoCard(); });
-    assert.doesNotMatch(await page.locator('#go-card').innerText(), /마감/);
+    assert.match(card,/출발 기준/);
+    assert.doesNotMatch(card,/초 뒤 출발/);
+    assert.match(await page.locator('#go-foot').innerText(),/미확인 5곳은 45초씩/);
     if (process.env.UI_SHOTS) await page.screenshot({ path: path.join(process.env.UI_SHOTS, 'result-card.png') });
-    console.log('PASS: time controls, validation, restore, day bounds, responsive layout, deadline card states');
+    // 팀 보고서(Sally 발견 1·5·6, Winston 결함 7): 터치 타깃 44px, 보조 글씨 12.5px, 버튼 줄 구조, 접근성 속성
+    const css = html.slice(html.indexOf('/* 레이아웃:'), html.indexOf('</style>'));   // MapLibre 기본 CSS는 제외
+    const tiny = [];
+    for (const [, sel, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      for (const [, px] of body.matchAll(/font(?:-size)?:\s*(?:[0-9]+\s+)?(\d+(?:\.\d+)?)px/g)) {
+        if (+px < 12.5 && !/\.badge|\.map-attrib|\.m-sig/.test(sel)) tiny.push(sel.trim().slice(0, 40) + ' ' + px);
+      }
+    }
+    assert.deepEqual(tiny, [], '12.5px 미만 글씨: ' + tiny.join(', '));
+    const targets = await page.evaluate(() => {
+      const bad = [];
+      const size = (sel, prop, min) => document.querySelectorAll(sel).forEach(e => { const v = parseFloat(getComputedStyle(e)[prop]); if (!(v >= min)) bad.push(sel + ' ' + prop + '=' + v); });
+      size('.icon-btn', 'width', 44); size('.icon-btn', 'height', 44);
+      for (const sel of ['.chip', '.link-btn', '.trip-pt', '[data-time-step]', '.time-unit input', '.gc-row .use']) size(sel, 'minHeight', 44);
+      size('.time-unit button', 'width', 44);
+      return { bad, role: $('pace-chips').getAttribute('role'), label: $('pace-chips').getAttribute('aria-label'),
+        homeFooter: !!$('home-actions').closest('.sheet-footer'), walkFooter: !!$('walk-done').closest('.sheet-footer'), demoHidden: $('walk-demo').hidden };
+    });
+    assert.deepEqual(targets.bad, []);
+    assert.equal(targets.role, 'group'); assert.equal(targets.label, '길찾기에 쓸 속도');
+    assert.equal(targets.homeFooter, true); assert.equal(targets.walkFooter, true); assert.equal(targets.demoHidden, true);
+    console.log('PASS: time controls, validation, restore, day bounds, responsive layout, optional departure summary, touch targets, small text, footer buttons');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

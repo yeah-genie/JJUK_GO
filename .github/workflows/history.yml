@@ -1,0 +1,56 @@
+name: official-history
+
+# Scheduled workflows activate only after this file reaches the default branch.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 19 * * *' # 04:20 KST, new dates only
+
+permissions:
+  contents: write
+
+concurrency:
+  group: official-history
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev]'
+      - uses: actions/cache@v4
+        with:
+          path: datastore/history/plans-v2
+          key: history-plans-${{ hashFiles('scripts/export_history_plans.py') }}-${{ hashFiles('official-history/*.json') }}
+          restore-keys: history-plans-${{ hashFiles('scripts/export_history_plans.py') }}-
+      - name: Import new official dates and discard temporary ZIPs
+        run: python scripts/import_official_history.py --all --remove-raw
+      - name: Rebuild hourly baselines and prototype
+        run: |
+          python scripts/export_history_plans.py --incremental
+          python scripts/build_prototype.py
+      - name: Validate
+        run: python -m pytest tests/test_official_history.py -q
+      - name: Archive compact data outside Git history
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python -c 'import json,pathlib; [print(p) for p in pathlib.Path("official-history").glob("*.csv.gz") if not json.loads(p.with_name(p.name[:8]+".json").read_text()).get("archive_release_url")]' > /tmp/history-uploads.txt
+          while IFS= read -r file; do
+            gh release upload signal-history-sample-20261027 "$file" --clobber
+          done < /tmp/history-uploads.txt
+          python scripts/mark_history_archived.py
+      - name: Commit compact public data
+        run: |
+          git config user.name 'jjukgo-history'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add official-history/*.json docs/prototype/seoul/signal-plans.json docs/prototype/seoul/signal-hours docs/prototype/index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Update official pedestrian signal history'
+          git push

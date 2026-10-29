@@ -44,7 +44,7 @@ body {
   width: 390px; max-width: 100%; height: 844px; max-height: calc(100dvh - 48px);
   background: var(--map); border-radius: 44px; border: 10px solid var(--asphalt); overflow: hidden; position: relative;
 }
-@media (max-width: 480px), (max-height: 700px) {
+@media (max-width: 480px), (max-height: 700px), (any-pointer: coarse) {
   body { padding: 0; display: block; }
   .phone { width: 100%; height: 100dvh; max-height: none; border: 0; border-radius: 0; }
 }
@@ -61,11 +61,11 @@ body {
   display: flex; align-items: center; gap: 8px;
 }
 .searchbox { cursor: text; border: 0; font: inherit; text-align: left; width: auto; color: var(--muted); font-size: 16px; }
-.icon-btn { border: 0; background: none; font: inherit; font-size: 20px; color: var(--asphalt); width: 32px; height: 32px; border-radius: 10px; cursor: pointer; flex: none; }
+.icon-btn { border: 0; background: none; font: inherit; font-size: 20px; color: var(--asphalt); width: 44px; height: 44px; border-radius: 10px; cursor: pointer; flex: none; }
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip {
   border: 1.5px solid var(--line); background: #fff; color: var(--asphalt);
-  font: inherit; font-size: 13.5px; font-weight: 500; padding: 6px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font: inherit; font-size: 13.5px; font-weight: 500; padding: 6px 14px; min-height: 44px; border-radius: 999px; cursor: pointer; white-space: nowrap;
 }
 .chip[aria-pressed="true"] { background: var(--asphalt); color: var(--zebra); border-color: var(--asphalt); }
 .home-chips { position: absolute; z-index: 10; left: 12px; right: 0; top: calc(max(14px, calc(env(safe-area-inset-top, 0px) + 8px)) + 60px); flex-wrap: nowrap; overflow-x: auto; padding-right: 12px; scrollbar-width: none; }
@@ -77,10 +77,30 @@ body {
   display: flex; flex-direction: column; transition: height .24s cubic-bezier(.2,.7,.2,1);
 }
 .sheet.dragging { transition: none; }
-.grip-area { flex: none; padding: 9px 0 7px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.grip-area { flex: none; padding: 14px 0 12px; display: grid; place-items: center; cursor: grab; touch-action: none; border: 0; background: none; width: 100%; color: inherit; }
 .grip { width: 38px; height: 4px; border-radius: 4px; background: #B9C0CB; }
-.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
-.sheet:not(.full) .sheet-body { overflow: hidden; }
+.sheet-body { flex: 1 1 0; min-height: 0; overflow-y: auto; touch-action: pan-y; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding: 2px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
+/* 홈·걷기 시트는 버튼 줄이 아래에 따로 붙어 있어, 본문이 길어도 버튼은 화면 안에 있다 */
+#sheet-home .sheet-body, #sheet-walk .sheet-body { padding-bottom: 8px; }
+.sheet-body > * { flex-shrink: 0; }
+.sheet-footer { flex: none; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--zebra); border-top: 1px solid var(--line); }
+.sheet.peek .sheet-footer { display: none; }
+.comfort-hero { background: #fff; color: var(--asphalt); padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); border-left: 4px solid var(--lane); }
+.comfort-hero h3 { margin: 0 0 3px; font-size: 17px; line-height: 1.35; letter-spacing: -.3px; font-weight: 700; }
+.route[aria-pressed="true"] .name::before { content: "✓ "; font-weight: 700; }
+.comfort-hero p { margin: 0; line-height: 1.5; font-size: 13px; color: #4A5263; }
+.comfort-budget { padding-block: 3px; }
+.comfort-budget p { margin: 0 0 9px; font-size: 13px; font-weight: 600; }
+.comfort-budget .chips { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; }
+.comfort-budget .chip { padding: 9px 4px; }
+.route[aria-pressed="true"] { border-color: var(--asphalt); box-shadow: inset 4px 0 0 var(--lane); }
+.departure-card { font-size: 14px; line-height: 1.7; padding: 12px 0; }
+.departure-card strong { display: block; font-size: 16px; }
+.departure-options { border-top: 1px solid var(--line); }
+@media (min-width: 700px) and (any-pointer: coarse) {
+  .sheet { width: min(460px, calc(100% - 32px)); left: auto; right: 16px; bottom: 16px; border-radius: 22px; }
+  .topbar { max-width: 480px; }
+}
 .row-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .row-label h2 { margin: 0; font-size: 15px; font-weight: 600; }
 .route {
@@ -88,13 +108,13 @@ body {
   display: grid; grid-template-columns: auto auto 1fr; gap: 2px 8px; align-items: baseline; cursor: pointer;
   text-align: left; font: inherit; color: inherit; width: 100%;
 }
-.route[aria-pressed="true"] { border-color: var(--asphalt); box-shadow: inset 0 0 0 1px var(--asphalt); }
+.route[aria-pressed="true"] { border-color: var(--asphalt); box-shadow: inset 4px 0 0 var(--lane); }
 .route .name { font-weight: 700; font-size: 14.5px; }
 .route .mins { font-family: var(--display); font-size: 21px; font-variant-numeric: tabular-nums; }
 .route .stat { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
 .route .stat strong { color: var(--asphalt); font-weight: 700; }
-.ex { margin-left: 5px; font-size: 10.5px; font-weight: 700; color: #7A5C00; background: #FFF1C2; padding: 1px 5px; border-radius: 5px; vertical-align: 1px; }
-.route .sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.ex { margin-left: 5px; font-size: 12.5px; font-weight: 700; color: #7A5C00; background: #FFF1C2; padding: 1px 5px; border-radius: 5px; vertical-align: 1px; }
+.route .sub { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
 .strip { grid-column: 1 / -1; height: 8px; border-radius: 4px; overflow: hidden; display: flex; margin-top: 4px; background: var(--map); }
 .strip i { display: block; height: 100%; }
 .strip .walk-j { background: var(--lane); }
@@ -107,9 +127,9 @@ body {
 .btn-primary { background: var(--lane); color: var(--asphalt); }
 .btn-ghost { background: var(--map); color: var(--asphalt); flex: 0 0 auto; padding-inline: 16px; }
 .btn:disabled { opacity: .45; cursor: default; }
-.safety { margin: 0; font-size: 12px; color: var(--muted); }
+.safety { margin: 0; font-size: 12.5px; color: var(--muted); }
 button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); outline-offset: 2px; }
-.legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.legend { display: flex; gap: 12px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .status { font-size: 14px; color: var(--asphalt); background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; }
@@ -117,10 +137,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 /* 출발·도착 막대 */
 .trip-bar { padding: 6px 8px; }
 .trip { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.trip-pt { border: 0; background: none; font: inherit; color: inherit; text-align: left; display: flex; align-items: center; gap: 8px; padding: 6px 4px; cursor: pointer; min-width: 0; }
+.trip-pt { border: 0; background: none; font: inherit; color: inherit; text-align: left; display: flex; align-items: center; gap: 8px; padding: 6px 4px; min-height: 44px; cursor: pointer; min-width: 0; }
 .trip-pt + .trip-pt { border-top: 1px solid #ECEEF1; }
 .trip-pt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 14.5px; }
-.trip-pt small { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.trip-pt small { color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
 .pt-from, .pt-to { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .pt-from { border: 3px solid var(--asphalt); background: #fff; }
 .pt-to { background: var(--asphalt); box-shadow: 0 0 0 2px var(--lane); }
@@ -131,14 +151,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .gc-big small { font-family: var(--body); font-size: 14px; font-weight: 600; color: #E3E7EC; margin-left: 6px; }
 .gc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; border-top: 1px solid #505867; padding-top: 12px; }
 .gc-stats div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.gc-stats span { font-size: 11px; color: #A9B2C1; white-space: nowrap; }
+.gc-stats span { font-size: 12.5px; color: #A9B2C1; white-space: nowrap; }
 .gc-stats b { font-size: 15px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .gc-stats .bad b { color: #FFB4B4; }
 .gc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.gc-row .use { border: 0; border-radius: 10px; background: var(--lane); color: var(--asphalt); font: inherit; font-weight: 700; font-size: 13.5px; padding: 8px 14px; cursor: pointer; }
+.gc-row .use { border: 0; border-radius: 10px; background: var(--lane); color: var(--asphalt); font: inherit; font-weight: 700; font-size: 13.5px; padding: 8px 14px; min-height: 44px; cursor: pointer; }
 .gc-row .on { font-size: 12.5px; color: var(--lane); font-weight: 600; }
-.gc-row .note2 { font-size: 12px; color: #A9B2C1; }
-.gc-foot { margin: 6px 2px 0; font-size: 12px; color: var(--muted); }
+.gc-row .note2 { font-size: 12.5px; color: #A9B2C1; }
+.gc-foot { margin: 6px 2px 0; font-size: 12.5px; color: var(--muted); }
 .peek-sum { display: none; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; font-size: 15px; font-weight: 700; }
 .peek-sum small { font-size: 12.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 .sheet.peek .peek-sum { display: flex; }
@@ -146,37 +166,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .deadline-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; font-size: 13px; }
 .time-picker { display: flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 16px; padding: 4px; margin: 0; background: #fff; min-width: 0; }
 .time-unit { display: flex; flex-direction: column; align-items: center; }
-.time-unit button { width: 44px; height: 32px; border: 0; border-radius: 8px; background: transparent; font: 20px var(--body); color: var(--muted); cursor: pointer; }
+.time-unit button { width: 44px; height: 44px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; font: 20px var(--body); color: var(--muted); cursor: pointer; }
 .time-unit button:hover { background: var(--map); }
-.time-unit input { width: 48px; border: 0; background: transparent; padding: 0; text-align: center; color: var(--asphalt); font: 600 26px var(--body); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.time-unit input { width: 48px; min-height: 44px; border: 0; background: transparent; padding: 0; text-align: center; color: var(--asphalt); font: 600 26px var(--body); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
 .time-unit input::-webkit-inner-spin-button, .time-unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .time-picker:disabled { opacity: .4; }
 .time-unit button:disabled { cursor: default; opacity: .4; }
 .gocard { gap: 10px; padding: 16px; }
 .route-facts { grid-column: 1 / -1; display: flex; gap: 12px; margin-top: 7px; }
 .route-facts > span { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.route-facts small { font-size: 11px; color: var(--muted); }
+.route-facts small { font-size: 12.5px; color: var(--muted); }
 .route-facts b { font-size: 14px; font-weight: 600; }
 .result-options { flex: none; border-top: 1px solid var(--line); }
-.result-options summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; }
-.result-options summary::-webkit-details-marker { display: none; }
-.result-options summary span { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 400; }
-.result-options summary::after { content: "⌄"; color: var(--muted); }
-.result-options[open] summary::after { content: "⌃"; }
-.result-options summary:focus-visible { outline: 3px solid var(--asphalt); outline-offset: -3px; border-radius: 6px; }
+.result-options > summary { min-height: 44px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; }
+.result-options > summary::-webkit-details-marker { display: none; }
+.result-options > summary span { margin-left: auto; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+.result-options > summary::after { content: "⌄"; color: var(--muted); }
+.result-options[open] > summary::after { content: "⌃"; }
+.result-options > summary:focus-visible { outline: 3px solid var(--asphalt); outline-offset: -3px; border-radius: 6px; }
 .option-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0 12px; }
 .option-body .link-btn { align-self: flex-start; padding-left: 0; }
 #sheet-result .sheet-body > *, #sheet-result .route { flex-shrink: 0; }
 #result-actions { padding-top: 4px; }
-#result-note { font-size: 11px; }
+#result-note { font-size: 12.5px; }
 #tradeoff { font-size: 13px; font-weight: 500; }
 
-.route .mins { font-family: var(--body); font-weight: 700; font-size: 23px; justify-self: end; }
+.route .mins { font-family: var(--body); font-weight: 700; font-size: 36px; line-height: 1.1; letter-spacing: -1px; justify-self: end; font-variant-numeric: tabular-nums; }
 .route { grid-template-columns: 1fr auto; padding: 12px; }
 .miss { display: block; margin-top: 2px; color: #3E6B4A; font-size: 12.5px; }
 .miss.warn { color: #9A3B2E; }
-.cov { margin: 3px 0 0; font-size: 12.5px; color: #7A5C00; }
-.cov .link-btn { font-size: 12.5px; color: #7A5C00; padding: 0; }
+.cov { margin: 3px 0 0; font-size: 12.5px; color: #7A5C00; display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
+.cov .link-btn { font-size: 12.5px; color: #7A5C00; }
 .sheet:not(.full):not(.dragging) .more { visibility: hidden; }
 /* 작은 화면: 출발·도착을 한 줄로, 카드를 더 촘촘하게 */
 @media (max-height: 700px) {
@@ -188,20 +208,20 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
   .route { padding: 6px 11px; }
   .route .strip { height: 6px; margin-top: 2px; }
   .tradeoff { font-size: 14px; }
-  .route .mins { font-size: 18px; }
+  .route .mins { font-size: 30px; }
   .btn { padding: 11px; }
   .sheet-body { gap: 8px; }
 }
 /* 지도 버튼 (네이버 지도처럼 오른쪽) */
 .mapctl { position: absolute; z-index: 12; right: 12px; bottom: calc(var(--sheet-h) + 16px); display: flex; flex-direction: column; gap: 8px; transition: bottom .24s cubic-bezier(.2,.7,.2,1); }
 .mapctl .grp { display: flex; flex-direction: column; background: #fff; border-radius: 12px; box-shadow: 0 3px 10px rgba(42,49,64,.18); overflow: hidden; }
-.mapctl button { width: 40px; height: 40px; border: 0; background: #fff; font: 600 20px var(--body); color: var(--asphalt); cursor: pointer; display: grid; place-items: center; }
+.mapctl button { width: 44px; height: 44px; border: 0; background: #fff; font: 600 20px var(--body); color: var(--asphalt); cursor: pointer; display: grid; place-items: center; }
 .mapctl .grp button + button { border-top: 1px solid var(--line); }
 .mapctl .solo { border-radius: 12px; box-shadow: 0 3px 10px rgba(42,49,64,.18); }
 .mapctl svg { width: 20px; height: 20px; }
 .map-attrib { position: absolute; z-index: 11; left: 10px; bottom: calc(var(--sheet-h) + 8px); font-size: 10px; color: #5B6170; background: rgba(255,255,255,.75); padding: 1px 5px; border-radius: 4px; transition: bottom .24s cubic-bezier(.2,.7,.2,1); }
 .maplibregl-ctrl-bottom-left { bottom: calc(var(--sheet-h) + 24px); transition: bottom .24s cubic-bezier(.2,.7,.2,1); }
-.maplibregl-ctrl-scale { background: rgba(255,255,255,.8); border-color: var(--asphalt-2); color: var(--asphalt); font: 500 10.5px var(--body); }
+.maplibregl-ctrl-scale { background: rgba(255,255,255,.8); border-color: var(--asphalt-2); color: var(--asphalt); font: 500 12.5px var(--body); }
 .loading { position: absolute; z-index: 15; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(42,49,64,.88); color: #fff; font-size: 13px; padding: 8px 14px; border-radius: 999px; }
 /* 지도 위 표시 */
 .m-sig { display: flex; align-items: center; gap: 3px; cursor: pointer; }
@@ -212,7 +232,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .m-start { pointer-events: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 4px solid var(--asphalt); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
 .m-dest { display: flex; align-items: center; gap: 6px; pointer-events: none; }
 .m-dest i { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--asphalt); border: 3px solid var(--lane); }
-.m-dest span { background: #fff; font: 600 12px var(--body); color: var(--asphalt); padding: 2px 7px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.2); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+.m-dest span { background: #fff; font: 600 12.5px var(--body); color: var(--asphalt); padding: 2px 7px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.2); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 .m-pick { pointer-events: none; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--stop); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
 .m-me { width: 44px; height: 44px; display: grid; place-items: center; pointer-events: none; }
 .m-me::before { content: ""; position: absolute; width: 44px; height: 44px; border-radius: 50%; background: rgba(47,91,255,.18); animation: me-pulse 2s ease-out infinite; }
@@ -251,10 +271,30 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .next .dist { font-family: var(--display); font-size: 28px; }
 .next p { margin: 0; }
 .next .say { color: var(--lane); font-weight: 600; }
+.next .say.soft { color: #A7B0C0; font-weight: 400; font-size: 12.5px; }
 .progress { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
 .progress div { display: flex; flex-direction: column; }
-.progress span { color: var(--muted); font-size: 12px; }
+.progress span { color: var(--muted); font-size: 12.5px; }
 .progress strong { font-family: var(--display); font-size: 24px; font-weight: 400; }
+.progress strong small, .stat-big strong small { font-family: var(--body); font-size: max(.5em, 12.5px); font-weight: 600; margin-left: 1px; }
+/* 내 걸음 */
+.pace-row { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 8px; width: 100%; min-height: 52px; margin-top: 10px; padding: 11px 14px; border: 1px solid var(--line); border-left: 4px solid var(--lane); border-radius: 14px; background: #fff; font: inherit; color: var(--asphalt); text-align: left; cursor: pointer; }
+.pace-row .pr-l { font-size: 15px; font-weight: 700; color: var(--asphalt); }
+.pace-row b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.pace-row small { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pace-row .pr-go { color: var(--muted); font-size: 18px; }
+.pace-hero { background: var(--asphalt); color: var(--zebra); border-radius: 18px; border-top: 4px solid var(--lane); padding: 18px; display: flex; flex-direction: column; gap: 2px; }
+.pace-hero strong { font-family: var(--display); font-weight: 400; font-size: 40px; line-height: 1.1; color: var(--lane); font-variant-numeric: tabular-nums; }
+.pace-hero span { font-size: 15px; font-weight: 600; }
+.pace-hero small { font-size: 12.5px; color: #A7B0C0; margin-top: 4px; }
+.pace-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 6px; }
+.pace-chips .chip { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; }
+.pace-chips .chip small { font-size: 12.5px; opacity: .75; font-variant-numeric: tabular-nums; }
+.wrec { display: grid; grid-template-columns: 1fr repeat(4, auto); gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.wrec > div, .wrec > span { display: flex; flex-direction: column; min-width: 0; }
+.wrec > span { align-items: flex-end; }
+.wrec b { font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wrec small { font-size: 12.5px; color: var(--muted); }
 /* 도착 공유 카드 */
 .done { background: #1E2430; color: var(--zebra); align-items: stretch; justify-content: center; gap: clamp(8px, 1.6vh, 16px); padding: 24px 22px 18px; overflow: hidden; }
 .card {
@@ -263,14 +303,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
   display: flex; flex-direction: column; align-items: center; gap: clamp(4px, 1vh, 8px); flex: 0 1 auto; min-height: 0;
 }
 .card .logo { position: absolute; top: 16px; left: 20px; font-family: var(--display); font-size: 18px; color: var(--lane); }
-.card .date { position: absolute; top: 19px; right: 20px; font-size: 12px; color: #A7B0C0; }
+.card .date { position: absolute; top: 19px; right: 20px; font-size: 12.5px; color: #A7B0C0; }
 .card #card-shape { flex: 0 1 auto; min-height: 0; display: flex; justify-content: center; }
 .card svg { width: clamp(90px, 30vh, 240px); height: clamp(90px, 30vh, 240px); margin-top: 22px; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 4px; }
 .card .kind { font-weight: 600; font-size: 15px; margin-bottom: 8px; text-align: center; }
 .stat-big { display: flex; flex-direction: column; align-items: center; }
-.stat-big strong { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 3.6vh, 30px); line-height: 1.15; font-variant-numeric: tabular-nums; }
-.stat-big span { font-size: 12px; color: #A7B0C0; }
+.stat-big strong { font-family: var(--display); font-weight: 400; font-size: clamp(20px, 3.4vh, 28px); line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-big span { font-size: 12.5px; color: #A7B0C0; }
 .compare { margin: clamp(4px, 1vh, 12px) 0 0; font-size: 14px; color: var(--lane); font-weight: 600; text-align: center; }
 .done .hint { font-size: 12.5px; color: #A7B0C0; margin: 0; text-align: center; }
 .done .actions { width: 100%; }
@@ -283,10 +323,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 @keyframes lane-draw { to { stroke-dashoffset: 0; } }
 .wordmark { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 56px; letter-spacing: 2px; color: var(--lane); }
 .tagline { margin: 0; font-size: 16px; color: #C9D0DA; }
-.splash-foot { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); margin: 0; font-size: 12px; color: #8B95A6; }
+.splash-foot { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); margin: 0; font-size: 12.5px; color: #8B95A6; }
 @media (prefers-reduced-motion: reduce) { .logo-svg .lane { stroke-dashoffset: 0; } }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.link-btn { border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--asphalt); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 0; }
+.link-btn { border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--asphalt); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 12px 0; min-height: 44px; }
 /* 출발 시각 추천 */
 .best { background: var(--asphalt); color: var(--zebra); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
 .best .when { font-size: 14px; color: #C9D0DA; }
@@ -296,11 +336,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
   display: grid; grid-template-columns: 62px 1fr auto; gap: 12px; align-items: center; padding: 10px 2px; }
 .drow .t { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .drow time { font-variant-numeric: tabular-nums; font-weight: 600; }
-.drow .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
+.drow .tag { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 1px 6px; border-radius: 6px; }
 .tag.now { background: var(--map); color: var(--asphalt); }
 .tag.rec { background: var(--lane); color: var(--asphalt); }
 .drow .strip { grid-column: auto; margin-top: 0; height: 10px; }
-.drow .res { text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.35; }
+.drow .res { text-align: right; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.35; }
 .drow .res b { color: var(--asphalt); font-size: 14px; }
 .drow[aria-current="true"] { background: #EEF1F4; }
 /* 횡단보도 신호 상세 */
@@ -313,7 +353,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
 .timeline { position: relative; height: 26px; border-radius: 8px; overflow: hidden; background: var(--stop); }
 .timeline i { position: absolute; top: 0; bottom: 0; background: var(--go); }
 .timeline .me { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--asphalt); box-shadow: 0 0 0 2px var(--zebra); }
-.tl-labels { position: relative; height: 18px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.tl-labels { position: relative; height: 18px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
 .tl-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .tl-labels span:first-child { transform: none; }
 .tl-labels span:last-child { transform: translateX(-100%); }
@@ -363,6 +403,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
         <div id="home-intro">
           <div class="row-label"><h2>비슷한 시간이면, 덜 힘들게.</h2></div>
           <p class="safety" style="font-size:13px;margin-top:4px">신호 · 계단 · 오르막을 함께 비교해요.</p>
+          <button class="pace-row" data-go="me"><span class="pr-l">내 걸음</span><b id="home-pace">4.3km/h</b><small id="home-pace-sub"></small><span class="pr-go" aria-hidden="true">›</span></button>
           <div class="deadline-row">
             <span id="deadline-label">도착 마감</span>
             <fieldset class="time-picker" id="deadline" aria-labelledby="deadline-label">
@@ -386,8 +427,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
           <p id="hp-sub"></p>
         </div>
         <p class="safety" id="location-status" role="status">내 위치는 허용할 때만 연결해요.</p>
-        <div class="actions" id="home-actions" data-mid-end></div>
       </div>
+      <div class="sheet-footer"><div class="actions" id="home-actions"></div></div>
     </div>
   </section>
 
@@ -422,22 +463,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div class="row-label" id="result-heading"><h2>걷기 경로</h2><span class="safety">시연</span></div>
+        <div class="row-label" id="result-heading"><h2>어떻게 걸을까요?</h2><span class="safety" id="result-mode">이력 추정</span></div>
+        <section class="comfort-hero" id="comfort-summary" aria-live="polite">
+          <h3 id="comfort-title">내게 편한 길을 골라요</h3>
+          <p id="comfort-copy"></p>
+        </section>
+        <div class="comfort-budget" id="comfort-budget">
+          <p>더 걸어도 되는 시간</p>
+          <div class="chips" role="group" aria-label="편한 길의 추가 시간">
+            <button class="chip" data-budget="0" aria-pressed="false">+0분</button>
+            <button class="chip" data-budget="120" aria-pressed="true">+2분</button>
+            <button class="chip" data-budget="300" aria-pressed="false">+5분</button>
+            <button class="chip" data-budget="600" aria-pressed="false">+10분</button>
+          </div>
+        </div>
         <div id="route-cards" style="display:flex;flex-direction:column;gap:8px">
           <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
           <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
         </div>
-        <p class="safety" id="result-note">예상 시간 · 미확인 신호 대기 제외</p>
+        <p class="safety" id="result-note"></p>
         <p class="tradeoff" id="tradeoff" hidden></p>
         <p class="safety" id="result-location" role="status" hidden></p>
         <details class="result-options" id="result-options">
-          <summary>출발 시각·경로 조건 <span id="budget-label">+2분까지</span></summary>
+          <summary>계산 기준 <span id="budget-label">+2분까지</span></summary>
           <div class="option-body">
-            <div class="row-between"><span class="safety">더 걸려도 괜찮은 시간</span><div class="chips" role="group" aria-label="추가 시간 예산"><button class="chip" data-budget="60" aria-pressed="false">+1분</button><button class="chip" data-budget="120" aria-pressed="true">+2분</button><button class="chip" data-budget="180" aria-pressed="false">+3분</button></div></div>
-            <div id="go-wrap" hidden><div class="gocard" id="go-card"></div><p class="gc-foot" id="go-foot"></p></div>
             <p class="safety" id="route-facts"></p>
             <p class="cov" id="cov-note" hidden><span id="cov-text"></span> <button class="link-btn" id="cov-req">이 구간도 필요해요</button></p>
             <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
+            <details class="result-options departure-options" id="departure-options">
+              <summary>출발 시각도 비교하기 (선택)</summary>
+              <div class="option-body">
+                <div id="go-wrap" hidden><div class="departure-card" id="go-card"></div><p class="safety" id="go-foot"></p></div>
             <div class="row-label">
               <h2 id="depart-label">08:40 출발</h2>
               <div class="chips" role="group" aria-label="출발 시각">
@@ -447,11 +503,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
               </div>
             </div>
             <button class="link-btn" data-go="depart">다른 출발 시각 비교</button>
+              </div>
+            </details>
             <p class="safety" id="result-safety"></p>
           </div>
         </details>
-        <div class="actions" id="result-actions" data-mid-end>
-          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
+      </div>
+      <div class="sheet-footer" id="result-footer">
+        <div class="actions" id="result-actions">
+          <button class="btn btn-primary" data-go="walk" id="start-walk">이 길로 걷기</button>
         </div>
       </div>
     </div>
@@ -470,7 +530,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
   <section class="screen" id="s-walk" hidden>
     <div class="map" id="map-walk"></div>
     <div class="next" aria-live="polite">
-      <p style="font-size:13px;color:#A7B0C0">다음 신호 횡단보도</p>
+      <p style="font-size:13px;color:#A7B0C0" id="next-label">다음 안내</p>
       <div class="dist" id="next-dist">—</div>
       <p id="next-state"></p>
       <p class="say" id="next-say"></p>
@@ -480,15 +540,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="progress">
-          <div><span>지나온 거리</span><strong id="w-stops">—</strong></div>
-          <div><span>남은 거리</span><strong id="w-left">—</strong></div>
-          <div><span>걷기만 약</span><strong id="w-eta">—</strong></div>
+          <div><span>시간</span><strong id="w-time">—</strong></div>
+          <div id="w-left-col"><span id="w-left-l">남은 거리</span><strong id="w-left">—</strong></div>
+          <div><span>속도</span><strong id="w-pace">—</strong></div>
         </div>
+        <button class="btn btn-primary" id="walk-reroute" data-reroute hidden>내 위치에서 다시 찾기</button>
         <p class="safety" id="walk-location" role="status">위치 연결 대기</p>
-        <div class="chips"><button class="chip" data-gps-retry>위치 다시 연결</button><button class="chip" data-walk-demo>움직임 시연</button></div>
+        <div class="chips"><button class="chip" data-gps-retry>위치 다시 연결</button><button class="chip" id="walk-demo" data-walk-demo hidden>움직임 시연</button></div>
+      </div>
+      <div class="sheet-footer">
         <div class="actions">
-          <button class="btn btn-ghost" data-go="result">그만 걷기</button>
-          <button class="btn btn-primary" data-go="done">경로 요약 보기</button>
+          <button class="btn btn-ghost" id="walk-end">그만 걷기</button>
+          <button class="btn btn-primary" id="walk-done">걷기 끝내기</button>
         </div>
       </div>
     </div>
@@ -529,6 +592,27 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
     </div>
   </section>
 
+  <!-- 내 걸음: 속도와 걷기 기록 -->
+  <section class="screen detail" id="s-me" hidden>
+    <header>
+      <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
+      <h1>내 걸음</h1>
+    </header>
+    <div class="list">
+      <div class="pace-hero">
+        <strong id="me-speed"></strong>
+        <span id="me-pace"></span>
+        <small id="me-src"></small>
+      </div>
+      <p class="sec-title">길찾기에 쓸 속도</p>
+      <div class="chips pace-chips" id="pace-chips" role="group" aria-label="길찾기에 쓸 속도"></div>
+      <button class="btn btn-primary" data-free-walk style="margin-top:14px;flex:none">그냥 걷기 시작</button>
+      <p class="sec-title" style="margin-top:20px">걷기 기록</p>
+      <div id="walk-list"></div>
+      <p class="note"><span id="me-save">이 기기에만 저장해요. 위치 좌표는 남기지 않아요.</span> <button class="link-btn" id="walks-clear" aria-live="polite">기록 지우기</button></p>
+    </div>
+  </section>
+
   <!-- ⑤ 도착 공유 카드 -->
   <section class="screen done" id="s-done" hidden>
     <div class="card" id="share-card">
@@ -539,7 +623,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--asphalt); o
       <div class="stats">
         <div class="stat-big"><strong id="c-stops"></strong><span id="c-stops-l">멈춘 횟수</span></div>
         <div class="stat-big"><strong id="c-wait"></strong><span id="c-wait-l">신호 기다림</span></div>
-        <div class="stat-big"><strong id="c-time"></strong><span>시연 예상 시간</span></div>
+        <div class="stat-big"><strong id="c-time"></strong><span id="c-time-l">예상 소요 시간</span></div>
       </div>
       <p class="compare" id="c-compare"></p>
     </div>
