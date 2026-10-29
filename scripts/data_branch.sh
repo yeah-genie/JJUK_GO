@@ -29,7 +29,9 @@ case "${1:-}" in
       echo "변경 없음"
       exit 0
     fi
-    git commit --quiet -m "${2:-data update}"
+    # 수집 데이터 커밋은 앱 배포(Vercel)를 만들지 않는다. 5분마다 push하면 하루 배포 한도(100회)를 다 써서
+    # 정작 앱 수정본이 배포되지 못했다(2026-10-29). Vercel은 커밋 메시지의 [skip ci] / [vercel skip]을 보고 배포를 건너뛴다.
+    git commit --quiet -m "[skip ci] [vercel skip] ${2:-data update}"
     for attempt in 1 2 3 4; do
       if git push --quiet origin "HEAD:$BRANCH"; then
         exit 0
