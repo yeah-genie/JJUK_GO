@@ -1,3 +1,5 @@
+> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md), [HANDOFF](HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
+
 # 쭉고 (JJUK GO) — 기획서
 
 > 이 문서는 신호 중심 초기 기획이다. 2026-10-28 사용자 논의·게시물로 확인한 최신 방향은 [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md)의 **‘비슷하게 걸리면, 덜 힘든 길’(신호+경사+계단)**이다. 지하철·버스는 후순위다. 아래 초기 MVP 범위·스택·평가계획을 최신 결정으로 간주하지 않는다.
@@ -169,7 +171,7 @@ E[W] = P(적색 도착) · E[대기 | 적색] = (R/C) · (R/2) = R² / (2C)
 
 ## 7. 화면 설계
 
-최신 화면 기획은 [UX.md](UX.md)와 [프로토타입](prototype/index.html)을 따른다. 아래는 초기 안이다.
+최신 화면 기획은 [UX.md](DESIGN_SYSTEM.md)와 [프로토타입](prototype/index.html)을 따른다. 아래는 초기 안이다.
 
 
 1. **검색**

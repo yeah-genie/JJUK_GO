@@ -17,7 +17,10 @@ OUT = SRC.parent / "index.html"
 def main():
     css = re.sub(r"/\*#\s*sourceMappingURL=.*?\*/", "", (SRC / "maplibre-gl.min.css").read_text(encoding="utf-8"))
     html = (SRC / "template.html").read_text(encoding="utf-8")
-    html = html.replace("/*MAPLIBRE_CSS*/", css, 1).replace("/*APP_JS*/", (SRC / "app.js").read_text(encoding="utf-8"), 1)
+    app = (SRC / "app.js").read_text(encoding="utf-8")
+    app = app.replace("/*WALKING_PROFILE*/", (SRC / "walking-profile.js").read_text(encoding="utf-8"), 1)
+    app = app.replace("/*ASPHALT_UI*/", (SRC / "screens.js").read_text(encoding="utf-8"), 1)
+    html = html.replace("/*MAPLIBRE_CSS*/", css, 1).replace("/*ASPHALT_CSS*/", (SRC / "asphalt.css").read_text(encoding="utf-8"), 1).replace("/*APP_JS*/", app, 1)
     OUT.write_text(html, encoding="utf-8")
     print(f"{OUT} ({len(html):,}자)")
 

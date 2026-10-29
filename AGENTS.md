@@ -14,8 +14,8 @@
 
 ## 프로젝트 실행
 
-- 프로토타입 소스: `docs/prototype/src/template.html`, `docs/prototype/src/app.js`.
+- 프로토타입 소스: `docs/prototype/src/template.html`, `docs/prototype/src/app.js`, `screens.js`, `walking-profile.js`, `asphalt.css`.
 - 소스 수정 후 `python scripts/build_prototype.py`로 `docs/prototype/index.html`을 생성한다.
 - 실행 데이터는 `docs/prototype/seoul/`에 포함되어 있다. ZIP은 추가하지 않는다.
 - 실행: `python -m http.server 8766 --bind 127.0.0.1 --directory docs/prototype`.
-- 테스트: `.venv/Scripts/python.exe -m pytest -q`; UI 검사: `node scripts/check_prototype_ui.cjs`(Playwright 필요).
+- 테스트: `python -m pytest -q`, `node scripts/check_walk_logic.cjs`, `node scripts/check_profile.cjs`, `node scripts/check_app_shell.cjs`. 실제 UI는 브라우저에서 확인하고 `reports/design-qa.md`에 근거를 남긴다. 현재 화면 기준은 `docs/PRODUCT_SPEC.md`, `docs/DESIGN_SYSTEM.md`다.
