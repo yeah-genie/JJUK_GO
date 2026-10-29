@@ -402,7 +402,7 @@ function ensureMap() {
     pitchWithRotate: false, maxBounds: [[126.62, 37.38], [127.27, 37.70]], minZoom: 10, maxZoom: 19 });
   map.once("load", () => { mapReady = true; });
   map.touchZoomRotate.disableRotation();
-  map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-left");
+  map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
   map.on("click", onMapClick);
   for (const l of ["sig-all"]) { map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer"); map.on("mouseleave", l, () => map.getCanvas().style.cursor = ""); }
@@ -421,8 +421,10 @@ function fit(coordsList, extra = {}) {
   const all = coordsList.flat(); const b = new maplibregl.LngLatBounds(all[0], all[0]); all.forEach(c => b.extend(c));
   const phoneRect=$("phone").getBoundingClientRect(),panel=document.getElementById("sheet-"+current)?.getBoundingClientRect();
   const sidePanel=panel&&panel.width<phoneRect.width*.8&&panel.left>phoneRect.left+phoneRect.width*.3;
-  const pad = { top: current === "result" ? (phoneH() < 700 ? 80 : 120) : 90, bottom: sidePanel?40:sheetH()+30, left:34, right:sidePanel?panel.width+48:64,...extra };
-  ready(() => map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }));
+  // 홈·결과의 지도 컨테이너는 시트 위까지만 차지하므로 시트 높이를 빼지 않는다. 걷기 화면은 지도가 시트 밑까지 이어진다.
+  const bounded = current === "result" || current === "home";
+  const pad = { top: bounded ? 36 : 90, bottom: sidePanel ? 40 : bounded ? 30 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 64, ...extra };
+  ready(() => { map.resize(); map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }); });
 }
 function markTrip(sims, focus, forecasts = false) {
   clearDyn();
@@ -498,7 +500,16 @@ function setSheet(name, pos, px) {
   if (name === current) {
     $("phone").style.setProperty("--sheet-h", s.h + "px");
     $("mapctl").hidden = s.pos === "full";
+    layoutMapCtl();
   }
+}
+// 지도 조작 버튼은 지도가 보이는 영역 안에만 둔다. 남는 높이가 모자라면(작은 화면) 확대·축소 묶음은 감추고(핀치로 확대) 내 위치만 남긴다.
+function layoutMapCtl() {
+  const ctl = $("mapctl"), name = current, sh = sheets[name];
+  if (!sh || !["home", "result", "walk"].includes(name)) return;
+  const small = phoneH() < 690, mapTop = name === "home" ? (small ? 138 : 148) : name === "result" ? 96 : 112, top = mapTop + 12;
+  ctl.style.top = top + "px";
+  $("ctl-in").parentElement.hidden = phoneH() - sh.h - top - 12 < 152;
 }
 function setPeek(name, html) { const el = $("sheet-" + name).querySelector("[data-peek]"); if (el) el.innerHTML = html; }
 function initSheet(name) {
@@ -615,7 +626,7 @@ function readFix(p, maxAccuracy = 100) {
 }
 function gpsError(err) {
   gpsPending = false;
-  gpsStatus(err.code === 1 ? "위치 권한이 꺼져 있어요. 장소를 검색하거나 지도에서 골라 주세요" : err.code === 3 ? "위치 연결이 늦어져요. 다시 시도하거나 지도에서 골라 주세요" : err.message || "위치를 찾지 못했어요. 지도에서 골라 주세요");
+  gpsStatus(err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 꺼져 있어요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.code === 3 ? "위치를 연결하지 못했어요. 연결이 늦어져요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.message || "위치를 연결하지 못했어요. 다시 시도하거나 지도에서 출발지를 골라 주세요");
 }
 function locate(useAsStart) {
   if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("위치 연결은 HTTPS에서 사용할 수 있어요. 지도에서 출발지를 골라 주세요"); return; }
@@ -667,7 +678,7 @@ function plausibleProgress(previous, fix, distance) {
 // 페이지가 사라질 때 지금까지의 걷기를 저장한다(좌표 없는 요약만). 진행 중 기록을 따로 임시 저장하지는 않는다.
 addEventListener("pagehide", () => { endWalk(); stopGPS(); });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("위치 추적이 멈췄어요. 화면을 켜고 다시 연결해 주세요"); }
+  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 화면으로 돌아와 다시 연결해 주세요"); }
 });
 
 // ---------- 출발 시각 (쭉고의 중심) ----------
@@ -855,7 +866,7 @@ function renderWalk(demo = false, resume = false) {
     } catch (err) { update(null); gpsError(err); }
   }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   gpsStaleTimer = setInterval(() => {
-    if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("30초 넘게 위치 갱신이 없어요. 다시 연결해 주세요"); }
+    if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 30초 넘게 갱신이 없어요. 다시 연결해 주세요"); }
   }, 5000);
 }
 // 걷는 중 상태 문구는 5m 단위로만 바뀐다(스크린 리더가 매번 읽지 않게)
@@ -1034,11 +1045,6 @@ document.addEventListener("click", e => {
   if (b.dataset.dep !== undefined) { state.dep = +b.dataset.dep; renderResult(); return; }
   if (b.dataset.route) { state.focus = b.dataset.route; renderResult(); return; }
   go(b.dataset.go);
-});
-$("result-options").addEventListener("toggle", () => {
-  if (current !== "result") return;
-  setSheet("result", $("result-options").open ? "full" : "mid");
-
 });
 $("sq").addEventListener("input", () => renderSearchList());
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });

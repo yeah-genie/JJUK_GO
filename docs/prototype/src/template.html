@@ -26,32 +26,36 @@
   <!-- ① 홈 -->
   <section class="screen" id="s-home" hidden>
  <div class="map" id="map-home"></div>
- <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span style="color:var(--lane)">.</span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
- <button class="searchbox" data-search="to">어디로 걸어갈까요? <span style="margin-left:auto">⌕</span></button>
+ <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
+ <button class="searchbox" data-search="to"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>어디로 걸어갈까요?</span></button>
  <div class="home-origin"><span id="home-origin">출발지를 정해 주세요</span><button data-search="from">변경</button></div></div>
  <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 정보 표시 켜짐</button>
- <div class="map-legend">노랑 · 이력 있음　회색 · 신호 정보 미확인</div>
+ <div class="map-legend" aria-label="횡단 정보 범례"><span class="lg"><i class="lg-hist"></i>이력 있음</span><span class="lg"><i class="lg-unk"></i>미확인</span></div>
  <div class="sheet" id="sheet-home"><div class="grip-area"><div class="grip"></div></div><div class="sheet-body">
- <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" data-go="settings"><span>내 걸음</span><b id="home-pace"></b><small id="home-pace-sub">아직 측정 전</small><span>›</span></button>
+ <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" id="home-pace-row" data-go="settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="home-pace">내 걸음 · 아직 측정 전</span><span class="go">설정 ›</span></button>
  <div class="recent-heading">최근 찾은 곳</div><div id="home-chips"></div></div>
  <div id="home-place" class="place" hidden><h2 id="hp-name"></h2><p id="hp-sub"></p></div>
  <p class="safety" id="location-status" role="status">위치는 허용할 때만 연결해요.</p></div>
  <div class="sheet-footer"><div class="actions" id="home-actions"></div></div></div></section>
 
 <section class="screen" id="s-onboarding" hidden>
- <div class="onboarding-top"><span class="brand">쭉고<span style="color:var(--lane)">.</span></span><button class="text-action" id="onboarding-skip">건너뛰기</button></div>
- <div class="onboarding-main"><p class="step" id="onboarding-step">내 걸음 맞추기 · 1 / 2</p><h1 class="question-title" id="onboarding-title"></h1><p class="question-copy" id="onboarding-copy"></p><div class="answer-list" id="onboarding-answers"></div></div>
- <div class="onboarding-foot"><p id="onboarding-note">속도를 몰라도 괜찮아요. 걷는 동안 조금씩 맞춰요.</p><div class="actions"><button class="btn btn-ghost" id="onboarding-back" hidden>이전</button><button class="btn btn-primary" id="onboarding-next">다음</button></div></div>
+ <div class="onboarding-top"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="text-action" id="onboarding-skip">건너뛰기</button></div>
+ <div class="onboarding-main"><p class="step" id="onboarding-step"><b>1</b> / 2</p><div class="progress-bars" id="onboarding-progress" aria-hidden="true"><i></i><i></i></div><h1 class="question-title" id="onboarding-title"></h1><p class="question-copy" id="onboarding-copy"></p><div class="answer-list" id="onboarding-answers"></div><p class="onboarding-hint" id="onboarding-hint"></p></div>
+ <div class="onboarding-foot"><p id="onboarding-note">나중에 설정할 수 있어요</p><div class="actions"><button class="btn btn-ghost" id="onboarding-back" hidden>이전</button><button class="btn btn-primary" id="onboarding-next">다음</button></div></div>
 </section>
 <section class="screen detail" id="s-settings" hidden>
- <header><button class="icon-btn" id="settings-back" aria-label="취소하고 돌아가기">‹</button><h1>내 걸음과 이동 조건</h1></header>
+ <header><button class="icon-btn" id="settings-back" aria-label="취소하고 돌아가기">‹</button><h1>걸음 설정</h1></header>
  <div class="settings-content">
- <section class="setting-section"><label class="setting-row" for="auto-mode"><b>내 걸음에 자동으로 맞추기</b><input class="switch" id="auto-mode" type="checkbox"></label><p>위치를 허용하고 길 안내를 시작하면, 멈춘 시간과 부정확한 위치를 빼고 측정해요.</p></section>
- <section class="setting-section"><h2>내 걸음</h2><strong id="settings-pace-state">아직 측정 전</strong><p id="settings-pace-copy"></p><button class="text-action" id="edit-onboarding">처음 답한 내용 바꾸기 ›</button>
- <details id="settings-manual"><summary>속도를 직접 정하기</summary><label class="setting-row" for="manual-mode">직접 정한 속도 사용<input class="switch" id="manual-mode" type="checkbox"></label><label for="manual-speed">걷는 속도 (km/h)</label><input id="manual-speed" type="range" min="0.72" max="7.92" step="0.01"><output id="manual-speed-value" for="manual-speed"></output><p>자동 맞춤을 켜면 다시 측정한 걸음을 사용해요.</p></details></section>
- <section class="setting-section"><h2>이동 조건</h2><p id="equipment-summary"></p><label class="setting-row" for="avoid-steps">확인된 계단 피하기<input class="switch" id="avoid-steps" type="checkbox"></label><label class="setting-row" for="budget-select">더 걸어도 괜찮은 시간<select id="budget-select"><option value="0">추가 없이</option><option value="120">2분</option><option value="180">3분</option><option value="300">5분</option><option value="600">10분</option></select></label><p>지도에 없는 턱·계단과 엘리베이터 운영은 확인할 수 없어요. 무장애 경로를 보장하지 않아요.</p></section>
- <section class="setting-section"><label class="setting-row" for="save-summary">학습한 걸음을 이 기기에 저장<input class="switch" id="save-summary" type="checkbox"></label><p>끄면 다음 접속에 학습 결과를 남기지 않아요. 위치 경로는 저장하지 않아요.</p><button class="text-action" id="reset-learning">학습한 걸음 초기화</button><p class="settings-note" id="settings-message" role="status"></p></section>
- </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용하기</button></div>
+ <section class="setting-section"><label class="setting-row" for="auto-mode"><b>자동으로 맞추기</b><input class="switch" id="auto-mode" type="checkbox"></label><p>걷기 안내 중에만 측정해요. 멈춘 시간과 부정확한 위치는 빼요.</p></section>
+ <section class="setting-section"><h2>학습 상태</h2><strong id="settings-pace-state">아직 측정 전</strong><p id="settings-pace-copy"></p>
+ <details id="settings-manual"><summary>직접 정하기</summary><label class="setting-row" for="manual-mode">직접 정한 속도 사용<input class="switch" id="manual-mode" type="checkbox"></label><label for="manual-speed">걷는 속도 (km/h)</label><input id="manual-speed" type="range" min="0.72" max="7.92" step="0.01"><output id="manual-speed-value" for="manual-speed"></output><p>자동으로 맞추기를 켜면 다시 측정한 걸음을 사용해요.</p></details></section>
+ <section class="setting-section row-section"><button class="row-link" id="edit-onboarding"><span>처음 답변 수정</span><span aria-hidden="true">›</span></button><p id="equipment-summary"></p></section>
+ <section class="setting-section"><h2>이동 조건</h2><label class="setting-row" for="avoid-steps">확인된 계단 피하기<input class="switch" id="avoid-steps" type="checkbox"></label><label class="setting-row" for="budget-select">더 걸어도 괜찮은 시간<select id="budget-select"><option value="0">추가 없이</option><option value="120">2분</option><option value="180">3분</option><option value="300">5분</option><option value="600">10분</option></select></label><p>지도에 없는 턱·계단과 엘리베이터 운영은 확인할 수 없어요. 무장애 경로를 보장하지 않아요.</p></section>
+ <section class="setting-section"><label class="setting-row" for="save-summary"><b>이 기기에 요약 저장</b><input class="switch" id="save-summary" type="checkbox"></label><p>끄면 다음 접속에 학습 결과를 남기지 않아요. 위치 경로는 저장하지 않아요.</p></section>
+ <section class="setting-section last-section"><button class="row-link muted" id="reset-learning"><span>학습 초기화</span><span aria-hidden="true">›</span></button>
+ <div class="reset-confirm" id="reset-confirm" role="group" aria-label="학습 초기화 확인" hidden><p>맞춰 온 걸음 속도 요약만 지워요. 설문 답과 최근 장소는 그대로 둬요.</p><div class="actions"><button class="btn btn-ghost" id="reset-confirm-no">취소</button><button class="btn btn-secondary" id="reset-confirm-yes">속도 요약 지우기</button></div></div>
+ <p class="settings-note" id="settings-message" role="status"></p></section>
+ </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용</button></div>
 </section>
 
   <!-- 검색 -->
@@ -85,28 +89,29 @@
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div class="result-state"><span id="result-pace">아직 측정 전</span><button class="text-action" data-go="settings">내 걸음 · 이동 조건 ›</button></div>
- <div class="route-head"><span>걷기 경로</span><span class="margin-label">횡단 여유<small>초록 시작 기준 · 추정</small></span></div><div id="route-cards">
-          <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
-          <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
-        </div>
-        <p class="safety" id="result-note"></p>
-
-        <p class="safety" id="result-location" role="status" hidden></p>
-        <details class="result-options" id="result-options">
-          <summary>계산 기준 <span id="budget-label">+2분까지</span></summary>
-          <div class="option-body">
+        <div id="result-content">
+          <div class="result-state"><span class="pace-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="result-pace">내 걸음 · 아직 측정 전</span></span><button class="basis-btn" id="calc-basis" aria-expanded="false" aria-controls="result-options">계산 기준<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.1"/></svg></button></div>
+          <div class="result-options" id="result-options" hidden>
+            <p class="safety" id="basis-signal">신호는 과거 이력이며 실시간이 아니에요. 요일·날짜별 차이는 확인하지 못했어요.</p>
             <p class="safety" id="route-facts"></p>
             <p class="cov" id="cov-note" hidden><span id="cov-text"></span></p>
-            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
-
             <p class="safety" id="result-safety"></p>
+            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
           </div>
-        </details>
+          <div class="route-head"><span class="margin-label">횡단 여유<small>초록 시작 기준</small></span></div>
+          <div id="route-cards">
+            <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+            <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
+          </div>
+          <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
+          <p class="safety" id="result-note"></p>
+          <p class="safety" id="result-location" role="status" hidden></p>
+        </div>
       </div>
       <div class="sheet-footer" id="result-footer">
         <div class="actions" id="result-actions">
-          <button class="btn btn-primary" data-go="walk" id="start-walk">이 길로 걷기</button>
+          <button class="btn btn-ghost" id="adjust-conditions" data-go="settings">조건 조정</button>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
         </div>
       </div>
     </div>

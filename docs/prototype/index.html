@@ -15,13 +15,13 @@ html,body{margin:0;height:100%;overflow:hidden}body{background:#171D23;color:var
 button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,summary:focus-visible,select:focus-visible{outline:3px solid var(--lane);outline-offset:3px}button{touch-action:manipulation}a{color:var(--lane)}p{line-height:1.55}h1,h2,h3,p{margin-top:0}
 .phone{width:min(430px,100vw);height:min(900px,100dvh);position:relative;background:var(--asphalt);overflow:hidden;--sheet-h:240px}.screen{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;background:var(--asphalt)}
 @media(max-width:480px),(max-height:700px){.phone{width:100vw;height:100dvh}}
-.map{position:absolute;inset:96px 0 0;background:var(--map)}#map-home{top:148px}#map-walk{top:112px}#mapbox{position:absolute;inset:0}.mapctl{position:absolute;z-index:30;right:12px;top:182px;display:flex;flex-direction:column;gap:10px}.mapctl .grp{display:flex;flex-direction:column;border-radius:12px;overflow:hidden}.mapctl button{border:0;background:var(--asphalt);width:44px;height:44px;font-size:23px}.mapctl .grp button+button{border-top:1px solid var(--line)}.mapctl .solo{border-radius:50%}.mapctl svg{width:23px;height:23px}.map-attrib{position:absolute;z-index:6;bottom:calc(var(--sheet-h) + 3px);left:4px;font-size:9px;background:#242a32df;padding:2px 4px;color:#C5CCD3;max-width:85%}.badge{display:none}
-.icon-btn{width:44px;min-width:44px;height:44px;background:none;border:0;border-radius:8px;color:var(--zebra);font-size:26px}.text-action,.link-btn{border:0;background:none;color:var(--muted);min-height:44px;padding:8px 0;font-size:14px;text-align:left}.text-action:hover,.link-btn:hover{color:var(--lane)}.brand{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:-1px}.home-header{position:absolute;inset:0 0 auto;z-index:12;padding:10px 16px 6px;background:var(--asphalt);height:148px}.home-brand-row{display:flex;align-items:center;justify-content:space-between;height:40px}.searchbox{display:flex;align-items:center;text-align:left;width:100%;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);font-size:16px}.home-origin{height:40px;display:flex;align-items:center;justify-content:space-between;font-size:14px}.home-origin button{border:0;background:none;color:var(--lane);height:40px}.layer-control{position:absolute;top:160px;left:12px;z-index:10;background:var(--asphalt);color:var(--zebra);border:0;border-radius:20px;padding:10px 14px;min-height:44px;font-size:13px}.map-legend{position:absolute;left:8px;bottom:calc(var(--sheet-h) + 22px);z-index:8;background:#242a32ee;color:#D3D7DC;padding:7px 10px;font-size:11px;border-radius:7px}
-.sheet{position:absolute;z-index:20;inset:auto 0 0;background:var(--asphalt);height:var(--h,240px);display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--line);border-radius:0}.grip-area{display:none}.sheet-body{padding:0 16px;overflow:auto;min-height:0;flex:1;overscroll-behavior:contain;touch-action:pan-y}.sheet-footer{flex:none;padding:12px 16px max(16px,env(safe-area-inset-bottom));background:var(--asphalt)}.actions{display:flex;gap:10px}.btn{border:0;min-height:48px;padding:12px 16px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;font-size:16px;font-weight:700;flex:1;text-decoration:none}.btn-primary{background:var(--lane);color:#20262E}.btn-ghost{background:transparent;color:var(--zebra);border:1px solid var(--line)}.btn-secondary{background:var(--panel);color:var(--zebra)}.button-small{flex:0 0 100px;font-size:14px}.peek-sum{display:none}.pace-row{width:100%;display:flex;align-items:center;gap:8px;text-align:left;min-height:48px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--zebra);padding:6px 0;font-size:14px}.pace-row small{color:var(--muted);font-size:13px;margin-left:auto}.pace-row b{font-size:14px;font-weight:500}.recent-heading{font-size:13px;color:var(--muted);margin:12px 0 0}.recent-row{border:0;border-bottom:1px solid var(--line);width:100%;background:none;color:var(--zebra);height:44px;text-align:left;font-size:14px;display:flex;align-items:center;justify-content:space-between}.empty-recent{font-size:13px;color:var(--muted);margin:6px 0}.place h2{font-size:18px;margin:12px 0 2px}.place p{font-size:13px;color:var(--muted);margin-bottom:8px}
+.map{position:absolute;inset:96px 0 0;background:var(--map)}#map-home{top:148px;bottom:var(--sheet-h)}#map-result{bottom:var(--sheet-h)}#map-walk{top:112px}#mapbox{position:absolute;inset:0}.mapctl{position:absolute;z-index:30;right:12px;top:182px;display:flex;flex-direction:column;gap:10px}.mapctl .grp{display:flex;flex-direction:column;border-radius:12px;overflow:hidden}.mapctl button{border:0;background:var(--asphalt);width:44px;height:44px;font-size:23px}.mapctl .grp button+button{border-top:1px solid var(--line)}.mapctl .solo{border-radius:50%}.mapctl svg{width:23px;height:23px}.map-attrib{position:absolute;z-index:6;bottom:calc(var(--sheet-h) + 3px);left:4px;font-size:9px;background:#242a32df;padding:2px 4px;color:#C5CCD3;max-width:85%}.badge{display:none}
+.icon-btn{width:44px;min-width:44px;height:44px;background:none;border:0;border-radius:8px;color:var(--zebra);font-size:26px}.text-action,.link-btn{border:0;background:none;color:var(--muted);min-height:44px;padding:8px 0;font-size:14px;text-align:left}.text-action:hover,.link-btn:hover{color:var(--lane)}.brand{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:-1px;display:inline-flex;align-items:center;gap:8px}.lane-mark{display:inline-flex;gap:4px}.lane-mark i{display:block;width:6px;height:15px;background:var(--lane);transform:skewX(-24deg);border-radius:1px}.lane-mark i+i{background:var(--muted)}.home-header{position:absolute;inset:0 0 auto;z-index:12;padding:10px 16px 6px;background:var(--asphalt);height:148px}.home-brand-row{display:flex;align-items:center;justify-content:space-between;height:40px}.searchbox{display:flex;align-items:center;text-align:left;width:100%;height:48px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);font-size:16px}.home-origin{height:40px;display:flex;align-items:center;justify-content:space-between;font-size:14px}.home-origin button{border:0;background:none;color:var(--lane);height:40px}.layer-control{position:absolute;top:160px;left:12px;z-index:10;background:var(--asphalt);color:var(--zebra);border:0;border-radius:20px;padding:10px 14px;min-height:44px;font-size:13px}.map-legend{position:absolute;left:8px;bottom:calc(var(--sheet-h) + 22px);z-index:8;background:#242a32ee;color:#D3D7DC;padding:7px 10px;font-size:11px;border-radius:7px}
+.sheet{position:absolute;z-index:20;inset:auto 0 0;background:var(--asphalt);height:var(--h,240px);display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--line);border-radius:0}.grip-area{display:none}.sheet-body{padding:0 16px;overflow:auto;min-height:0;flex:1;overscroll-behavior:contain;touch-action:pan-y}.sheet-footer{flex:none;padding:12px 16px max(16px,env(safe-area-inset-bottom));background:var(--asphalt)}.actions{display:flex;gap:10px}.btn{border:0;min-height:48px;padding:12px 16px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;font-size:16px;font-weight:700;flex:1;text-decoration:none}.btn-primary{background:var(--lane);color:var(--asphalt)}.btn-primary:disabled{background:var(--panel);color:var(--muted);opacity:1}.btn-ghost{background:transparent;color:var(--zebra);border:1px solid var(--line)}.btn-secondary{background:var(--panel);color:var(--zebra)}.button-small{flex:0 0 100px;font-size:14px}.peek-sum{display:none}.pace-row{width:100%;display:flex;align-items:center;gap:8px;text-align:left;min-height:48px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--zebra);padding:6px 0;font-size:14px}.pace-row small{color:var(--muted);font-size:13px;margin-left:auto}.pace-row b{font-size:14px;font-weight:500}.recent-heading{font-size:13px;color:var(--muted);margin:12px 0 0}.recent-row{border:0;border-bottom:1px solid var(--line);width:100%;background:none;color:var(--zebra);height:44px;text-align:left;font-size:14px;display:flex;align-items:center;justify-content:space-between}.empty-recent{font-size:13px;color:var(--muted);margin:6px 0}.place h2{font-size:18px;margin:12px 0 2px}.place p{font-size:13px;color:var(--muted);margin-bottom:8px}
 .topbar.trip-bar{position:absolute;z-index:12;inset:0 0 auto;height:96px;padding:4px 8px;display:flex;align-items:center;background:var(--asphalt);gap:6px}.trip{flex:1;min-width:0}.trip-pt{display:flex;align-items:center;gap:10px;height:43px;border:0;background:none;color:var(--zebra);font-size:15px;width:100%;text-align:left;padding:4px}.trip-pt:first-child{border-bottom:1px solid var(--line)}.trip-pt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.trip-pt small{font-size:11px;color:var(--muted);margin-left:8px}.pt-from,.pt-to{width:10px;height:10px;border-radius:50%;background:var(--lane);flex:none}.pt-from{background:transparent;border:2px solid var(--zebra)}
-.result-state{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:13px;border-bottom:1px solid var(--line)}.result-state span{color:var(--muted)}.route-head{display:flex;justify-content:space-between;align-items:center;padding-top:10px;font-size:12px;color:var(--muted)}.route-head .margin-label{text-align:right;color:var(--lane);max-width:155px}.route-head small{display:block;color:var(--muted);font-size:10px}.route{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;min-height:65px;padding:10px 4px 10px 12px;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;color:var(--zebra);position:relative}.route[aria-pressed=true]{box-shadow:inset 3px 0 var(--lane)}.route .name{font-size:14px}.route .mins{font-size:23px;font-weight:700;white-space:nowrap;letter-spacing:-1px}.route .mins small{font-size:11px;font-weight:400;letter-spacing:0;display:block;color:var(--muted);text-align:right}.route .margin{font-size:14px;text-align:right;min-width:88px;color:var(--muted)}.route[aria-pressed=true] .margin{color:var(--lane)}.route .margin.available{font-size:25px;font-weight:700}.route-meta{display:flex;justify-content:space-between;align-items:center;min-height:42px;font-size:12px;color:var(--muted)}.route-meta button{font-size:13px}.safety,.note,.cov{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0}.status{padding:20px 0;font-size:14px;color:var(--muted)}.status b{display:block;color:var(--zebra);font-size:18px;margin-bottom:10px}.status .btn{margin-top:16px;width:100%}.status .btn+.btn{margin-top:8px}.result-options summary{cursor:pointer;min-height:44px;padding:10px 0;font-size:14px}.option-body{padding-bottom:16px}.result-options[open] .option-body{border-top:1px solid var(--line)}.facts{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:13px}.facts dt{color:var(--muted)}.facts dd{margin:0}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{min-height:44px;border:1px solid var(--line);padding:7px 14px;border-radius:8px;background:none;color:var(--zebra);font-size:14px}.chip[aria-pressed=true]{background:var(--lane);color:var(--asphalt);border-color:var(--lane)}
-.detail header,.simple-header{display:flex;align-items:center;gap:8px;min-height:64px;flex:none;padding:8px 12px}.detail header h1,.simple-header h1{font-size:20px;margin:0;font-weight:700}.detail .list,.settings-content{padding:12px 20px 32px;overflow:auto;flex:1;min-height:0;overscroll-behavior:contain}.detail{background:var(--asphalt)}.search-head{border-bottom:1px solid var(--line)}.search-field{display:flex;flex:1;min-width:0;align-items:center}.search-field input{background:none;border:0;color:var(--zebra);width:100%;height:44px;outline-offset:-1px}.search-for{padding:8px 20px;color:var(--muted);font-size:13px}.res-item{display:grid;grid-template-columns:1fr auto;gap:3px 8px;min-height:65px;padding:12px 0;border:0;border-bottom:1px solid var(--line);text-align:left;width:100%;background:none;color:var(--zebra)}.res-item b{font-size:15px}.res-item small{grid-column:1;color:var(--muted);font-size:12px}.res-item .km{grid-column:2;grid-row:1/3;align-self:center;color:var(--muted);font-size:12px}.sec-title{font-size:13px;color:var(--muted);margin:16px 0 5px}.res-item mark{background:none;color:var(--lane)}
-.onboarding-top{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 10px}.onboarding-main{padding:12px 20px;flex:1;overflow:auto;min-height:0}.step{font-size:13px;color:var(--lane);margin:10px 0 22px}.question-title{font-size:24px;line-height:1.4;margin-bottom:10px}.question-copy{font-size:14px;color:var(--muted);margin-bottom:26px}.answer-list{display:flex;flex-direction:column}.answer{width:100%;min-height:56px;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);color:var(--zebra);font-size:15px;padding:12px 4px;display:flex;align-items:center;justify-content:space-between;gap:12px}.answer .answer-check{font-size:12px;color:var(--muted)}.answer[aria-pressed=true]{color:var(--lane)}.answer[aria-pressed=true] .answer-check{color:var(--lane)}.onboarding-foot{padding:8px 20px max(20px,env(safe-area-inset-bottom))}.onboarding-foot .btn{width:100%}.onboarding-foot p{font-size:12px;color:var(--muted);margin-bottom:10px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;font-size:16px}.setting-section{padding:16px 0;border-bottom:1px solid var(--line)}.setting-section h2{font-size:14px;color:var(--muted);font-weight:400}.setting-section strong{font-size:20px}.setting-section p{font-size:13px;color:var(--muted);margin:6px 0 0}.switch{width:22px;height:22px;accent-color:var(--lane);cursor:pointer}.settings-content details summary{min-height:52px;cursor:pointer;padding:14px 0}.settings-content input[type=range]{width:100%;accent-color:var(--lane);min-height:44px}.settings-content input[type=number]{width:90px;padding:8px;color:var(--zebra);background:var(--panel);border:1px solid var(--line);border-radius:6px}.settings-content select{background:var(--panel);color:var(--zebra);padding:10px;border:1px solid var(--line);border-radius:6px;max-width:140px}.manual-value{display:flex;align-items:center;gap:12px}.settings-content label{cursor:pointer}.settings-note{font-size:12px;min-height:22px;color:var(--lane)}
+#result-content{padding-bottom:8px}.result-state{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:52px;font-size:15px;border-bottom:1px solid var(--line)}.pace-label{display:flex;align-items:center;gap:10px;min-width:0}.pace-label .ico,.unknown-row .ico{width:22px;height:22px;flex:none}.basis-btn{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 0 0 12px;border:0;background:none;color:var(--muted);font-size:13px;flex:none}.basis-btn .ico{width:20px;height:20px}.basis-btn[aria-expanded=true]{color:var(--lane)}.result-options{padding:8px 0 4px;border-bottom:1px solid var(--line)}.route-head{display:flex;justify-content:flex-end;align-items:center;padding-top:10px;font-size:12px;color:var(--muted)}.route-head .margin-label{text-align:right;color:var(--lane);max-width:155px}.route-head small{display:block;color:var(--muted);font-size:12px}.route{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;min-height:65px;padding:10px 4px 10px 12px;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;color:var(--zebra);position:relative}.route[aria-pressed=true]{box-shadow:inset 3px 0 var(--lane)}.route .name{font-size:14px}.route .mins{font-size:23px;font-weight:700;white-space:nowrap;letter-spacing:-1px}.route .mins small{font-size:13px;font-weight:400;letter-spacing:0;display:inline;margin-left:6px;color:var(--muted)}.route .margin{font-size:13px;text-align:right;min-width:72px;color:var(--muted)}.route-meta{display:flex;justify-content:space-between;align-items:center;min-height:42px;font-size:12px;color:var(--muted)}.route-meta button{font-size:13px}.safety,.note,.cov{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0}.status{padding:20px 0;font-size:14px;color:var(--muted)}.status b{display:block;color:var(--zebra);font-size:18px;margin-bottom:10px}.status .btn{margin-top:16px;width:100%}.status .btn+.btn{margin-top:8px}.result-options summary{cursor:pointer;min-height:44px;padding:10px 0;font-size:14px}.option-body{padding-bottom:16px}.result-options[open] .option-body{border-top:1px solid var(--line)}.facts{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:13px}.facts dt{color:var(--muted)}.facts dd{margin:0}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{min-height:44px;border:1px solid var(--line);padding:7px 14px;border-radius:8px;background:none;color:var(--zebra);font-size:14px}.chip[aria-pressed=true]{background:var(--lane);color:var(--asphalt);border-color:var(--lane)}
+.detail header,.simple-header{display:flex;align-items:center;gap:8px;min-height:64px;flex:none;padding:8px 12px}.detail header h1,.simple-header h1{font-size:20px;margin:0;font-weight:700}.detail .list,.settings-content{padding:12px 20px 40px;scroll-padding-bottom:40px;overflow:auto;flex:1;min-height:0;overscroll-behavior:contain}.detail{background:var(--asphalt)}.search-head{border-bottom:1px solid var(--line)}.search-field{display:flex;flex:1;min-width:0;align-items:center}.search-field input{background:none;border:0;color:var(--zebra);width:100%;height:44px;outline-offset:-1px}.search-for{padding:8px 20px;color:var(--muted);font-size:13px}.res-item{display:grid;grid-template-columns:1fr auto;gap:3px 8px;min-height:65px;padding:12px 0;border:0;border-bottom:1px solid var(--line);text-align:left;width:100%;background:none;color:var(--zebra)}.res-item b{font-size:15px}.res-item small{grid-column:1;color:var(--muted);font-size:12px}.res-item .km{grid-column:2;grid-row:1/3;align-self:center;color:var(--muted);font-size:12px}.sec-title{font-size:13px;color:var(--muted);margin:16px 0 5px}.res-item mark{background:none;color:var(--lane)}
+.onboarding-top{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 10px}.onboarding-main{padding:12px 20px;flex:1;overflow:auto;min-height:0}.step{font-size:16px;color:var(--muted);margin:8px 0 8px}.step b{color:var(--lane);font-size:22px}.progress-bars{display:flex;gap:8px;margin:0 0 28px}.progress-bars i{width:56px;height:5px;border-radius:3px;background:var(--line)}.progress-bars i.on{background:var(--lane)}.question-title{font-size:28px;line-height:1.3;margin-bottom:10px}.question-copy{font-size:16px;color:var(--muted);margin-bottom:26px}.answer-list{display:flex;flex-direction:column}.answer{width:100%;min-height:56px;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);color:var(--zebra);font-size:17px;padding:12px 4px;display:flex;align-items:center;justify-content:space-between;gap:12px}.answer .mark{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;color:var(--asphalt)}.answer[role=checkbox] .mark{border-radius:7px}.answer[aria-checked=true] .mark{background:var(--lane);border-color:var(--lane)}.answer[aria-checked=true]{font-weight:600}.onboarding-hint{font-size:14px;color:var(--muted);margin:16px 4px 0}.onboarding-hint:empty{display:none}.onboarding-foot{padding:8px 20px max(20px,env(safe-area-inset-bottom))}.onboarding-foot .btn{width:100%}.onboarding-foot p{font-size:14px;color:var(--muted);margin-bottom:12px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;font-size:16px}.setting-section{padding:16px 0;border-bottom:1px solid var(--line)}.setting-section h2{font-size:14px;color:var(--muted);font-weight:400}.setting-section strong{font-size:20px}.setting-section p{font-size:13px;color:var(--muted);margin:6px 0 0}.switch{width:22px;height:22px;accent-color:var(--lane);cursor:pointer}.settings-content details summary{min-height:52px;cursor:pointer;padding:14px 0}.settings-content input[type=range]{width:100%;accent-color:var(--lane);min-height:44px}.settings-content input[type=number]{width:90px;padding:8px;color:var(--zebra);background:var(--panel);border:1px solid var(--line);border-radius:6px}.settings-content select{background:var(--panel);color:var(--zebra);padding:10px;border:1px solid var(--line);border-radius:6px;max-width:140px}.manual-value{display:flex;align-items:center;gap:12px}.settings-content label{cursor:pointer}.settings-note{font-size:12px;min-height:22px;color:var(--lane)}
 .next{position:absolute;inset:0 0 auto;min-height:112px;padding:14px 20px;background:var(--asphalt);border-bottom:2px solid var(--lane);z-index:10}.next #next-label{font-size:12px;color:var(--muted);margin:0}.next .dist{font-size:28px;font-weight:700;display:inline-block;margin-right:12px}.next #next-state{font-size:16px;display:inline;margin:0}.next .say{font-size:11px;color:var(--muted);margin:6px 0 0}.progress{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0 5px}.progress>div{display:flex;flex-direction:column}.progress span{font-size:12px;color:var(--muted)}.progress strong{font-size:22px}.progress strong small{font-size:12px}.walk-destination{font-size:14px;color:var(--muted)}#sheet-walk .sheet-body{padding:4px 16px}#w-time{font-size:17px}#walk-location{font-size:11px;max-height:46px;overflow:auto}.done{padding:24px;justify-content:center}.done h1{font-size:26px}.done .btn{margin-top:16px;flex:none}.splash{justify-content:center;align-items:center;gap:14px}.splash h1{font-size:30px;color:var(--lane);font-family:var(--display)}.splash-foot{color:var(--muted);font-size:13px;max-width:90%;text-align:center}
 .m-start{width:18px;height:18px;border-radius:50%;background:var(--asphalt);border:3px solid var(--lane)}.m-dest{display:flex;align-items:center;gap:5px}.m-dest i{width:18px;height:18px;border:3px solid var(--lane);border-radius:50%;background:var(--asphalt)}.m-dest span{font-size:12px;padding:4px 6px;background:var(--asphalt);color:var(--zebra);border-radius:4px}.m-me{width:22px;height:22px;border-radius:50%;background:#4D8FFF;border:3px solid #fff;box-shadow:0 0 0 9px #4d8fff24}.m-sig{width:18px;height:18px;border:2px solid var(--lane);border-radius:50%;background:var(--asphalt)}.m-sig.unk{border-color:var(--muted)}.m-sig b{display:none}.m-sig.dim{opacity:.7}.m-pick{width:18px;height:18px;border-radius:50%;border:3px solid var(--lane);background:var(--asphalt)}.xing{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}.xing small{display:block;color:var(--muted);font-size:12px;margin-top:4px}.xing time{font-size:12px;color:var(--muted)}.xing-btn{background:none;border:0;text-align:left;color:inherit;width:100%}
 @media(max-height:690px){.home-header{height:138px;padding-top:4px}#map-home{top:138px}.layer-control{top:148px}.question-title{font-size:21px}.step{margin-bottom:12px}.question-copy{margin-bottom:14px}.answer{min-height:48px}.onboarding-top{padding-top:8px}.sheet-footer{padding-bottom:max(8px,env(safe-area-inset-bottom))}.settings-content{padding-top:0}.setting-section{padding:12px 0}.route{min-height:58px}.mapctl{top:160px}}
@@ -29,6 +29,12 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 
 /* Native focus/keyboard semantics, road-yellow switch visuals. */
 .switch{appearance:none;flex:none;width:44px;height:26px;border:1px solid #8793A3;border-radius:20px;background:#303844;position:relative;margin:0}.switch:before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;background:#B7BEC8;border-radius:50%}.switch:checked{background:var(--lane);border-color:var(--lane)}.switch:checked:before{left:21px;background:#242A32}.searchbox,.btn-ghost,.settings-content select,.settings-content input[type=number]{border-color:#8793A3}.mapctl svg{stroke:#8CAEFF}.mapctl svg circle:last-of-type{fill:#8CAEFF}.route .mins{font-variant-numeric:tabular-nums}.map-legend{pointer-events:none}.m-sig.unk{border-style:dashed}.m-sig.unk:after{content:"?";font-size:10px;display:block;text-align:center;line-height:14px;color:var(--muted)}
+
+/* 승인 시안과의 차이를 줄이는 보강: 홈 검색·내 걸음 행·범례, 결과의 정보 없는 횡단 행·하단 두 버튼, 설정 행 링크·초기화 확인. */
+.searchbox{gap:10px}.searchbox .ico{width:20px;height:20px;flex:none}.pace-row{font-size:15px}.pace-row .ico{width:22px;height:22px;flex:none}.pace-row .go{margin-left:auto;color:var(--muted);font-size:14px}.map-legend{display:flex;align-items:center;padding:0;font-size:12px}.map-legend .lg{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 12px}.map-legend .lg+.lg{border-left:1px solid var(--line)}.lg-hist,.lg-unk{width:16px;height:16px;border-radius:50%;flex:none;position:relative}.lg-hist{border:2px solid var(--lane)}.lg-unk{border:2px dashed var(--muted)}.lg-unk:after{content:"?";position:absolute;inset:0;font-size:9px;line-height:12px;text-align:center;color:var(--muted)}
+.unknown-row{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--zebra);font-size:14px;text-align:left;padding:0}.unknown-row .go{margin-left:auto;color:var(--muted)}.unknown-row .ico{color:var(--muted)}#adjust-conditions{flex:0 0 36%}#start-walk{flex:1}
+.row-link{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:56px;padding:0;background:none;border:0;color:var(--zebra);font-size:16px;font-weight:600;text-align:left}.row-link.muted{color:var(--muted);font-weight:500}.row-section{padding:0 0 8px}.row-section p{margin:0 0 8px}.last-section{border-bottom:0}.reset-confirm{margin-top:4px}.reset-confirm p{margin:0 0 12px}.reset-confirm .btn{min-width:0}
+#s-settings .sheet-footer{border-top:1px solid var(--line)}
 </style>
 
 <div class="phone" id="phone">
@@ -46,32 +52,36 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
   <!-- ① 홈 -->
   <section class="screen" id="s-home" hidden>
  <div class="map" id="map-home"></div>
- <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span style="color:var(--lane)">.</span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
- <button class="searchbox" data-search="to">어디로 걸어갈까요? <span style="margin-left:auto">⌕</span></button>
+ <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
+ <button class="searchbox" data-search="to"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>어디로 걸어갈까요?</span></button>
  <div class="home-origin"><span id="home-origin">출발지를 정해 주세요</span><button data-search="from">변경</button></div></div>
  <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 정보 표시 켜짐</button>
- <div class="map-legend">노랑 · 이력 있음　회색 · 신호 정보 미확인</div>
+ <div class="map-legend" aria-label="횡단 정보 범례"><span class="lg"><i class="lg-hist"></i>이력 있음</span><span class="lg"><i class="lg-unk"></i>미확인</span></div>
  <div class="sheet" id="sheet-home"><div class="grip-area"><div class="grip"></div></div><div class="sheet-body">
- <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" data-go="settings"><span>내 걸음</span><b id="home-pace"></b><small id="home-pace-sub">아직 측정 전</small><span>›</span></button>
+ <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" id="home-pace-row" data-go="settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="home-pace">내 걸음 · 아직 측정 전</span><span class="go">설정 ›</span></button>
  <div class="recent-heading">최근 찾은 곳</div><div id="home-chips"></div></div>
  <div id="home-place" class="place" hidden><h2 id="hp-name"></h2><p id="hp-sub"></p></div>
  <p class="safety" id="location-status" role="status">위치는 허용할 때만 연결해요.</p></div>
  <div class="sheet-footer"><div class="actions" id="home-actions"></div></div></div></section>
 
 <section class="screen" id="s-onboarding" hidden>
- <div class="onboarding-top"><span class="brand">쭉고<span style="color:var(--lane)">.</span></span><button class="text-action" id="onboarding-skip">건너뛰기</button></div>
- <div class="onboarding-main"><p class="step" id="onboarding-step">내 걸음 맞추기 · 1 / 2</p><h1 class="question-title" id="onboarding-title"></h1><p class="question-copy" id="onboarding-copy"></p><div class="answer-list" id="onboarding-answers"></div></div>
- <div class="onboarding-foot"><p id="onboarding-note">속도를 몰라도 괜찮아요. 걷는 동안 조금씩 맞춰요.</p><div class="actions"><button class="btn btn-ghost" id="onboarding-back" hidden>이전</button><button class="btn btn-primary" id="onboarding-next">다음</button></div></div>
+ <div class="onboarding-top"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="text-action" id="onboarding-skip">건너뛰기</button></div>
+ <div class="onboarding-main"><p class="step" id="onboarding-step"><b>1</b> / 2</p><div class="progress-bars" id="onboarding-progress" aria-hidden="true"><i></i><i></i></div><h1 class="question-title" id="onboarding-title"></h1><p class="question-copy" id="onboarding-copy"></p><div class="answer-list" id="onboarding-answers"></div><p class="onboarding-hint" id="onboarding-hint"></p></div>
+ <div class="onboarding-foot"><p id="onboarding-note">나중에 설정할 수 있어요</p><div class="actions"><button class="btn btn-ghost" id="onboarding-back" hidden>이전</button><button class="btn btn-primary" id="onboarding-next">다음</button></div></div>
 </section>
 <section class="screen detail" id="s-settings" hidden>
- <header><button class="icon-btn" id="settings-back" aria-label="취소하고 돌아가기">‹</button><h1>내 걸음과 이동 조건</h1></header>
+ <header><button class="icon-btn" id="settings-back" aria-label="취소하고 돌아가기">‹</button><h1>걸음 설정</h1></header>
  <div class="settings-content">
- <section class="setting-section"><label class="setting-row" for="auto-mode"><b>내 걸음에 자동으로 맞추기</b><input class="switch" id="auto-mode" type="checkbox"></label><p>위치를 허용하고 길 안내를 시작하면, 멈춘 시간과 부정확한 위치를 빼고 측정해요.</p></section>
- <section class="setting-section"><h2>내 걸음</h2><strong id="settings-pace-state">아직 측정 전</strong><p id="settings-pace-copy"></p><button class="text-action" id="edit-onboarding">처음 답한 내용 바꾸기 ›</button>
- <details id="settings-manual"><summary>속도를 직접 정하기</summary><label class="setting-row" for="manual-mode">직접 정한 속도 사용<input class="switch" id="manual-mode" type="checkbox"></label><label for="manual-speed">걷는 속도 (km/h)</label><input id="manual-speed" type="range" min="0.72" max="7.92" step="0.01"><output id="manual-speed-value" for="manual-speed"></output><p>자동 맞춤을 켜면 다시 측정한 걸음을 사용해요.</p></details></section>
- <section class="setting-section"><h2>이동 조건</h2><p id="equipment-summary"></p><label class="setting-row" for="avoid-steps">확인된 계단 피하기<input class="switch" id="avoid-steps" type="checkbox"></label><label class="setting-row" for="budget-select">더 걸어도 괜찮은 시간<select id="budget-select"><option value="0">추가 없이</option><option value="120">2분</option><option value="180">3분</option><option value="300">5분</option><option value="600">10분</option></select></label><p>지도에 없는 턱·계단과 엘리베이터 운영은 확인할 수 없어요. 무장애 경로를 보장하지 않아요.</p></section>
- <section class="setting-section"><label class="setting-row" for="save-summary">학습한 걸음을 이 기기에 저장<input class="switch" id="save-summary" type="checkbox"></label><p>끄면 다음 접속에 학습 결과를 남기지 않아요. 위치 경로는 저장하지 않아요.</p><button class="text-action" id="reset-learning">학습한 걸음 초기화</button><p class="settings-note" id="settings-message" role="status"></p></section>
- </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용하기</button></div>
+ <section class="setting-section"><label class="setting-row" for="auto-mode"><b>자동으로 맞추기</b><input class="switch" id="auto-mode" type="checkbox"></label><p>걷기 안내 중에만 측정해요. 멈춘 시간과 부정확한 위치는 빼요.</p></section>
+ <section class="setting-section"><h2>학습 상태</h2><strong id="settings-pace-state">아직 측정 전</strong><p id="settings-pace-copy"></p>
+ <details id="settings-manual"><summary>직접 정하기</summary><label class="setting-row" for="manual-mode">직접 정한 속도 사용<input class="switch" id="manual-mode" type="checkbox"></label><label for="manual-speed">걷는 속도 (km/h)</label><input id="manual-speed" type="range" min="0.72" max="7.92" step="0.01"><output id="manual-speed-value" for="manual-speed"></output><p>자동으로 맞추기를 켜면 다시 측정한 걸음을 사용해요.</p></details></section>
+ <section class="setting-section row-section"><button class="row-link" id="edit-onboarding"><span>처음 답변 수정</span><span aria-hidden="true">›</span></button><p id="equipment-summary"></p></section>
+ <section class="setting-section"><h2>이동 조건</h2><label class="setting-row" for="avoid-steps">확인된 계단 피하기<input class="switch" id="avoid-steps" type="checkbox"></label><label class="setting-row" for="budget-select">더 걸어도 괜찮은 시간<select id="budget-select"><option value="0">추가 없이</option><option value="120">2분</option><option value="180">3분</option><option value="300">5분</option><option value="600">10분</option></select></label><p>지도에 없는 턱·계단과 엘리베이터 운영은 확인할 수 없어요. 무장애 경로를 보장하지 않아요.</p></section>
+ <section class="setting-section"><label class="setting-row" for="save-summary"><b>이 기기에 요약 저장</b><input class="switch" id="save-summary" type="checkbox"></label><p>끄면 다음 접속에 학습 결과를 남기지 않아요. 위치 경로는 저장하지 않아요.</p></section>
+ <section class="setting-section last-section"><button class="row-link muted" id="reset-learning"><span>학습 초기화</span><span aria-hidden="true">›</span></button>
+ <div class="reset-confirm" id="reset-confirm" role="group" aria-label="학습 초기화 확인" hidden><p>맞춰 온 걸음 속도 요약만 지워요. 설문 답과 최근 장소는 그대로 둬요.</p><div class="actions"><button class="btn btn-ghost" id="reset-confirm-no">취소</button><button class="btn btn-secondary" id="reset-confirm-yes">속도 요약 지우기</button></div></div>
+ <p class="settings-note" id="settings-message" role="status"></p></section>
+ </div><div class="sheet-footer"><button class="btn btn-primary" id="settings-apply" style="width:100%">적용</button></div>
 </section>
 
   <!-- 검색 -->
@@ -105,28 +115,29 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
       <div class="sheet-body">
         <div class="peek-sum" data-peek></div>
         <div class="status" id="result-status" data-mid-end hidden></div>
-        <div class="result-state"><span id="result-pace">아직 측정 전</span><button class="text-action" data-go="settings">내 걸음 · 이동 조건 ›</button></div>
- <div class="route-head"><span>걷기 경로</span><span class="margin-label">횡단 여유<small>초록 시작 기준 · 추정</small></span></div><div id="route-cards">
-          <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
-          <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
-        </div>
-        <p class="safety" id="result-note"></p>
-
-        <p class="safety" id="result-location" role="status" hidden></p>
-        <details class="result-options" id="result-options">
-          <summary>계산 기준 <span id="budget-label">+2분까지</span></summary>
-          <div class="option-body">
+        <div id="result-content">
+          <div class="result-state"><span class="pace-label"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="result-pace">내 걸음 · 아직 측정 전</span></span><button class="basis-btn" id="calc-basis" aria-expanded="false" aria-controls="result-options">계산 기준<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.1"/></svg></button></div>
+          <div class="result-options" id="result-options" hidden>
+            <p class="safety" id="basis-signal">신호는 과거 이력이며 실시간이 아니에요. 요일·날짜별 차이는 확인하지 못했어요.</p>
             <p class="safety" id="route-facts"></p>
             <p class="cov" id="cov-note" hidden><span id="cov-text"></span></p>
-            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
-
             <p class="safety" id="result-safety"></p>
+            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
           </div>
-        </details>
+          <div class="route-head"><span class="margin-label">횡단 여유<small>초록 시작 기준</small></span></div>
+          <div id="route-cards">
+            <button class="route" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+            <button class="route" data-route="short" aria-pressed="false" id="card-short"></button>
+          </div>
+          <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
+          <p class="safety" id="result-note"></p>
+          <p class="safety" id="result-location" role="status" hidden></p>
+        </div>
       </div>
       <div class="sheet-footer" id="result-footer">
         <div class="actions" id="result-actions">
-          <button class="btn btn-primary" data-go="walk" id="start-walk">이 길로 걷기</button>
+          <button class="btn btn-ghost" id="adjust-conditions" data-go="settings">조건 조정</button>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
         </div>
       </div>
     </div>
@@ -726,7 +737,7 @@ function ensureMap() {
     pitchWithRotate: false, maxBounds: [[126.62, 37.38], [127.27, 37.70]], minZoom: 10, maxZoom: 19 });
   map.once("load", () => { mapReady = true; });
   map.touchZoomRotate.disableRotation();
-  map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-left");
+  map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
   map.on("click", onMapClick);
   for (const l of ["sig-all"]) { map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer"); map.on("mouseleave", l, () => map.getCanvas().style.cursor = ""); }
@@ -745,8 +756,10 @@ function fit(coordsList, extra = {}) {
   const all = coordsList.flat(); const b = new maplibregl.LngLatBounds(all[0], all[0]); all.forEach(c => b.extend(c));
   const phoneRect=$("phone").getBoundingClientRect(),panel=document.getElementById("sheet-"+current)?.getBoundingClientRect();
   const sidePanel=panel&&panel.width<phoneRect.width*.8&&panel.left>phoneRect.left+phoneRect.width*.3;
-  const pad = { top: current === "result" ? (phoneH() < 700 ? 80 : 120) : 90, bottom: sidePanel?40:sheetH()+30, left:34, right:sidePanel?panel.width+48:64,...extra };
-  ready(() => map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }));
+  // 홈·결과의 지도 컨테이너는 시트 위까지만 차지하므로 시트 높이를 빼지 않는다. 걷기 화면은 지도가 시트 밑까지 이어진다.
+  const bounded = current === "result" || current === "home";
+  const pad = { top: bounded ? 36 : 90, bottom: sidePanel ? 40 : bounded ? 30 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 64, ...extra };
+  ready(() => { map.resize(); map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }); });
 }
 function markTrip(sims, focus, forecasts = false) {
   clearDyn();
@@ -822,7 +835,16 @@ function setSheet(name, pos, px) {
   if (name === current) {
     $("phone").style.setProperty("--sheet-h", s.h + "px");
     $("mapctl").hidden = s.pos === "full";
+    layoutMapCtl();
   }
+}
+// 지도 조작 버튼은 지도가 보이는 영역 안에만 둔다. 남는 높이가 모자라면(작은 화면) 확대·축소 묶음은 감추고(핀치로 확대) 내 위치만 남긴다.
+function layoutMapCtl() {
+  const ctl = $("mapctl"), name = current, sh = sheets[name];
+  if (!sh || !["home", "result", "walk"].includes(name)) return;
+  const small = phoneH() < 690, mapTop = name === "home" ? (small ? 138 : 148) : name === "result" ? 96 : 112, top = mapTop + 12;
+  ctl.style.top = top + "px";
+  $("ctl-in").parentElement.hidden = phoneH() - sh.h - top - 12 < 152;
 }
 function setPeek(name, html) { const el = $("sheet-" + name).querySelector("[data-peek]"); if (el) el.innerHTML = html; }
 function initSheet(name) {
@@ -939,7 +961,7 @@ function readFix(p, maxAccuracy = 100) {
 }
 function gpsError(err) {
   gpsPending = false;
-  gpsStatus(err.code === 1 ? "위치 권한이 꺼져 있어요. 장소를 검색하거나 지도에서 골라 주세요" : err.code === 3 ? "위치 연결이 늦어져요. 다시 시도하거나 지도에서 골라 주세요" : err.message || "위치를 찾지 못했어요. 지도에서 골라 주세요");
+  gpsStatus(err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 꺼져 있어요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.code === 3 ? "위치를 연결하지 못했어요. 연결이 늦어져요. 다시 시도하거나 지도에서 출발지를 골라 주세요" : err.message || "위치를 연결하지 못했어요. 다시 시도하거나 지도에서 출발지를 골라 주세요");
 }
 function locate(useAsStart) {
   if (!navigator.geolocation || !window.isSecureContext) { gpsStatus("위치 연결은 HTTPS에서 사용할 수 있어요. 지도에서 출발지를 골라 주세요"); return; }
@@ -991,7 +1013,7 @@ function plausibleProgress(previous, fix, distance) {
 // 페이지가 사라질 때 지금까지의 걷기를 저장한다(좌표 없는 요약만). 진행 중 기록을 따로 임시 저장하지는 않는다.
 addEventListener("pagehide", () => { endWalk(); stopGPS(); });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("위치 추적이 멈췄어요. 화면을 켜고 다시 연결해 주세요"); }
+  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 화면으로 돌아와 다시 연결해 주세요"); }
 });
 
 // ---------- 출발 시각 (쭉고의 중심) ----------
@@ -1179,7 +1201,7 @@ function renderWalk(demo = false, resume = false) {
     } catch (err) { update(null); gpsError(err); }
   }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   gpsStaleTimer = setInterval(() => {
-    if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("30초 넘게 위치 갱신이 없어요. 다시 연결해 주세요"); }
+    if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 30초 넘게 갱신이 없어요. 다시 연결해 주세요"); }
   }, 5000);
 }
 // 걷는 중 상태 문구는 5m 단위로만 바뀐다(스크린 리더가 매번 읽지 않게)
@@ -1359,11 +1381,6 @@ document.addEventListener("click", e => {
   if (b.dataset.route) { state.focus = b.dataset.route; renderResult(); return; }
   go(b.dataset.go);
 });
-$("result-options").addEventListener("toggle", () => {
-  if (current !== "result") return;
-  setSheet("result", $("result-options").open ? "full" : "mid");
-
-});
 $("sq").addEventListener("input", () => renderSearchList());
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });
 addEventListener("hashchange", () => show(location.hash.slice(1)));
@@ -1391,17 +1408,22 @@ async function boot() {
 }
 // 화면 상태는 계산·GPS 엔진과 분리한다. 미확인 횡단 여유는 숫자로 만들지 않는다.
 let onboardingStep=1, onboardingHint=null, onboardingEquipment=[], onboardingEquipmentKnown=false, onboardingTarget='home', settingsReturn='home', settingsDraft=null;
-const EQUIPMENT_LABELS={stroller:'유모차',walker:'보행기',cane:'지팡이',luggage:'캐리어·무거운 짐',other:'그 밖의 이동 보조기'};
+const EQUIPMENT_LABELS={stroller:'유모차',walker:'보행 보조기',cane:'지팡이',luggage:'무거운 짐',other:'기타'};
+const CHECK_MARK='<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
 function renderOnboarding() {
-  setText('onboarding-step',`내 걸음 맞추기 · ${onboardingStep} / 2`);
-  setText('onboarding-title',onboardingStep===1?'함께 걸을 때, 내 걸음은?':'함께 이동하는 것이 있나요?');
-  setText('onboarding-copy',onboardingStep===1?'평소 느낌으로 골라 주세요. 정확히 몰라도 괜찮아요.':'여러 개 골라도 돼요. 이동 조건을 맞추는 데 참고해요.');
-  const choices=onboardingStep===1?[['behind','조금 뒤처지는 편이에요'],['similar','비슷하게 걸어요'],['ahead','조금 앞서가는 편이에요'],['unknown','잘 모르겠어요']]:[['none','따로 없어요'],...Object.entries(EQUIPMENT_LABELS)];
-  $('onboarding-answers').innerHTML=choices.map(([v,label])=>{const active=onboardingStep===1?onboardingHint===v:v==='none'?onboardingEquipmentKnown&&!onboardingEquipment.length:onboardingEquipment.includes(v);return `<button class="answer" ${onboardingStep===1?'data-pace-hint':'data-equipment'}="${v}" aria-pressed="${active}"><span>${label}</span><span class="answer-check">${active?'✓':'○'}</span></button>`;}).join('');
-  $('onboarding-next').disabled=onboardingStep===1&&!onboardingHint;
-  $('onboarding-back').hidden=onboardingStep===1;
-  setText('onboarding-next',onboardingStep===1?'다음':'시작하기');
-  setText('onboarding-note',onboardingStep===1?'이 답변을 실제 측정 속도로 표시하지 않아요.':'보조기 종류로 걸음 속도를 단정하지 않아요. 언제든 바꿀 수 있어요.');
+  const one=onboardingStep===1;
+  $('onboarding-step').innerHTML=`<b>${onboardingStep}</b> / 2`;
+  document.querySelectorAll('#onboarding-progress i').forEach((bar,i)=>bar.classList.toggle('on',i<onboardingStep));
+  setText('onboarding-title',one?'다른 사람과 걸으면?':'오늘 함께하는 것이 있나요?');
+  setText('onboarding-copy',one?'처음 길을 추천할 때 참고해요':'여러 개 골라도 돼요. 이동 조건을 맞추는 데 참고해요.');
+  const choices=one?[['behind','조금 뒤처지는 편이에요'],['similar','비슷하게 걷는 편이에요'],['ahead','앞서가는 편이에요'],['unknown','잘 모르겠어요']]:[['none','없음'],...Object.entries(EQUIPMENT_LABELS)];
+  const list=$('onboarding-answers');list.setAttribute('role',one?'radiogroup':'group');list.setAttribute('aria-labelledby','onboarding-title');
+  list.innerHTML=choices.map(([v,label])=>{const active=one?onboardingHint===v:v==='none'?onboardingEquipmentKnown&&!onboardingEquipment.length:onboardingEquipment.includes(v);return `<button class="answer" role="${one?'radio':'checkbox'}" ${one?'data-pace-hint':'data-equipment'}="${v}" aria-checked="${active}"><span>${label}</span><span class="mark" aria-hidden="true">${active?CHECK_MARK:''}</span></button>`;}).join('');
+  $('onboarding-next').disabled=one&&!onboardingHint;
+  $('onboarding-back').hidden=one;
+  setText('onboarding-next',one?'다음':'시작하기');
+  setText('onboarding-hint',one?'걸음 속도는 걷는 동안 맞춰요':'');
+  setText('onboarding-note',one?'나중에 설정할 수 있어요':'보조기 종류로 걸음 속도를 단정하지 않아요. 언제든 바꿀 수 있어요.');
 }
 function finishOnboarding(skip=false) {
   const saved=completeOnboarding(onboardingHint,onboardingEquipment,skip,onboardingEquipmentKnown);
@@ -1418,7 +1440,7 @@ function renderSettings() {
   setText('settings-pace-state',s.label+(s.speed?' · '+kmh(s.speed):''));
   setText('settings-pace-copy',s.speed?'길찾기의 소요 시간에 반영해요. 횡단별 신호 검증은 별도로 필요해요.':'측정 전에는 임시 속도로 소요 시간을 계산해요. 설문 응답은 측정값이 아니에요.');
   setText('equipment-summary',!p.equipmentAnswered?'이동 조건 아직 미응답':p.equipment.length?p.equipment.map(e=>EQUIPMENT_LABELS[e]).join(' · '):'선택한 이동 보조기 없음');
-  setText('settings-message',''); $('reset-learning').dataset.armed='';
+  setText('settings-message',''); $('reset-confirm').hidden=true;
 }
 function updateManualOutput(){setText('manual-speed-value',Number($('manual-speed').value).toFixed(1)+' km/h');}
 function applySettings() {
@@ -1434,32 +1456,45 @@ function applySettings() {
 function snaps(name){const H=phoneH(),mid=name==='result'?Math.min(320,H*.48):name==='walk'?Math.min(255,H*.42):Math.min(264,H*.43);return {peek:mid,mid,full:Math.max(mid,H-112)};}
 function resetHomeSheet(){state.picked=null;if(pickMarker){pickMarker.remove();pickMarker=null;}$('home-intro').hidden=false;$('home-place').hidden=true;$('home-actions').innerHTML='<button class="btn btn-primary" data-locate>내 위치로 출발</button><button class="btn btn-ghost button-small" data-search="from">직접 선택</button>';}
 function renderHome(){
-  mountMap('map-home');clearDyn();setRoutes(null,null);if(gpsFix)addDyn(el('m-me','<i></i>'),gpsFix.ll);if(!state.picked)resetHomeSheet();
-  const s=paceState();setText('home-pace',s.speed?kmh(s.speed):'');setText('home-pace-sub',s.label);setText('home-origin',state.from?tripLabel(state.from):'출발지를 정해 주세요');
+  if(!state.picked)resetHomeSheet();setSheet('home','mid');mountMap('map-home');clearDyn();setRoutes(null,null);if(gpsFix)addDyn(el('m-me','<i></i>'),gpsFix.ll);
+  setText('home-pace',paceRowText(paceState()));setText('home-origin',state.from?tripLabel(state.from):'출발지를 정해 주세요');
   const recent=store.get('recent',[]).slice(0,2);$('home-chips').chips=recent;
   $('home-chips').innerHTML=recent.map((p,i)=>`<button class="recent-row" data-chip="${i}">${esc(p.name)}<span>›</span></button>`).join('')+'<button class="text-action" data-trip="demo">먼저 예시 길 둘러보기 ›</button>';
   setSheet('home','mid');ready(()=>{if(!state.homeView){map.jumpTo({center:state.from?.ll||DEMO_FROM.ll,zoom:15.5});state.homeView=true;}});
 }
+// 횡단 여유 숫자는 방향·길이·점멸 의미·날짜 근거가 함께 검증되기 전(PRODUCT_SPEC §6 gate)에는 만들지 않는다.
+// 숫자 자리에는 숫자가 없는 이유가 되는 상태만 쓴다. 검증 증거가 생기면 이 함수 앞에 근거 확인을 추가한다.
+function marginCellText(ps){return ps.kind==='before'?'측정 전':ps.kind==='learning'?'계산 준비 중':ps.kind==='paused'?'정보 없음':'자료 확인 중';}
+function paceRowText(ps){return ps.kind==='before'?'내 걸음 · '+ps.label:ps.label;}
+function unknownXingText(sim){const n=sim.xings.filter(x=>!x.known).length;return n?`정보 없는 횡단 ${n}곳`:'';}
+// 시트 높이는 내용에 맞추되 지도가 일정 이상 남도록 제한한다. 지도는 시트 위 영역에만 놓인다.
+function fitResultSheet(){
+  const H=phoneH(),foot=$('result-footer');let need=2+(foot.hidden?0:foot.offsetHeight);
+  for(const c of $('sheet-result').querySelector('.sheet-body').children)if(!c.hidden)need+=c.offsetHeight;
+  const open=!$('result-options').hidden;setSheet('result',open?'full':'mid',Math.round(Math.min(Math.max(need,190),open?H-112:H*.62)));
+}
+function setBasisOpen(open){$('result-options').hidden=!open;$('calc-basis').setAttribute('aria-expanded',String(open));}
 async function renderResult(){
   const request=++resultRequest;if(!state.from||!state.to){state.pick=state.to?'from':'to';$('sq').value='';go('search');return;}
   if(state.mode==='actual'&&(!state.routes||state.tripKey!==tripKeyNow())){BASE=nowSeconds();state.routes=null;}
+  setBasisOpen(false);
   mountMap('map-result');setText('from-name',tripLabel(state.from));setText('to-name',state.to.name);
-  const status=$('result-status'),cards=$('route-cards');
+  const status=$('result-status'),content=$('result-content');
   if(state.tripKey!==tripKeyNow()){state.routes=null;state.error=null;}
-  status.hidden=false;cards.hidden=true;$('result-footer').hidden=true;$('result-options').hidden=true;
-  if(!state.routes&&!state.error){status.innerHTML='<b>내 걸음에 맞는 길을 찾고 있어요</b>서울 보행 도로망을 확인하고 있어요.';setSheet('result','mid');setRoutes(null,null);try{await computeTrip();}catch(e){console.error(e);state.error={title:'경로를 확인하지 못했어요',text:'다른 출입구를 선택하거나 다시 찾아 주세요.'};}if(current!=='result'||request!==resultRequest)return;}else refreshSims();
-  if(state.error){status.innerHTML=`<b>${esc(state.error.title)}</b>${esc(state.error.text)}<button class="btn btn-ghost" data-route-retry>다시 찾기</button><button class="btn btn-primary" data-search="from">출발지 바꾸기</button>`;setRoutes(null,null);clearDyn();setSheet('result','mid');return;}
-  status.hidden=true;cards.hidden=false;$('result-footer').hidden=false;$('result-options').hidden=false;
-  const S=state.sims,ps=paceState();setText('result-pace',ps.label);
-  for(const k of ['jjuk','short']){const c=$('card-'+k),sim=S[k];c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.focus===k));const extra=Math.max(0,Math.round((sim.total-S.short.total)/60));
-    c.innerHTML=`<span class="name">${k==='jjuk'?(state.same?'걷기 경로':'덜 부담스러운 길'):'시간 우선 길'}</span><span class="mins">${mins(sim.total)}<small>${extra?'+'+extra+'분':km(sim.meters)}</small></span><span class="margin">${ps.speed?'신호 미확인':'걸음 측정 전'}</span>`;}
-  const sim=S[state.focus],r=state.routes[state.focus];
-  setText('result-note',resultNote({example:state.mode==='example',base:BASE}));
-  setText('budget-label',`추가 ${state.budget/60}분 이내`);
-  setText('route-facts',`경로상 신호 ${sim.knownN+sim.unknownN}곳 · 지도에 표시된 계단 ${r.stairs}구간 · 오르막 추정 ${Math.round(r.rise)}m${r.under.length?' · 입체 구간 미확인':''}`);
+  status.hidden=false;content.hidden=true;$('result-footer').hidden=true;
+  if(!state.routes&&!state.error){status.innerHTML='<b>내 걸음에 맞는 길을 찾고 있어요</b>서울 보행 도로망을 확인하고 있어요.';fitResultSheet();setRoutes(null,null);try{await computeTrip();}catch(e){console.error(e);state.error={title:'경로를 확인하지 못했어요',text:'다른 출입구를 선택하거나 다시 찾아 주세요.'};}if(current!=='result'||request!==resultRequest)return;}else refreshSims();
+  if(state.error){status.innerHTML=`<b>${esc(state.error.title)}</b>${esc(state.error.text)}<button class="btn btn-ghost" data-route-retry>다시 찾기</button><button class="btn btn-primary" data-search="from">출발지 바꾸기</button>`;setRoutes(null,null);clearDyn();fitResultSheet();return;}
+  status.hidden=true;content.hidden=false;$('result-footer').hidden=false;
+  const S=state.sims,ps=paceState(),cell=marginCellText(ps);setText('result-pace',paceRowText(ps));
+  for(const k of ['jjuk','short']){const c=$('card-'+k),sim=S[k];c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.focus===k));const extra=k==='jjuk'?Math.max(0,Math.round((sim.total-S.short.total)/60)):0;
+    c.innerHTML=`<span class="name">${k==='jjuk'?(state.same?'걷기 경로':'편한 길 후보'):'빠른 길'}</span><span class="mins">${mins(sim.total)}${extra?`<small>+${extra}분</small>`:''}</span><span class="margin">${cell}</span>`;}
+  const sim=S[state.focus],r=state.routes[state.focus],unk=unknownXingText(sim);
+  $('unknown-xings').hidden=!unk;setText('unknown-xings-text',unk);
+  setText('result-note',resultNote({example:state.mode==='example',base:BASE})+(state.same?' · 두 후보가 같은 길이에요':''));
+  setText('route-facts',`거리 ${km(sim.meters)} · 경로상 신호 ${sim.knownN+sim.unknownN}곳 · 지도에 표시된 계단 ${r.stairs}구간 · 오르막 추정 ${Math.round(r.rise)}m${r.under.length?' · 입체 구간 미확인':''} · 추가 ${state.budget/60}분 이내`);
   $('cov-note').hidden=false;setText('cov-text','횡단 방향·길이·점멸 시간이 함께 검증되지 않아 건널 여유는 표시하지 않아요.');
   setText('result-safety',`미확인 신호는 곳당 45초 대기를 가정해 소요 시간을 추정해요. 실제 신호·출입구·턱은 현장에서 확인해 주세요. 계단은 OSM 표시 구간, 경사는 지형 추정이며 무장애 경로를 보장하지 않아요.${readProfile().avoidSteps?' 확인된 계단은 제외했어요.':''}${state.same?' 조건 안에서 다른 후보를 찾지 못했어요.':''}`);
-  setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(S,state.focus,false);setSheet('result',$('result-options').open?'full':'mid');
+  setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(S,state.focus,false);fitResultSheet();
   if(state.fitted!==state.tripKey){fit([state.routes.jjuk.coords,state.routes.short.coords]);state.fitted=state.tripKey;}
 }
 function renderDetail(){if(!state.sims)return go('home');const xs=state.sims[state.focus].xings;setText('detail-title',`경로의 횡단 정보 ${xs.length}곳`);$('detail-list').innerHTML=xs.map(x=>`<div class="xing"><span>○</span><div><b>${esc(x.name)}</b><small>${x.known?'과거 신호 이력 있음':'신호 정보 미확인'} · 횡단 여유 미확인</small></div></div>`).join('')+'<p class="note">과거 신호 이력은 지금 켜진 불이 아니에요. 횡단 방향·길이·점멸 시간이 검증되기 전에는 남은 초나 건너도 된다는 안내를 하지 않아요.</p>';}
@@ -1474,7 +1509,10 @@ document.addEventListener('click',e=>{
   if(t.closest('#settings-back'))go(settingsReturn);
   if(t.closest('#settings-apply'))applySettings();
   if(t.closest('#edit-onboarding')){const p=readProfile();onboardingHint=p.paceHint;onboardingEquipment=p.equipment;onboardingEquipmentKnown=p.equipmentAnswered;onboardingStep=1;onboardingTarget='settings';go('onboarding');}
-  if(t.closest('#reset-learning')){const b=$('reset-learning');if(b.dataset.armed==='yes'){resetLearning();applyPace();state.routes=null;state.tripKey=null;renderSettings();setText('settings-message','학습한 걸음을 초기화했어요.');}else{b.dataset.armed='yes';setText('settings-message','한 번 더 누르면 학습한 걸음만 지워요.');}}
+  if(t.closest('#reset-learning')){$('reset-confirm').hidden=false;setText('settings-message','');$('reset-confirm').scrollIntoView({block:'nearest'});$('reset-confirm-no').focus();}
+  if(t.closest('#reset-confirm-no')){$('reset-confirm').hidden=true;$('reset-learning').focus();}
+  if(t.closest('#reset-confirm-yes')){resetLearning();applyPace();state.routes=null;state.tripKey=null;renderSettings();setText('settings-message','맞춰 온 걸음 속도 요약을 지웠어요.');}
+  if(t.closest('#calc-basis')){setBasisOpen($('result-options').hidden);fitResultSheet();}
   if(t.closest('#layer-toggle')){const b=$('layer-toggle'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);setText('layer-toggle',`횡단 정보 표시 ${on?'켜짐':'꺼짐'}`);ready(()=>map.setLayoutProperty('sig-all','visibility',on?'visible':'none'));}
 });
 $('auto-mode').addEventListener('change',()=>{if($('auto-mode').checked)$('manual-mode').checked=false;});
