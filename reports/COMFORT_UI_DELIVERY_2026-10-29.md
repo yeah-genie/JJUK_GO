@@ -26,3 +26,5 @@
 [팀 방향](../docs/PRODUCT_TEAM_BRIEF.md), [역할 실행 범위](../docs/BMAD_TEAM.md), [디자인 검토](COMFORT_DESIGN_REVIEW_2026-10-29.md), [QA 검토](COMFORT_QA_REVIEW_2026-10-29.md), [속도와 Threads 반응](WALKING_PACE_AND_EARLY_RESPONSE_2026-10-29.md).
 
 GitHub 및 공개 배포 확인 결과는 최신 HANDOFF의 배포 식별자를 따른다.
+
+공개 반영 확인: 코드069622f, production `dpl_7CmQ2B6eHVBRixhB1hGi9K8wQY6x` READY, 대표주소 https://jjukgo.vercel.app/ . 공개HTML은 로컬 생성본과 CRLF 정규화 후 일치했다. 공개 브라우저의 예시 경로→+5분 변경→상세→내부 스크롤(309.80px, 표시444px/전체754px)→선택 출발 정보→접기를 확인했다. 고정 CTA는 폰 영역 안에 유지됐다. 실제 기기 터치 검증과는 구분한다. 스크린샷은 로컬 캐시에만 남기고 GitHub에는 문서만 올렸다.

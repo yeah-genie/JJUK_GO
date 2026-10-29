@@ -4,6 +4,8 @@
 
 ## 다음 작업자가 먼저 알아야 할 사항
 
+- **최신 공개 배포 확인:** 편한 길 UI 코드 `069622f95b6241cdadd6f3d6f49f4430545acd09`, Vercel production `dpl_7CmQ2B6eHVBRixhB1hGi9K8wQY6x` READY 및 대표주소 https://jjukgo.vercel.app/ 확인. 공개HTML과 검증한 로컬 생성본이 CRLF 정규화 후 일치. 공개 홈→서대문역/청계광장→+5분 변경→상세 펼침→scrollTop309.80(내용754px/표시444px)→선택 출발 상세→접기 흐름 확인, 걷기 CTA가 폰 영역 안에 유지됨. 실제 Android 터치 검증과 개인속도 구현은 여전히 미완료. GitHub 작업 브랜치에 push했고 기본 브랜치 merge는 하지 않았다.
+
 - **편한 길 UI 개편:** 사용자 태블릿 스크롤 신고와 출발 카운트다운 중심 화면을 수정했다. 독립 스크롤+고정 CTA, 허용시간/계단/오르막/신호 중심 비교, 출발 정보는 선택 상세. [수정·검증](../reports/COMFORT_UI_DELIVERY_2026-10-29.md). Python64/Node VM/CUA390px 스크롤 통과. 실제 Android 터치·현장 GPS·320px/태블릿 입력은 이번 회차 미검증. 공개 배포 식별자는 후속 기록한다.
 - **팀 공통 기준:** [PRODUCT_TEAM_BRIEF](PRODUCT_TEAM_BRIEF.md), [BMAD_TEAM](BMAD_TEAM.md)를 먼저 읽는다. 실제 기획/UX/QA 에이전트 분담 검토 완료, 프로젝트 `_bmad` 정식 초기화는 미완료다. 문서상의 역할 이름과 도구 설치를 혼동하지 않는다.
 - **보행속도/시장 반응:** 현재1.2m/s 고정, 개인별 선택/학습 미구현. 수동 선택→연속 이동 구간 보정이 제안이며 다음 P1이다. 네이버/카카오 정확한 기본 속도·개인 학습은 공식 자료에서 확인하지 못했고 카카오의 ‘편안한 길’ 옵션은 확인했다. Threads 초기 관심은 좋지만 실제 수요 검증 아님. [근거·다음 검증](../reports/WALKING_PACE_AND_EARLY_RESPONSE_2026-10-29.md).
