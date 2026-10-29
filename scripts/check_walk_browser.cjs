@@ -9,24 +9,27 @@ const fs = require('node:fs');
     const context = await browser.newContext({ viewport: { width:390, height:844 }, permissions:['geolocation'], geolocation:{longitude:126.96664,latitude:37.5658,accuracy:8} });
     const page = await context.newPage();
     const errors=[];page.on('pageerror', e=>errors.push(e.message));
-    await page.goto((process.env.UI_BASE_URL || 'http://127.0.0.1:8766') + '/#result');
+    await page.goto((process.env.UI_BASE_URL || 'http://127.0.0.1:8766') + '/#home');
+    await page.getByRole('button',{name:'서대문역 → 청계광장',exact:true}).click();
     await page.waitForFunction(()=>!!state.sims,{timeout:60000});
-    assert.match(await page.locator('#card-jjuk').innerText(), /신호.*계단.*오르막 추정/s);
+    assert.match(await page.locator('#card-jjuk').innerText(), /계단.*오르막 추정.*신호/s);
     assert.equal(await page.locator('#go-card').isVisible(),false);
     assert.equal(await page.locator('#route-cards .strip').count(),0);
-    await page.locator('#result-options summary').click();
+    await page.locator('#result-options > summary').click();
+    assert.equal(await page.locator('#go-card').isVisible(),false);
+    await page.locator('#departure-options > summary').click();
     assert.equal(await page.locator('#go-card').isVisible(),true);
-    await page.locator('[data-budget="180"]').click();
-    assert.equal(await page.locator('#budget-label').innerText(),'+3분까지');
-    await page.locator('#result-options summary').focus();
+    await page.locator('[data-budget="300"]').click();
+    assert.equal(await page.locator('#budget-label').innerText(),'+5분까지');
+    await page.locator('#result-options > summary').focus();
     await page.keyboard.press('Space');
     assert.equal(await page.locator('#go-card').isVisible(),false);
-    assert.match(await page.locator('#go-foot').textContent(), /실시간 아님/);
+    assert.match(await page.locator('#go-foot').textContent(), /현재 신호가 아니/);
     for(const budget of [60,180,120]) {
       await page.evaluate(b=>{state.budget=b;refreshSims();},budget);
       assert(await page.evaluate(()=>{
         const j=state.sims.jjuk,s=state.sims.short;
-        return j.total+j.unknownN*45<=s.total+s.unknownN*45+state.budget+0.1;
+        return j.total<=s.total+state.budget+0.1;
       }));
     }
     const shots=process.env.UI_SHOTS;

@@ -413,7 +413,9 @@ function addDyn(elm, ll, opts = {}) { const m = new maplibregl.Marker({ element:
 function setRoutes(rj, rs) { ready(() => { map.getSource("rj").setData(routeFC(rj)); map.getSource("rs").setData(routeFC(rs)); }); }
 function fit(coordsList, extra = {}) {
   const all = coordsList.flat(); const b = new maplibregl.LngLatBounds(all[0], all[0]); all.forEach(c => b.extend(c));
-  const pad = { top: current === "result" ? (phoneH() < 700 ? 80 : 120) : 90, bottom: sheetH() + 30, left: 34, right: 64, ...extra };
+  const phoneRect=$("phone").getBoundingClientRect(),panel=document.getElementById("sheet-"+current)?.getBoundingClientRect();
+  const sidePanel=panel&&panel.width<phoneRect.width*.8&&panel.left>phoneRect.left+phoneRect.width*.3;
+  const pad = { top: current === "result" ? (phoneH() < 700 ? 80 : 120) : 90, bottom: sidePanel?40:sheetH()+30, left:34, right:sidePanel?panel.width+48:64,...extra };
   ready(() => map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }));
 }
 function markTrip(sims, focus, forecasts = true) {
@@ -487,6 +489,11 @@ const phoneH = () => $("phone").clientHeight;
 function sheetH() { const s = sheets[current]; return s ? s.h : 0; }
 function snaps(name) {
   const sh = $("sheet-" + name), H = $("phone").clientHeight, body = sh.querySelector(".sheet-body");
+  if (name === "result") {
+    const grip = sh.querySelector(".grip-area").offsetHeight;
+    const mid = Math.min(Math.max(180, Math.round(H * .68)), H - 70);
+    return {peek:grip+54,mid,full:Math.max(mid,H-(H<500?64:100))};
+  }
   const wasPeek = sh.classList.contains("peek");
   sh.classList.remove("peek");  // 펼친 내용 높이로 재야 한다
   const grip = sh.querySelector(".grip-area").offsetHeight;
@@ -512,6 +519,9 @@ function setSheet(name, pos, px) {
 function setPeek(name, html) { const el = $("sheet-" + name).querySelector("[data-peek]"); if (el) el.innerHTML = html; }
 function initSheet(name) {
   const sh = $("sheet-" + name), grip = sh.querySelector(".grip-area");
+  grip.setAttribute("role","button"); grip.tabIndex = 0;
+  grip.setAttribute("aria-label","패널 높이 바꾸기");
+  grip.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSheet(name,sheets[name].pos === "full" ? "mid" : "full"); } });
   let y0 = 0, h0 = 0, moved = false;
   grip.addEventListener("pointerdown", e => { y0 = e.clientY; h0 = sheets[name].h; moved = false; sh.classList.add("dragging"); grip.setPointerCapture(e.pointerId); });
   grip.addEventListener("pointermove", e => {
@@ -670,36 +680,32 @@ document.addEventListener("visibilitychange", () => {
 // ---------- 출발 시각 (쭉고의 중심) ----------
 // 지금 보는 길 그대로, 지금(dep=0)부터 15분 사이 5초 간격으로 출발해 보며
 // 가장 덜 멈추는 출발과 마감에 맞는 가장 늦은 출발을 찾는다. (출발마다 길을 바꾸면 비교가 흐려진다)
-function planDeparture() {
-  const R = state.routes[state.same ? "jjuk" : state.focus], opts = [];
-  for (let d = 0; d <= 900; d += 5) { const s = simulate(R, d); opts.push({ d, s, arr: BASE + d + s.total }); }
-  if (!opts.length) return null;
-  const dl = state.deadline, ok = o => dl == null || o.arr <= dl - 30;  // 마감 30초 전까지 도착
-  // 마감에 맞는 출발이 5분 안에 하나도 없으면 마감은 빼고 덜 멈추는 출발만 고른다
-  const soon = opts.filter(o => o.d <= 300 && ok(o)).length ? opts.filter(o => o.d <= 300 && ok(o)) : opts.filter(o => o.d <= 300);
-  const best = (soon.length ? soon : opts.slice(0, 1)).slice().sort((a, b) => a.s.stops - b.s.stops || a.arr - b.arr || a.d - b.d)[0];
-  const latest = dl == null ? null : opts.filter(ok).pop() || null;
-  return { now: opts[0], best, latest };
-}
 const fmtSlack = s => s >= 60 ? `${Math.floor(s / 60)}분` + (s % 60 >= 30 ? " 30초" : "") : `${Math.max(0, Math.round(s))}초`;
 function renderGoCard() {
-  const wrap = $("go-wrap"), el = $("go-card"), S = state.sims;
-  if (!S || S.jjuk.knownN + S.short.knownN === 0) { wrap.hidden = true; return null; }
-  const p = planDeparture();
-  if (!p) { wrap.hidden = true; return null; }
-  const { now, best, latest } = p, dl = state.deadline;
-  const better = best.d > 0 && (best.s.stops < now.s.stops || best.arr < now.arr - 5);
-  const pick = better ? best : now, when = pick.d === 0 ? "지금" : (pick.d < 60 ? pick.d + "초" : phrase(pick.d)) + " 뒤";
-  const stat = (label, val, bad) => `<div class="${bad ? "bad" : ""}"><span>${label}</span><b>${val}</b></div>`;
-  let h = `<div class="gc-head">과거 패턴으로 비교한 출발 시각</div>
-    <div class="gc-big">${when} 출발</div>
-    <div class="gc-stats">${stat("예측 신호 멈춤", pick.s.stops + "번")}${stat("신호 대기", mmss(pick.s.wait))}${stat("도착 예상", clock(pick.arr), dl != null && pick.arr > dl)}</div>`;
-  if (better) h += `<div class="gc-row">${state.dep === best.d ? `<span class="on">✓ 선택됨</span>` : `<button class="use" data-dep-use="${best.d}">이 시각 선택</button>`}<span class="note2">지금 출발하면 ${now.s.stops}번 멈춤</span></div>`;
-  if (dl != null) h += `<div class="gc-head">${clock(dl)} 마감 · ${latest ? `${clock(BASE + latest.d)}까지 출발` : pick.arr > dl ? `약 ${phrase(pick.arr - dl).trim()} 늦음` : "도착 여유 30초 미만"}</div>`;
-  el.innerHTML = h;
-  $("go-foot").textContent = `신호 ${now.s.knownN}곳 예측` + (now.s.unknownN ? ` · ${now.s.unknownN}곳은 45초씩 가정` : "") + ` · 공식 이력 기반 · 실시간 아님`;
+  const wrap = $("go-wrap"), sim = state.sims?.[state.same ? "jjuk" : state.focus];
+  if (!sim) { wrap.hidden = true; return; }
+  $("go-card").innerHTML = `<strong>${clock(BASE + state.dep)} 출발 기준</strong>예상 도착 ${clock(BASE + state.dep + sim.total)}<br>패턴이 있는 신호의 예상 대기 ${mmss(sim.wait)}`;
+  $("go-foot").textContent = `과거 이력으로 비교해요. 현재 신호가 아니에요.` + (sim.unknownN ? ` 미확인 ${sim.unknownN}곳은 45초씩 가정했어요.` : "");
   wrap.hidden = false;
-  return { pick, when };
+}
+function comfortCopy(routes, sims, focus, same, budget) {
+  const allowance = budget ? `${budget/60}분 더 걸어도 되는 조건` : "같은 예상 시간 조건";
+  if (same) return {title:"이 조건에선 같은 길이에요",copy:`${allowance}에서 덜 힘든 다른 후보를 찾지 못했어요.`};
+  if (focus === "short") return {title:"도착 시간을 우선한 길",copy:"비교한 후보 중 예상 시간이 짧은 길이에요."};
+  const a=routes.short,b=routes.jjuk,as=sims.short,bs=sims.jjuk;
+  const stairs=a.stairs-b.stairs,stairsComparable=!a.under?.length&&!b.under?.length;
+  const terrainComparable=stairsComparable&&a.length>0&&b.length>0&&a.terrainMeters/a.length>=.8&&b.terrainMeters/b.length>=.8;
+  const rise=terrainComparable?a.rise-b.rise:0;
+  const signals=as.knownN+as.unknownN-bs.knownN-bs.unknownN;
+  const title=stairs>0&&stairsComparable?"지도상 계단이 적은 후보":rise>=10?"오르막 추정이 적은 후보":signals>0?`지도상 신호가 ${signals}곳 적은 후보`:"비슷한 조건의 다른 경로";
+  const extra=bs.total-as.total,parts=[Math.abs(extra)>2?`예상 ${phrase(extra)} ${extra>0?"더":"덜"} 걸려요`:"예상 시간은 거의 같아요"];
+  if(stairs<0)parts.push(`검출 계단 ${-stairs}구간은 더 지나가요`);
+  if(stairs>0&&stairsComparable)parts.push(`지도에 표시된 계단 ${stairs}구간이 적어요`);
+  if(rise<=-10)parts.push(`지형상 상승량 추정은 약 ${Math.round(-rise/5)*5}m 더 있어요`);
+  if(signals<0)parts.push(`신호는 ${-signals}곳 더 지나가요`);
+  if(rise>=10)parts.push(`지형상 상승량 추정은 약 ${Math.round(rise/5)*5}m 적어요`);
+  parts.push("계단·지형은 지도 자료의 추정이에요");
+  return {title,copy:parts.join(". ")+"."};
 }
 // '이번 신호 놓쳐도 괜찮아?' 한 줄. 마감이 있으면 여유와 비교한다. 뛰라고 하지 않는다.
 function missLine(x, sim) {
@@ -755,7 +761,7 @@ async function renderResult() {
   $("from-name").innerHTML = esc(tripLabel(state.from)) + (state.from.sub ? `<small>${esc(state.from.sub)}</small>` : "");
   $("to-name").innerHTML = esc(state.to.name) + (state.to.sub ? `<small>${esc(state.to.sub)}</small>` : "");
   const st = $("result-status"), cards = $("route-cards");
-  const waitUI = on => { ["tradeoff", "result-actions", "result-heading", "result-note", "result-options"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
+  const waitUI = on => { ["tradeoff", "result-footer", "result-heading", "result-note", "result-options", "comfort-summary", "comfort-budget"].forEach(id => $(id).hidden = !on); if (!on) $("go-wrap").hidden = true; };
   if (state.tripKey !== tripKeyNow()) { state.routes = null; state.error = null; }
   if (!state.routes && !state.error) {
     st.hidden = false; st.innerHTML = "<b>길 찾는 중…</b>지도 데이터를 받고 있어요."; cards.hidden = true; waitUI(false);
@@ -782,52 +788,35 @@ async function renderResult() {
     const sim = S[k], c = $("card-" + k);
     c.hidden = k === "short" && state.same;
     c.setAttribute("aria-pressed", String(state.focus === k));
-    const name = k === "jjuk" ? "쭉고" : "빠른 길";
+    const name = k === "jjuk" ? (state.same ? "추천 경로" : "쭉고 추천") : "시간 우선";
     const route = state.routes[k];
     const stairText = route.under.length && !route.stairs ? "미확인" : `${route.stairs}구간${route.under.length ? " 이상" : ""}`;
     c.innerHTML = `<span class="name">${name}</span><span class="mins">${mins(sim.total)}</span>
-      <span class="route-facts"><span><small>신호</small><b>${sim.knownN + sim.unknownN}곳</b></span><span><small>계단</small><b>${stairText}</b></span><span><small>오르막 추정</small><b>${route.terrainMeters > 0 ? `약 ${Math.round(route.rise)}m↑` : "미확인"}</b></span></span>`;
+      <span class="route-facts"><span><small>계단</small><b>${stairText}</b></span><span><small>오르막 추정</small><b>${route.terrainMeters > 0 ? `약 ${Math.round(route.rise)}m↑` : "미확인"}</b></span><span><small>신호</small><b>${sim.knownN + sim.unknownN}곳</b></span></span>`;
   }
-  const kn = S.jjuk.knownN + S.short.knownN, dWalk = S.jjuk.walk - S.short.walk;
-  let t;
-  if (state.same) t = S.jjuk.unknownN + S.jjuk.knownN === 0 ? "신호 없이 쭉 갈 수 있어요." : "기다림까지 따진 최단 시간 길이 신호도 가장 적어요.";
-  else if (kn) {
-    const dWait = S.short.wait - S.jjuk.wait, dStops = S.short.stops - S.jjuk.stops, dUnk = S.short.unknownN - S.jjuk.unknownN;
-    if (dWait > 5) t = `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}${phrase(dWait)} 덜 기다려요.`;
-    else if (dStops > 0) t = `${dStops}번 덜 멈춰요.`;
-    else if (dUnk > 0) t = `신호를 ${dUnk}곳 덜 지나요.`;
-    else t = "지금은 두 길의 기다림이 비슷해요.";
-  } else {
-    const dSig = S.short.unknownN - S.jjuk.unknownN;
-    t = dSig > 0 ? `${dWalk > 20 ? phrase(dWalk) + " 더 걷고, " : ""}신호를 ${dSig}곳 덜 지나요.` : "두 길이 지나는 신호 수가 같아요.";
-  }
-  const a = state.routes.short, b = state.routes.jjuk;
-  const reductions = [];
-  if (a.stairs > b.stairs) reductions.push(`계단 ${a.stairs - b.stairs}구간`);
-  if (a.rise - b.rise > 2) reductions.push(`오르막 약 ${Math.round(a.rise - b.rise)}m`);
-  const extra = S.jjuk.total - S.short.total;
-  const savedWait = S.short.wait - S.jjuk.wait;
-  if (savedWait > 5) reductions.push(`신호 대기 ${phrase(savedWait)}`);
-  $("tradeoff").textContent = state.same ? `+${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : `${extra > 2 ? `약 ${phrase(extra)} 더 걸리고, ` : ""}${reductions.length ? reductions.join(" · ") + " 줄여요." : t}`;
-  $("tradeoff").hidden = state.same;
+  const comfort = comfortCopy(state.routes,S,state.focus,state.same,state.budget);
+  $("comfort-summary").classList.toggle("is-same",state.same);
+  $("comfort-title").textContent = comfort.title;
+  $("comfort-copy").textContent = comfort.copy;
+  $("tradeoff").hidden = true;
   document.querySelectorAll("[data-budget]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.budget === state.budget)));
-  $("budget-label").textContent = `+${state.budget / 60}분까지`;
+  $("budget-label").textContent = state.budget ? `+${state.budget / 60}분까지` : "같은 시간";
   const selected = S[state.focus], selectedRoute = state.routes[state.focus];
   $("route-facts").innerHTML = `${statLine(selected)}<br>검출 계단 ${selectedRoute.stairs}구간 · 지형 상승 약 ${Math.round(selectedRoute.rise)}m${selectedRoute.under.length ? " · 입체구간 미확인" : ""}${state.same ? `<br>추가 ${state.budget / 60}분 안에서 더 나은 후보를 찾지 못했어요.` : ""}`;
   $("result-note").textContent = `${state.mode === "example" ? "08:40 예시" : clock(BASE) + " 출발 기준"} · 이력 추정 · 미확인 신호45초/곳 포함`;
   $("result-mode").textContent = state.mode === "example" ? "예시" : "이력 추정";
-  $("start-walk").textContent = "걷기 시작";
+  $("start-walk").textContent = "이 길로 걷기";
   document.querySelectorAll("[data-dep]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.dep === state.dep)));
   // 패턴이 없는 길: 기다림 대신 신호 개수로 비교한다고 지도 위에 알린다
   const anyKnown = S.jjuk.knownN + S.short.knownN > 0, anyUnknown = S.jjuk.unknownN + S.short.unknownN > 0;
-  $("cov-note").hidden = !anyUnknown || !$("go-wrap").hidden;  // 출발 카드가 있으면 그 각주로 대신
+  $("cov-note").hidden = !anyUnknown;  // 출발 상세가 닫혀 있어도 미확인 가정을 표시
   $("cov-text").textContent = anyKnown ? "미확인 신호는 곳당45초 가정으로 비교해요" : "신호 주기를 몰라 곳당45초 가정으로 비교해요";
   $("result-safety").textContent = `${REAL.source_dates.length}일 공식 이력 · 시간대별 검증 패턴 기준, 실시간 아님. 미확인 신호는 곳당45초 가정이며 실제 대기는 다를 수 있어요. 출입구 연결35m 이내도 현장 확인이 필요해요. 세 후보를 비교하며 전체 최적 경로를 보장하지 않아요. 계단은 OSM 검출 구간, 오르막은 약120m 지형망 추정(육교·지하 제외). 무장애 경로 보장 아님.`;
   setRoutes(state.focus === "jjuk" || state.same ? state.routes.jjuk : state.routes.short, state.same ? null : (state.focus === "jjuk" ? state.routes.short : state.routes.jjuk));
   ready(() => { map.setPaintProperty("route-jjuk", "line-color", state.focus === "jjuk" ? "#F6C343" : "#9AA3B2"); });
   markTrip(S, state.focus);
   const fk = state.same ? "jjuk" : state.focus;
-  setPeek("result", `<span>${clock(BASE + state.dep)} 선택 경로 · ${mins(S[fk].total)}</span><small>올려서 비교</small>`);
+  setPeek("result", `<span>${mins(S[fk].total)} · 선택한 걷기 경로</span>`);
   setSheet("result", sheets.result?.pos === "full" ? "full" : sheets.result?.pos || "mid");
   if (!state.fitted || state.fitted !== state.tripKey) { fit([state.routes.jjuk.coords, state.routes.short.coords]); state.fitted = state.tripKey; }
 }
@@ -1188,7 +1177,7 @@ document.addEventListener("click", e => {
 $("result-options").addEventListener("toggle", () => {
   if (current !== "result") return;
   setSheet("result", $("result-options").open ? "full" : "mid");
-  if (!$("result-options").open) $("sheet-result").querySelector(".sheet-body").scrollTop = 0;
+
 });
 $("sq").addEventListener("input", () => renderSearchList());
 $("sq").addEventListener("keydown", e => { if (e.key === "Enter") { const r = $("search-list").results; if (r && r.length && $("sq").value.trim()) choosePlace(r[0]); } });

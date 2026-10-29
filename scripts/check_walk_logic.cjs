@@ -26,6 +26,13 @@ vm.runInContext(`
   assert.equal(sigWait('test',28800,'s'),null);
   REAL={signals:{},source_dates:[]};
   assert.equal(state.from,null);assert.equal(state.to,null);
+  const comfortRoutes={short:{stairs:2,rise:50,terrainMeters:300,length:300},jjuk:{stairs:3,rise:20,terrainMeters:300,length:300}};
+  const comfortSims={short:{total:600,knownN:1,unknownN:1},jjuk:{total:660,knownN:1,unknownN:1}};
+  const comfort=comfortCopy(comfortRoutes,comfortSims,'jjuk',false,120);
+  assert(comfort.title.includes('오르막 추정'));assert(comfort.copy.includes('30m'));assert(comfort.copy.includes('계단 1구간은 더'));
+  const sameComfort=comfortCopy(comfortRoutes,comfortSims,'jjuk',true,120);
+  assert(sameComfort.title.includes('같은 길'));assert(!sameComfort.title.includes('줄이는'));
+  assert(comfortCopy(comfortRoutes,comfortSims,'short',false,120).title.includes('도착 시간'));
   // Direction matters: descending is not climbing; missing/grade-separated is unknown.
   G.node.set(1, { x:100, y:100, h:10 }); G.node.set(2, { x:200, y:100, h:30 });
   assert.equal(edgeRise({cls:2},1,2),20);

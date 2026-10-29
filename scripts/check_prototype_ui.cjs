@@ -63,23 +63,16 @@ const assert = require('node:assert/strict');
       $('result-options').open = true;
       $('from-name').textContent = '서대문역';
       $('to-name').textContent = '청계광장';
-      state.sims = { jjuk: { knownN: 2 }, short: { knownN: 2 } };
-      // Fixture isolates rendering from routing and real signal data.
-      planDeparture = () => ({
-        now: { d: 0, arr: 33010, s: { stops: 2, knownN: 2, unknownN: 5 } },
-        best: { d: 55, arr: 32980, s: { stops: 0, wait: 0 } }, latest: null,
-      });
+      state.sims = {jjuk:{knownN:2,unknownN:5,total:600,wait:20},short:{knownN:2,unknownN:5,total:600,wait:20}};
+      state.focus='jjuk';state.same=false;
       renderGoCard();
+      $('departure-options').open=true;
     });
     const card = await page.locator('#go-card').innerText();
-    assert.match(card, /도착 여유 30초 미만/);
-    assert.doesNotMatch(card, /늦음/);
-    assert.match(await page.locator('#go-foot').innerText(), /5곳 대기시간 미반영/);
-    await page.evaluate(() => { state.deadline = 32000; renderGoCard(); });
-    assert.match(await page.locator('#go-card').innerText(), /늦음/);
-    await page.evaluate(() => { state.deadline = null; renderGoCard(); });
-    assert.doesNotMatch(await page.locator('#go-card').innerText(), /마감/);
+    assert.match(card,/출발 기준/);
+    assert.doesNotMatch(card,/초 뒤 출발/);
+    assert.match(await page.locator('#go-foot').innerText(),/미확인 5곳은 45초씩/);
     if (process.env.UI_SHOTS) await page.screenshot({ path: path.join(process.env.UI_SHOTS, 'result-card.png') });
-    console.log('PASS: time controls, validation, restore, day bounds, responsive layout, deadline card states');
+    console.log('PASS: time controls, validation, restore, day bounds, responsive layout, optional departure summary');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
