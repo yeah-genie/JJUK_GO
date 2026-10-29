@@ -21,7 +21,7 @@ const context = vm.createContext({
   addEventListener(type, fn) { listeners[type] = fn; }, clearInterval() {},setTimeout(){return 0;},cancelAnimationFrame(){},
 });
 const app = fs.readFileSync(path.join(__dirname, '../docs/prototype/src/app.js'), 'utf8').replace('/*WALKING_PROFILE*/',fs.readFileSync(path.join(__dirname,'../docs/prototype/src/walking-profile.js'),'utf8')).replace('/*ASPHALT_UI*/',fs.readFileSync(path.join(__dirname,'../docs/prototype/src/screens.js'),'utf8')).replace(/boot\(\);\s*$/, '');
-vm.runInContext(app, context);
+vm.runInContext(app+'\n'+fs.readFileSync(path.join(__dirname,'../docs/prototype/src/walk-card.js'),'utf8'), context);
 vm.runInContext(`
   SPEED=1.2;
   REAL = {signals:{'test':{bands:[{start:28800,end:32400,legs:{n:{day0:0,ref:0,c:120,win:[[0,30]]}}}]}},source_dates:[]};
@@ -126,3 +126,14 @@ vm.runInContext(`
   ({mountMap,setRoutes,markTrip,setSheet,fit}=originals);
 `,context);
 console.log("PASS navigation: signal direction/time validity, terrain direction, route budget, projection, GPS rejection, retry, snap, destination preservation and walk initialization");
+
+vm.runInContext(`
+  current='home';let calls=[],success=null,failure=null;
+  navigator.geolocation={getCurrentPosition(ok,fail,opts){calls.push({ok,fail,opts});}};
+  requestLocation(p=>success=p,e=>failure=e);assert.equal(calls[0].opts.enableHighAccuracy,false);
+  calls[0].fail({code:3});assert.equal(calls.length,2);assert.equal(calls[1].opts.enableHighAccuracy,true);
+  calls[1].ok({coords:{accuracy:8}});assert.equal(success.coords.accuracy,8);
+  calls=[];requestLocation(()=>{},e=>failure=e);calls[0].fail({code:1});assert.equal(calls.length,1);assert.equal(failure.code,1);
+  calls=[];requestLocation(p=>success=p,()=>{});calls[0].ok({coords:{accuracy:500}});assert.equal(calls.length,2);calls[1].fail({code:3});assert.equal(success.coords.accuracy,500);
+`,context);
+console.log('PASS GPS acquisition: fast first, precision retry, no permission loop, coarse confirmation fallback');
