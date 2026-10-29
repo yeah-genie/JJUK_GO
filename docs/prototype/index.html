@@ -1516,7 +1516,7 @@ async function renderResult(){
   status.hidden=true;content.hidden=false;$('result-footer').hidden=false;
   const S=state.sims,ps=paceState(),cell=marginCellText(ps);setText('result-pace',paceRowText(ps));
   for(const k of ['jjuk','short']){const c=$('card-'+k),sim=S[k];c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.focus===k));const extra=k==='jjuk'?Math.max(0,Math.round((sim.total-S.short.total)/60)):0;
-    c.innerHTML=`<span class="name">${k==='jjuk'?(state.same?'걷기 경로':'편한 길 후보'):'빠른 길'}</span><span class="mins">${mins(sim.total)}${extra?`<small>+${extra}분</small>`:''}</span><span class="margin">${cell}</span>`;}
+    c.innerHTML=`<span class="name">${k==='jjuk'?(state.same?'걷기 경로':'여유 있는 길'):'빠른 길'}</span><span class="mins">${mins(sim.total)}${extra?`<small>+${extra}분</small>`:''}</span><span class="margin">${cell}</span>`;}
   const sim=S[state.focus],r=state.routes[state.focus],unk=unknownXingText(sim);
   $('unknown-xings').hidden=!unk;setText('unknown-xings-text',unk);
   setText('result-note',resultNote({example:state.mode==='example',base:BASE})+(state.same?' · 두 후보가 같은 길이에요':''));

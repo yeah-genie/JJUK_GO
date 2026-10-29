@@ -209,7 +209,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert(!(await page.evaluate(() => state.same)), '종각역→혜화역은 서로 다른 후보(시험 전제)');
       assert(await visible(page, '#card-jjuk')); assert(await visible(page, '#card-short'));
       const rows = await page.evaluate(() => ['jjuk', 'short'].map(k => { const c = document.getElementById('card-' + k), S = state.sims; return { name: c.querySelector('.name').textContent, t: c.querySelector('.mins').textContent, margin: c.querySelector('.margin').textContent, extra: Math.max(0, Math.round((S[k].total - S.short.total) / 60)), pressed: c.getAttribute('aria-pressed') }; }));
-      assert.equal(rows[0].name, '편한 길 후보'); assert.equal(rows[1].name, '빠른 길');
+      assert.equal(rows[0].name, '여유 있는 길'); assert.equal(rows[1].name, '빠른 길');
       assert(rows[0].extra >= 1 && rows[0].t.includes(`+${rows[0].extra}분`), `${tag} 편한 길 추가 시간 ${JSON.stringify(rows[0])}`); assert(!/\+\d/.test(rows[1].t));
       assert(/\d+분/.test(rows[0].t) && /\d+분/.test(rows[1].t)); assert.deepEqual(rows.map(r => r.pressed), ['true', 'false']);
       assert.deepEqual(rows.map(r => r.margin), ['측정 전', '측정 전']);
