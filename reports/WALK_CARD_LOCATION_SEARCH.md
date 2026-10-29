@@ -24,4 +24,10 @@
 - Node: 기본 경로/시뮬레이션, 빠른 위치→정밀 재시도·권한 거부 무반복·대략 위치 확인 fallback, 저속 학습·중단 구간 궤적 분리·좌표 비저장, 카드 실제/예시 구분·분리 polyline, 공개 검색 입력/서울 범위/캐시/요청 간격 통과.
 - 브라우저: 로고 화면, 최근 두 곳 홈에서 본문 content/clientHeight 모두215px, 아이콘 중심 오차 약0px, 공개 검색 결과와 추가 출입구 선택, 결과에서 계산 기준 제거·설정 이동, 걷기 종료 카드와 PNG 저장 성공. 오류 로그 없음.
 - 360×640 iframe에서 홈 최근 두 곳·예시·CTA가 모두 보이는 화면 확인. 실제 모바일 GPS의 야외 정확도와 보행 학습은 미검증.
-- 배포 식별자와 온라인 검사 결과는 완료 후 아래에 기록한다.
+- Python 59개(2.80초) 및 Node 4종 통과. GitHub head 21b6073의 test check 둘과 Vercel check success. [PR #5](https://github.com/yeah-genie/JJUK_GO/pull/5) 병합 e7d2d2c 완료. 동시 Claude의 PRODUCT_DEFINITION 정정(1ad4a6f)도 병합 결과에 보존했다.
+- 운영 배포 `dpl_65EzhkBiuQnehGFBrZ8c5bxicZ6U`, 소스 e7d2d2c, production READY 및 `https://jjukgo.vercel.app/` 확인. `/api/places?q=광화문` HTTP200, 장소12개 응답 확인.
+- 운영 브라우저에서 시작 로고→홈, 횡단 토글 없음, 계산 기준 설정 이동, 예시 경로→걷기 종료→카드→PNG 저장 성공을 확인했다. 오류 로그 없음. [운영 카드](ui/walk-card-location/production-card.png). 이 이미지는 예시 경로이며 실제 보행 인증으로 주장하지 않는다.
+
+### 남은 GPS 문제
+
+운영 내장 브라우저의 실제 초기 위치 요청도 확인했다. 빠른 요청→정밀 재시도 후 위치값을 받지 못해 실패 안내가 표시됐다. 이 실패는 해결 완료로 세지 않는다. 실패 시 홈 본문 content/clientHeight 모두257px로 안내와 CTA도 잘리지 않았다. 실제 Chrome/Safari·휴대전화 수신과 야외 학습 검증이 남아 있다. 수신하지 못한 좌표나 이동 기록을 임의로 채우지 않았다.
