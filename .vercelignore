@@ -1,17 +1,4 @@
-.git
-.venv
-node_modules
-datastore
-reports
-research_notes
-_bmad
-.claude
-docs/assets
-docs/reference
-docs/discussions
-docs/experiments
-*.log
-.pytest_cache
-.test-tmp*
-
-docs/prototype/_qa.html
+# 배포 크기를 Vercel 한도(약 100MB) 안으로 유지한다.
+# 신호 시간대 패턴(약 30MB)은 '빠른 길 vs 쭉고 길' 비교판에서 쓰지 않는다(신호 예측 숫자는 닫혀 있음).
+# 저장소에는 남겨 두고 배포에서만 뺀다. 앱은 파일이 없으면 신호를 '모름'으로 처리한다.
+docs/prototype/seoul/signal-hours
