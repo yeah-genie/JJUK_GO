@@ -134,3 +134,12 @@ python -m pytest -q
 ## 확인이 필요한 가정
 - 하루 1,000회 한도: 공식 API 페이지에는 적혀 있지 않다. 그린인 개발자 사례와 일반 안내를 근거로 잡은 값이다.
 - 응답 JSON 구조와 상태 필드 이름(`*StatNm`): 공식 출력 목록을 기준으로 했다. 실제 응답이 다르면 `meta/api_probe.json`의 `sample_keys`를 보고 `src/jjukgo/normalize.py`의 `FIELD_RE`를 고친다.
+
+## 횡단보도 길이 수집(OA-21209)
+서울 열린데이터광장 "서울시 대로변 횡단보도 위치정보"(서비스명 `tbTraficCrsng`)를 전량 내려받는 일회성 작업이다. `scripts/fetch_crosswalks.py`가 1,000건씩 끝까지 받고(재시도·대기 포함), 받은 행 수가 `list_total_count`와 다르면 실패한다.
+
+- **사용자가 할 일**: GitHub → Actions → `crosswalk-data` → Run workflow 를 한 번 누른다. 자동·예약 실행은 없다.
+- **키**: 저장소 Secret `SEOUL_OPENAPI_KEY`(이름만 적는다. 값은 문서·코드·채팅 어디에도 붙이지 않는다). 로그와 오류 메시지에서도 키를 가린다.
+- **결과 위치**: 워크플로 artifact `crosswalk-data`, 그리고 `data` 브랜치의 `crosswalk/oa21209_rows.csv.gz`(전 컬럼 원본)와 `crosswalk/oa21209_summary.json`(행 수, NODE/LINK 수, `LNKG_LEN` 최소·중앙·최대·0 개수, 구별 건수, 좌표 범위, 수령 시각). 실패하면 `data` 브랜치는 건드리지 않는다.
+- **수동 점검**: `python scripts/fetch_crosswalks.py --sample` 은 `sample` 키로 1~5행만 받는다.
+- **한계**: `LNKG_LEN`의 단위(미터로 추정), 결측, 이상치, 좌표계는 수령 후 `summary.json`을 보고 확인한다. 수집 단계에서는 값을 고치거나 변환하지 않는다. 실제 키 응답 구조는 아직 확인되지 않아, 코드는 응답이 다르면 실패하고 원인(코드·메시지)만 보고한다.

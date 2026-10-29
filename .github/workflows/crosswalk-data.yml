@@ -1,0 +1,56 @@
+name: crosswalk-data
+
+# 서울시 대로변 횡단보도 위치정보(OA-21209, tbTraficCrsng)를 전량 내려받는다.
+# 사람이 Run workflow를 눌렀을 때만 실행한다(예약 실행 없음).
+# 결과는 workflow artifact 와 data 브랜치의 crosswalk/ 에 남긴다. 인증키는 Secret SEOUL_OPENAPI_KEY.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-maint
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch crosswalks
+        id: fetch
+        env:
+          SEOUL_OPENAPI_KEY: ${{ secrets.SEOUL_OPENAPI_KEY }}
+        run: |
+          if [ -n "$SEOUL_OPENAPI_KEY" ]; then echo "::add-mask::$SEOUL_OPENAPI_KEY"; fi
+          python scripts/fetch_crosswalks.py
+      - name: Summary
+        if: steps.fetch.outcome == 'success'
+        run: |
+          {
+            echo '### 횡단보도 수집(OA-21209)'
+            echo '```json'
+            cat crosswalk-data/oa21209_summary.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crosswalk-data
+          path: crosswalk-data/
+          if-no-files-found: ignore
+      - name: Save to data branch
+        if: steps.fetch.outcome == 'success'
+        run: |
+          bash scripts/data_branch.sh checkout
+          mkdir -p datastore/crosswalk
+          cp crosswalk-data/oa21209_rows.csv.gz crosswalk-data/oa21209_summary.json datastore/crosswalk/
+          bash scripts/data_branch.sh push "crosswalk OA-21209 $(date -u +%Y-%m-%dT%H:%MZ)"
