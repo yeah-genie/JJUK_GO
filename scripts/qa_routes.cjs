@@ -15,7 +15,7 @@ fs.mkdirSync(out, { recursive: true });
     await p.addInitScript(() => localStorage.setItem('jjukgo:profile', JSON.stringify({ version: 2, onboarded: true })));
     const url = `http://127.0.0.1:8771/?from=${od.from.join(',')}&to=${od.to.join(',')}&fn=${encodeURIComponent(od.fn)}&tn=${encodeURIComponent(od.tn)}`;
     const t0 = Date.now();
-    await p.goto(url);
+    try { await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 }); } catch (e) { errs.push('열기 시간 초과'); }
     try { await p.waitForSelector('#s-result:not([hidden]) #result-content:not([hidden]), #s-result:not([hidden]) #result-status b', { timeout: 120000 }); } catch (e) { errs.push('시간 초과'); }
     await p.waitForTimeout(2000);
     const r = await p.evaluate(() => {
