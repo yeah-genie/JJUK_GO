@@ -17,3 +17,12 @@ build/
 # OS
 .DS_Store
 datastore/
+
+*.log
+
+.test-tmp*/
+.pytest_cache/
+
+docs/prototype/_qa.html
+
+reports/ui/asphalt-implementation/*-full.png

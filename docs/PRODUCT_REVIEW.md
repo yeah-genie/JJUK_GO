@@ -1,3 +1,5 @@
+> 과거 설계·검증 기록입니다. 현재 구현 기준은 [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md), [HANDOFF](HANDOFF.md)입니다. 아래 기능 목록은 현재 요구사항이 아닙니다.
+
 # 쭉고 제품 흐름 검토
 
 검토일: 2026-10-28 (Asia/Seoul). Product Design `audit` 절차로 로컬 수정본을 직접 실행해 캡처·검토했다. BMAD 플러그인은 설치됐지만 이 검토에서 BMAD 다중 에이전트 토론을 실행한 것은 아니다.

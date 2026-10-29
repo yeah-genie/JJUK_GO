@@ -1,0 +1,17 @@
+.git
+.venv
+node_modules
+datastore
+reports
+research_notes
+_bmad
+.claude
+docs/assets
+docs/reference
+docs/discussions
+docs/experiments
+*.log
+.pytest_cache
+.test-tmp*
+
+docs/prototype/_qa.html

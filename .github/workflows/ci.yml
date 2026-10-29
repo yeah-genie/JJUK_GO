@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    paths-ignore: ["docs/**", "*.md"]
+    paths-ignore: ["docs/**/*.md", "reports/**", "research_notes/**", "*.md"]
   pull_request:
 
 jobs:
@@ -15,3 +15,11 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python scripts/build_prototype.py
+      - run: git diff --exit-code -- docs/prototype/index.html
+      - run: node scripts/check_profile.cjs
+      - run: node scripts/check_walk_logic.cjs
+      - run: node scripts/check_app_shell.cjs

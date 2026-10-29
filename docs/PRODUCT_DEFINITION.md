@@ -2,6 +2,8 @@
 
 2026-10-29 · Claude 정리 · 브랜치 `ccr-94bac9df-i81579`
 
+> 최신 사용자 승인 화면/상태 계약: [PRODUCT_SPEC](PRODUCT_SPEC.md), [DESIGN_SYSTEM](DESIGN_SYSTEM.md). 구현·배포·미검증 범위는 [HANDOFF](HANDOFF.md)에서 확인한다. 자동 걸음 기본, 생략 가능한 상대 걸음·이동 보조기 설문, 수동 속도는 설정 하위다.
+
 BMAD 팀(Mary 분석·John PM·Sally UX·Winston 아키텍트)의 보고서를 합친 문서다. 원문은 `reports/team-2026-10-29/05~08_*.md`. 표기: **[확정]** 사용자가 말했거나 고른 것 / **[제안]** 팀 제안(미확정) / **[위험]** 데이터·구현상 아직 믿을 수 없는 것.
 
 ## 1. 한 문장
