@@ -1,0 +1,9 @@
+{
+  "name": "jjukgo",
+  "private": true,
+  "description": "쭉고 웹앱. 의존성은 Vercel 함수(api/event.js)의 Redis 저장용만 둔다.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "redis": "6.3.0"
+  }
+}
