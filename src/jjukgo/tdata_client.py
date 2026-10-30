@@ -25,6 +25,7 @@ from typing import Any, Callable
 
 QUOTA_HINTS = ("한도", "초과", "limit", "quota", "exceed")
 SPACING_S = 305  # 호출 간격 제한 300초 + 여유
+PRIMARY_RETRY_S = 6 * 3600  # 첫 주소가 실패해 다른 주소로 넘어갔으면, 이만큼 지난 뒤에 첫 주소를 다시 먼저 시도한다
 
 
 class ApiError(Exception):
@@ -107,6 +108,12 @@ def check_error(payload: Any) -> None:
     raise ApiError(f"{code}: {message}")
 
 
+def _endpoint_name(url: str) -> str:
+    """주소에서 API 이름만(예: v2xSignalPhaseTimingFusionCurrentInfo). 키는 들어 있지 않다."""
+    parts = [p for p in urllib.parse.urlsplit(url).path.split("/") if p]
+    return parts[-2] if len(parts) >= 2 else url
+
+
 class TDataClient:
     def __init__(
         self,
@@ -120,8 +127,14 @@ class TDataClient:
         last_call_path: Path | None = None,
         clock: Callable[[], float] = time.time,
         call_log_path: Path | None = None,
+        fallback_urls: list[str] | None = None,
+        endpoint_log_path: Path | None = None,
     ):
         self.base_url = base_url
+        # 앞 주소가 실패하거나 레코드가 없으면 다음 주소를 쓴다(새 실시간 API → 옛 API). 어느 주소가 답했는지 남긴다.
+        self.urls = [base_url] + [u for u in (fallback_urls or []) if u and u != base_url]
+        self.endpoint_log_path = endpoint_log_path
+        self.last_endpoint: str | None = None
         self.api_key = api_key
         self.timeout_s = timeout_s
         self.max_retries = max_retries
@@ -170,8 +183,8 @@ class TDataClient:
             self.last_call_path.parent.mkdir(parents=True, exist_ok=True)
             self.last_call_path.write_text(json.dumps({"at": self._last_call_at}), encoding="utf-8")
 
-    def _get(self, params: dict, wait_cap: float) -> Any:
-        url = f"{self.base_url}?{urllib.parse.urlencode(params)}"
+    def _get(self, params: dict, wait_cap: float, base_url: str | None = None) -> Any:
+        url = f"{base_url or self.base_url}?{urllib.parse.urlencode(params)}"
         last_error: Exception | None = None
         for attempt in range(self.max_retries):
             self._space_out(wait_cap)
@@ -180,7 +193,7 @@ class TDataClient:
             try:
                 with urllib.request.urlopen(url, timeout=self.timeout_s) as resp:
                     payload = json.loads(resp.read().decode("utf-8"))
-                    self._log(params, "ok")
+                    self._log(params, "ok", extra=_endpoint_name(base_url or self.base_url))
                     return payload
             except urllib.error.HTTPError as e:
                 body = e.read().decode("utf-8", errors="replace")
@@ -214,22 +227,89 @@ class TDataClient:
         max_wait_s: float | None = None,
     ) -> tuple[list[dict], int | None]:
         """호출 간격 제한에 걸리면 max_wait_s(기본 rate_limit_wait_max_s) 이내일 때만 기다렸다가 한 번 더 부른다."""
-        params = {"apiKey": self.api_key, "type": "json", "pageNo": page_no, "numOfRows": num_of_rows}
+        # 새 실시간 API 안내는 'apikey', 옛 API는 'apiKey'를 썼다. 둘 다 보낸다(쓰지 않는 쪽은 무시된다).
+        params = {"apiKey": self.api_key, "apikey": self.api_key, "type": "json", "pageNo": page_no, "numOfRows": num_of_rows}
         if itst_id is not None:
             params["itstId"] = itst_id
         wait_cap = self.rate_limit_wait_max_s if max_wait_s is None else max_wait_s
-        self._space_out(wait_cap)
+        errors = []
+        urls = self._ordered_urls()
+        for url in urls:
+            self._space_out(wait_cap)
+            try:
+                try:
+                    payload = self._get(params, wait_cap, url)
+                    check_error(payload)
+                except RateLimited:
+                    # 거절된 이 호출이 창을 다시 시작했으므로 retryAfter가 아니라 창 전체를 기다린다
+                    if SPACING_S > wait_cap:
+                        raise
+                    self.sleep(SPACING_S)
+                    payload = self._get(params, wait_cap, url)
+                    check_error(payload)
+            except RateLimited:
+                raise  # 호출 간격 제한은 주소를 바꿔도 같이 걸린다고 보고 그대로 올린다
+            except (ApiError, QuotaExceeded) as e:
+                errors.append(f"{_endpoint_name(url)}: {e}")
+                self._note_failure(url)
+                if url == urls[-1]:
+                    raise
+                continue
+            records = extract_records(payload)
+            if not records and url != urls[-1]:
+                errors.append(f"{_endpoint_name(url)}: 레코드 없음")
+                self._note_failure(url)
+                continue
+            self._note_endpoint(url, records, errors)
+            return records, extract_total_count(payload)
+        raise ApiError("; ".join(errors))
+
+    def _read_endpoint_log(self) -> dict:
+        if self.endpoint_log_path is None:
+            return {}
         try:
-            payload = self._get(params, wait_cap)
-            check_error(payload)
-        except RateLimited:
-            # 거절된 이 호출이 창을 다시 시작했으므로 retryAfter가 아니라 창 전체를 기다린다
-            if SPACING_S > wait_cap:
-                raise
-            self.sleep(SPACING_S)
-            payload = self._get(params, wait_cap)
-            check_error(payload)
-        return extract_records(payload), extract_total_count(payload)
+            return json.loads(self.endpoint_log_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+
+    def _write_endpoint_log(self, log: dict) -> None:
+        self.endpoint_log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.endpoint_log_path.write_text(json.dumps(log, ensure_ascii=False, indent=1), encoding="utf-8")
+
+    def _ordered_urls(self) -> list[str]:
+        """첫 주소가 최근(PRIMARY_RETRY_S 이내)에 실패했고 다른 주소가 답했으면 그 주소부터 부른다. 실패한 주소마다 호출 간격(305초)을 쓰므로."""
+        log = self._read_endpoint_log()
+        preferred = log.get("preferred")
+        failed_at = log.get("primary_failed_at")
+        if preferred in self.urls and preferred != self.urls[0] and failed_at is not None and self.clock() - failed_at < PRIMARY_RETRY_S:
+            return [preferred] + [u for u in self.urls if u != preferred]
+        return list(self.urls)
+
+    def _note_failure(self, url: str) -> None:
+        if self.endpoint_log_path is None or url != self.urls[0]:
+            return
+        log = self._read_endpoint_log()
+        log["primary_failed_at"] = self.clock()
+        self._write_endpoint_log(log)
+
+    def _note_endpoint(self, url: str, records: list[dict], errors: list[str]) -> None:
+        """어느 API가 답했는지와 응답 필드 목록을 남긴다(옛 API와 새 API의 필드가 같은지 확인용)."""
+        self.last_endpoint = url
+        if self.endpoint_log_path is None:
+            return
+        log = self._read_endpoint_log()
+        log["preferred"] = url
+        name = _endpoint_name(url)
+        entry = log.setdefault(name, {"url": url, "first_ok_utc": None, "last_ok_utc": None, "ok_calls": 0, "fields": [], "itst_ids": []})
+        stamp = datetime.fromtimestamp(self.clock(), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        entry["first_ok_utc"] = entry["first_ok_utc"] or stamp
+        entry["last_ok_utc"] = stamp
+        entry["ok_calls"] += 1
+        if records:
+            entry["fields"] = sorted(set(entry["fields"]) | set(records[0].keys()))
+            entry["itst_ids"] = sorted(set(entry["itst_ids"]) | {str(r.get("itstId")) for r in records})[:50]
+        log["last_errors_before_success"] = errors
+        self._write_endpoint_log(log)
 
 
 class FixtureClient:

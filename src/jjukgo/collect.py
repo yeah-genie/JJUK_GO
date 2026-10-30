@@ -337,6 +337,8 @@ def main(argv: list[str] | None = None) -> int:
             rate_limit_wait_max_s=api.get("rate_limit_wait_max_s", 330),
             last_call_path=args.data_dir / "meta" / "last_call.json",
             call_log_path=args.data_dir / "meta" / "call_log.csv",
+            fallback_urls=api.get("fallback_urls", []),
+            endpoint_log_path=args.data_dir / "meta" / "endpoints.json",
         )
 
     if args.command == "discover":

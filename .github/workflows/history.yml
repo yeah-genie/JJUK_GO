@@ -35,6 +35,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: gh release download signal-history-sample-20261027 --pattern '*.csv.gz' --dir official-history --skip-existing
+      - name: Fill days without an official file from the realtime collector (same history format)
+        run: |
+          git fetch --depth=1 origin data
+          git worktree add --detach "$RUNNER_TEMP/jjukgo-data" FETCH_HEAD
+          python scripts/realtime_to_history.py --data-dir "$RUNNER_TEMP/jjukgo-data" --missing
       - name: Rebuild hourly baselines (all days, cross-day stability) and prototype
         run: |
           python scripts/export_history_plans.py

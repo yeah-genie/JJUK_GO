@@ -116,7 +116,9 @@ def fit_hour(rows, lower, upper):
 def build_day(path, earlier=None):
     """earlier: {날짜: build_day 결과} 앞선 날들. 있으면 각 시간대 plan에 '앞선 날 plan을 이 날에 대본 일치율(xday)'을 붙인다."""
     CACHE.mkdir(parents=True, exist_ok=True)
-    cache = CACHE / (path.name[:8] + '.json')
+    meta = path.with_name(path.name[:8] + '.json')
+    kind = json.loads(meta.read_text()).get('source_kind', 'official') if meta.exists() else 'official'
+    cache = CACHE / (path.name[:8] + ('-realtime' if kind == 'realtime' else '') + '.json')  # 실시간으로 채운 날이 공식 파일로 바뀌면 다시 계산
     if cache.exists():
         return json.loads(cache.read_text())
     date = datetime.strptime(path.name[:8], '%Y%m%d').replace(tzinfo=KST)

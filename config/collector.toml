@@ -3,7 +3,11 @@
 
 [api]
 # C-ITS 신호 현시 + 잔여시간 결합 정보 (서울교통빅데이터플랫폼)
-base_url = "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionInformation/1.0"
+# 새 실시간 API "(실시간) 신호제어기 신호정보 및 잔여시간 현시 정보 서비스"(T Data data_id=10381)를 먼저 쓰고,
+# 실패하거나 레코드가 없으면 옛 API로 넘어간다. 옛 API는 2026-11-15 종료 예정. 필드 이름 규칙({방향}{신호종류}sg{RmdrCs|StatNm})과
+# 교차로 ID(itstId) 체계는 두 API와 일별 이력 파일(data_id=10382)이 같다. 어느 쪽이 답했는지는 meta/endpoints.json, meta/call_log.csv에 남는다.
+base_url = "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionCurrentInfo/1.0"
+fallback_urls = ["https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionInformation/1.0"]
 num_of_rows = 1000
 timeout_s = 20
 max_retries = 3

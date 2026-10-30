@@ -60,7 +60,8 @@ def import_day(date, ident):
     target = OUT / (date + '.csv.gz')
     if meta_path.exists():
         prior = json.loads(meta_path.read_text(encoding='utf-8'))
-        if target.exists() or prior.get('archive_release_url'):
+        # 실시간 수집으로 임시로 채운 날(realtime_to_history.py)은 공식 파일이 나오면 바꾼다.
+        if prior.get('source_kind') != 'realtime' and (target.exists() or prior.get('archive_release_url')):
             return prior
     archive = RAW / ('signalPhaseTimeFusion_' + date + '.zip')
     url = 'https://t-data.seoul.go.kr/dataprovide/download.do?id=' + ident
@@ -124,7 +125,7 @@ def import_day(date, ident):
             writer.writerow(COLUMNS)
             writer.writerows(segments[:200])
     ped_ids = sorted({r[0] for r in segments}, key=int)
-    meta = {'date': date, 'source': PAGE, 'download_url': url, 'sha256': digest, 'zip_bytes': archive.stat().st_size, 'csv_bytes': uncompressed, 'source_rows': rows, 'source_intersections': len(intersections), 'pedestrian_intersections': len(ped_ids), 'pedestrian_ids': ped_ids, 'direction_groups': len({(r[0], r[1]) for r in segments}), 'segments': len(segments), 'segment_bytes': target.stat().st_size, 'first_utc': min(r[4] for r in segments), 'last_utc': max(r[5] for r in segments), 'remaining_unit': 'decisecond (verified by adjacent 1s messages decreasing by about 10)', 'license': 'Seoul T Data attribution BY', 'kind': 'historical observations, not live signals'}
+    meta = {'date': date, 'source_kind': 'official', 'source': PAGE, 'download_url': url, 'sha256': digest, 'zip_bytes': archive.stat().st_size, 'csv_bytes': uncompressed, 'source_rows': rows, 'source_intersections': len(intersections), 'pedestrian_intersections': len(ped_ids), 'pedestrian_ids': ped_ids, 'direction_groups': len({(r[0], r[1]) for r in segments}), 'segments': len(segments), 'segment_bytes': target.stat().st_size, 'first_utc': min(r[4] for r in segments), 'last_utc': max(r[5] for r in segments), 'remaining_unit': 'decisecond (verified by adjacent 1s messages decreasing by about 10)', 'license': 'Seoul T Data attribution BY', 'kind': 'historical observations, not live signals'}
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(json.dumps({k: v for k, v in meta.items() if k != 'pedestrian_ids'}), flush=True)
     return meta

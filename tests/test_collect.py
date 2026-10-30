@@ -317,3 +317,62 @@ def test_failed_target_does_not_block_next_target(tmp_path):
     budget, _ = make(tmp_path)
     second = collect_once(cfg, tmp_path, FailingClient(FIXTURE), budget, NOW.replace(minute=55))
     assert second['rows'] > 0 and 'error' not in second
+
+
+def test_client_falls_back_to_old_api_and_remembers(tmp_path, monkeypatch):
+    """새 실시간 API가 거절하면 옛 API로 넘어가고, 어느 API가 답했는지와 필드를 meta/endpoints.json에 남긴다.
+    한동안은 답한 쪽부터 부르고(호출 간격을 아끼려고), 6시간 뒤에는 새 API를 다시 먼저 시도한다."""
+    import io, urllib.error
+    from jjukgo import tdata_client as tc
+
+    new = "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionCurrentInfo/1.0"
+    old = "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionInformation/1.0"
+    now, called = [1000.0], []
+    rec = {"itstId": "2217", "trsmUtcTime": 1, "etPdsgStatNm": "stop-And-Remain", "etPdsgRmdrCs": 120}
+
+    def urlopen(url, timeout):
+        called.append(url.split("?")[0])
+        assert "apikey=k" in url and "apiKey=k" in url
+        if url.startswith(new):
+            raise urllib.error.HTTPError(url, 403, "Forbidden", {}, io.BytesIO(b'{"responseCode":403,"message":"no access"}'))
+        return io.BytesIO(json.dumps({"body": {"items": [rec]}}).encode())
+
+    monkeypatch.setattr(tc.urllib.request, "urlopen", urlopen)
+    log = tmp_path / "meta" / "endpoints.json"
+    client = tc.TDataClient(new, "k", max_retries=1, sleep=lambda s: now.__setitem__(0, now[0] + s), clock=lambda: now[0],
+                            fallback_urls=[old], endpoint_log_path=log)
+    records, _ = client.fetch(itst_id="2217")
+    assert records == [rec] and called == [new, old] and client.last_endpoint == old
+    saved = json.loads(log.read_text())
+    entry = saved["v2xSignalPhaseTimingFusionInformation"]
+    assert entry["fields"] == sorted(rec) and entry["itst_ids"] == ["2217"] and entry["ok_calls"] == 1
+    assert saved["preferred"] == old and "403" in saved["last_errors_before_success"][0]
+
+    called.clear()
+    client.fetch(itst_id="2217")
+    assert called == [old]  # 방금 실패한 새 API는 건너뛴다
+    now[0] += tc.PRIMARY_RETRY_S + 1
+    called.clear()
+    client.fetch(itst_id="2217")
+    assert called == [new, old]  # 6시간 뒤에는 새 API부터 다시 시도
+
+
+def test_client_uses_new_api_when_it_answers(tmp_path, monkeypatch):
+    import io
+    from jjukgo import tdata_client as tc
+
+    called = []
+    monkeypatch.setattr(tc.urllib.request, "urlopen",
+                        lambda url, timeout: (called.append(url.split("?")[0]), io.BytesIO(b'{"items": [{"itstId": "20386"}]}'))[1])
+    log = tmp_path / "endpoints.json"
+    client = tc.TDataClient("http://x/new/1.0", "k", fallback_urls=["http://x/old/1.0"], endpoint_log_path=log)
+    records, _ = client.fetch(itst_id="20386")
+    assert records and called == ["http://x/new/1.0"]
+    assert json.loads(log.read_text())["new"]["itst_ids"] == ["20386"]
+
+
+def test_new_api_record_fields_normalize_like_old_api():
+    """새 API 안내서의 필드 이름(etPdsgRmdrCs 등)이 지금 정규화 규칙과 그대로 맞는지."""
+    from jjukgo.normalize import FIELD_RE
+    for name in ("ntPdsgStatNm", "etPdsgRmdrCs", "stStsgStatNm", "wtLtsgRmdrCs", "nePdsgStatNm"):
+        assert FIELD_RE.match(name), name
