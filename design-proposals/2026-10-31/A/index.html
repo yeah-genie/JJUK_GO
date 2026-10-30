@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>쭉고 A 지도 중심형</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<style>
+/* ── 쭉고 브랜드 토큰 (라이브 앱 그대로) + 신호 의미색 ── */
+:root{
+  --lane:#F6C343; --asphalt:#242A32; --panel:#303844; --zebra:#F4F2E9; --muted:#B7BEC8; --line:#46505D;
+  --go:#2FBF71; --stop:#EF5A4C; --unk:#8A939F;
+  --display:'Black Han Sans',sans-serif; --body:'IBM Plex Sans KR',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#171D23}
+body{font-family:var(--body);color:var(--zebra);word-break:keep-all;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--lane);outline-offset:3px}
+p{margin:0}
+
+.phone{position:relative;width:100vw;height:100dvh;max-width:430px;margin:0 auto;overflow:hidden;background:#1C2228}
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{font-size:9px!important;background:#242a32cc!important;color:#9aa3ae!important}
+.maplibregl-ctrl-attrib a{color:#9aa3ae!important}
+.maplibregl-ctrl-bottom-right{bottom:var(--attrib-b,190px)!important}
+
+/* ── iOS 상태바 (모형) ── */
+.status{position:absolute;inset:0 0 auto;height:47px;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0 32px;font:600 16px/1 -apple-system,var(--body);pointer-events:none;
+  background:linear-gradient(#1C2228 30%,#1c222800)}
+.status .sb{display:flex;gap:6px;align-items:center}
+.status .sb i{display:block;background:var(--zebra);border-radius:2px}
+
+/* ── 상단: 로고 + 출발/도착 한 줄 ── */
+.trip{position:absolute;z-index:30;left:12px;right:12px;top:51px;height:54px;display:flex;align-items:center;gap:12px;padding:0 6px 0 16px;
+  background:var(--asphalt);border-radius:16px;box-shadow:0 6px 20px #0006}
+.brand{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:-1px;display:inline-flex;align-items:center;gap:7px;flex:none}
+.lane-mark{display:inline-flex;gap:4px}
+.lane-mark i{display:block;width:6px;height:15px;background:var(--lane);transform:skewX(-24deg);border-radius:1px}
+.lane-mark i+i{background:var(--muted)}
+.od{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:44px;padding-left:12px;border-left:1px solid var(--line);font-size:16px;font-weight:600;text-align:left}
+.od span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.od svg{flex:none;color:var(--muted)}
+.od .from{color:var(--muted);font-weight:500}
+.icon{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;flex:none;color:var(--muted)}
+
+/* ── 지도 위 경로 표지 (비교는 지도 위에서) ── */
+.plate{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 11px 8px;border-radius:12px;white-space:nowrap;line-height:1.15;cursor:pointer;box-shadow:0 4px 14px #0007;position:absolute}
+.plate .nm{font-size:12px;font-weight:600}
+.plate .mn{font-size:20px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.plate .mn small{font-size:12px;font-weight:500;margin-left:5px;letter-spacing:0}
+.plate .wt{font-size:12px;font-weight:500}
+.plate.sel{background:var(--lane);color:var(--asphalt)}
+.plate.sel .mn small,.plate.sel .wt{color:#3d3a2c}
+.plate.alt{background:#2b323bf2;color:var(--zebra);border:1px solid var(--line)}
+.plate.alt .mn{font-size:16px}
+.plate.alt .nm,.plate.alt .mn small,.plate.alt .wt{color:var(--muted)}
+.plate::after{content:"";position:absolute;left:var(--tail,50%);width:10px;height:10px;transform:translateX(-50%) rotate(45deg);background:inherit;border:inherit;border-width:0}
+.plate.up::after{bottom:-5px}.plate.down::after{top:-5px}
+.plate.alt.up::after{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.plate.alt.down::after{border-left:1px solid var(--line);border-top:1px solid var(--line)}
+
+/* ── 신호 아이콘: 의미색만 ── */
+.sig{width:var(--s,26px);height:var(--s,26px);border-radius:50%;display:grid;place-items:center;color:#fff;border:2.5px solid var(--asphalt);box-shadow:0 2px 6px #0008}
+.sig svg{width:62%;height:62%}
+.sig.go{background:var(--go)}.sig.stop{background:var(--stop)}.sig.unk{background:var(--unk)}
+.sig.next{--s:40px;border-width:3px}
+.sig.next.pulse{box-shadow:0 0 0 0 #2fbf7188,0 2px 8px #0009;animation:pulse 1.8s ease-out infinite}
+@keyframes pulse{to{box-shadow:0 0 0 18px #2fbf7100,0 2px 8px #0009}}
+
+/* ── 다음 횡단보도 말풍선 (지도 위) ── */
+.callout{display:flex;align-items:center;gap:10px}
+.bubble{background:var(--asphalt);border-radius:14px;padding:9px 13px 10px;box-shadow:0 6px 18px #0008;line-height:1.25;position:absolute}
+.bubble .k{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.bubble .v{font-size:16px;font-weight:700;margin-top:2px}
+.bubble .v b{color:var(--go)}
+.bubble .s{font-size:12px;color:var(--muted);margin-top:1px}
+.tag{font-size:10.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 5px;line-height:1.3;white-space:nowrap}
+.bubble.notch::before{content:"";position:absolute;right:var(--notch,38px);top:-5px;width:10px;height:10px;background:var(--asphalt);transform:rotate(45deg)}
+.bubble .s{display:flex;align-items:center;gap:6px}
+
+.pin-start{width:16px;height:16px;border-radius:50%;background:var(--asphalt);border:3.5px solid var(--zebra);box-shadow:0 1px 4px #0009}
+.pin-end{display:flex;flex-direction:column;align-items:center}
+.pin-end .head{background:var(--zebra);color:var(--asphalt);font-size:12px;font-weight:700;padding:4px 8px;border-radius:8px;box-shadow:0 2px 6px #0008}
+.pin-end .stem{width:2px;height:8px;background:var(--zebra)}
+.pin-end .dot{width:10px;height:10px;border-radius:50%;background:var(--zebra);border:2px solid var(--asphalt)}
+.lbl-start{font-size:12px;font-weight:600;color:var(--zebra);text-shadow:0 0 3px #1c2228,0 0 3px #1c2228;}
+.me{width:22px;height:22px;border-radius:50%;background:#4D8FFF;border:3px solid #fff;box-shadow:0 0 0 10px #4d8fff2e,0 2px 6px #0008}
+
+.locate{position:absolute;right:12px;z-index:25;width:44px;height:44px;border-radius:50%;background:var(--asphalt);display:grid;place-items:center;box-shadow:0 4px 12px #0007;color:var(--zebra)}
+
+/* ── 하단 도크: 이유 하나 + CTA ── */
+.dock{position:absolute;z-index:30;left:10px;right:10px;bottom:28px;background:var(--asphalt);border-radius:22px;padding:14px 16px 16px;box-shadow:0 -2px 24px #0007;transition:transform .28s ease}
+.dock-top{display:flex;align-items:center;justify-content:space-between;height:22px}
+.pick{font-size:13px;font-weight:600;color:var(--lane);display:flex;align-items:center;gap:6px}
+.pick::before{content:"";width:14px;height:4px;border-radius:2px;background:var(--lane);transform:skewX(-24deg)}
+.more{font-size:14px;color:var(--muted);height:44px;margin:-11px -6px -11px 0;padding:0 6px;display:flex;align-items:center;gap:2px}
+.reason{font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.35;margin:6px 0 14px}
+.cta{width:100%;height:54px;border-radius:14px;background:var(--lane);color:var(--asphalt);font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.home-ind{position:absolute;z-index:45;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--zebra);opacity:.9}
+
+/* ── 자세히 보기 시트 ── */
+.sheet{position:absolute;z-index:35;inset:auto 0 0;height:60%;background:var(--asphalt);border-radius:24px 24px 0 0;box-shadow:0 -8px 30px #0008;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.sheet.open{transform:none}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 4px;flex:none}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:4px 12px 0 20px;flex:none}
+.sheet-head h2{font-size:18px;margin:0;font-weight:700}
+.sheet-body{flex:1;overflow:auto;padding:4px 20px 12px;scrollbar-width:none}
+.sheet-body::-webkit-scrollbar{display:none}
+.cmp{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;margin-top:4px}
+.cmp th{font-size:13px;font-weight:600;text-align:right;padding:8px 0 8px 12px;color:var(--muted)}
+.cmp th.me-col{color:var(--lane)}
+.cmp td{font-size:15px;text-align:right;padding:7px 0 7px 12px;border-top:1px solid #3a434f}
+.cmp td:first-child,.cmp th:first-child{text-align:left;padding-left:0;color:var(--muted);font-size:14px;font-weight:400}
+.cmp td.me-col{font-weight:700}
+.cmp tr.key td{font-size:16px}
+.cmp tr.key td.me-col{color:var(--lane)}
+.sub-h{font-size:14px;color:var(--muted);font-weight:500;margin:22px 0 4px}
+.xrow{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start;padding:12px 0;border-top:1px solid #3a434f}
+.xrow:first-of-type{border-top:0}
+.xrow .t{font-size:15px;font-weight:600}
+.xrow .d{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.45}
+.basis{margin-top:18px;padding-top:4px}
+.brow{display:flex;align-items:center;justify-content:space-between;min-height:48px;border-top:1px solid #3a434f;font-size:14px;width:100%;text-align:left}
+.brow span{color:var(--muted)}
+.brow b{font-weight:500}
+.brow .go-arrow{color:var(--muted)}
+.sheet-foot{padding:10px 16px 30px;flex:none;border-top:1px solid #3a434f}
+
+/* ── 걷기 화면 ── */
+.walk-top{position:absolute;z-index:30;left:10px;right:10px;top:51px;background:var(--asphalt);border-radius:22px;padding:16px 18px 16px;box-shadow:0 8px 24px #0008;display:none}
+.walk-top .row{display:flex;align-items:center;gap:14px}
+.walk-top .k{font-size:13px;color:var(--muted)}
+.walk-top .dist{font-size:40px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
+.walk-top .dist small{font-size:20px;letter-spacing:0;margin-left:2px}
+.walk-top .state{margin-top:12px;padding-top:12px;border-top:1px solid #3a434f;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.walk-top .state p{font-size:17px;font-weight:700}
+.walk-top .state p b{color:var(--go)}
+.walk-top .state p span{font-weight:500;color:var(--muted);font-size:14px}
+.walk-top .hint{font-size:13px;color:var(--muted);margin-top:4px}
+.walk-bot{position:absolute;z-index:30;left:10px;right:10px;bottom:28px;background:var(--asphalt);border-radius:22px;padding:12px 12px 12px 20px;display:none;align-items:center;justify-content:space-between;box-shadow:0 -2px 24px #0007}
+.walk-bot .left .big{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.walk-bot .left .big small{font-size:14px;color:var(--muted);font-weight:500;margin-left:6px}
+.walk-bot .left .s{font-size:13px;color:var(--muted)}
+.stop-btn{height:48px;padding:0 20px;border-radius:12px;background:var(--panel);font-weight:600;font-size:15px}
+
+.phone[data-state=walk] .trip,.phone[data-state=walk] .dock{display:none}
+.phone[data-state=walk] .walk-top{display:block}
+.phone[data-state=walk] .walk-bot{display:flex}
+.phone[data-state=detail] .dock{transform:translateY(130%)}
+
+@media(max-height:700px){
+  .reason{font-size:17px;margin:4px 0 10px}
+  .cta{height:50px}
+  .dock{bottom:18px;padding:12px 14px 14px}
+  .home-ind{bottom:5px}
+  .sheet{height:68%}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone" id="phone" data-state="result">
+  <div id="map" role="region" aria-label="경로 지도"></div>
+
+  <div class="status" aria-hidden="true"><span id="clock">14:10</span><span class="sb"><i style="width:3px;height:6px"></i><i style="width:3px;height:8px"></i><i style="width:3px;height:10px"></i><i style="width:3px;height:12px"></i><i style="width:24px;height:11px;border-radius:3px;margin-left:6px"></i></span></div>
+
+  <!-- 상단: 로고 + 출발·도착 -->
+  <header class="trip">
+    <span class="brand" aria-label="쭉고">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span>
+    <button class="od" aria-label="출발지 성수역, 도착지 서울숲. 바꾸기">
+      <span class="from" id="od-from">성수역</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      <span id="od-to">서울숲</span>
+    </button>
+    <button class="icon" aria-label="출발지와 도착지 바꾸기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v16M4 8l4-4 4 4M16 20V4M12 16l4 4 4-4"/></svg></button>
+  </header>
+
+  <button class="locate" id="locate" aria-label="내 위치"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></button>
+
+  <!-- 하단 도크: 추천 이유 하나 + 걷기 시작 -->
+  <section class="dock" id="dock" aria-label="추천 경로">
+    <div class="dock-top">
+      <span class="pick" id="pick">쭉고 길을 추천해요</span>
+      <button class="more" id="open-detail" aria-expanded="false">자세히 보기<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+    </div>
+    <p class="reason" id="reason"></p>
+    <button class="cta" id="start"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M10.2 8.3l2.6-.9c.9-.3 1.8.1 2.2 1l1.3 2.8 2.4 1.1-.7 1.6-3-1.3-.8-1.7-.9 3.6 2.4 2.6V22h-1.8v-4.4l-2.4-2.4-.9 3.7L7 22.6l-1.6-.9 3.3-4.3L10 12l-1.4.6-1 2.6-1.6-.6 1.3-3.4z"/></svg>걷기 시작</button>
+  </section>
+
+  <!-- 자세히 보기 -->
+  <section class="sheet" id="sheet" aria-label="경로 자세히" aria-hidden="true">
+    <div class="grab"></div>
+    <div class="sheet-head"><h2>두 길 비교</h2><button class="icon" id="close-detail" aria-label="닫기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sheet-body" id="sheet-body"></div>
+    <div class="sheet-foot"><button class="cta" id="start2">걷기 시작</button></div>
+  </section>
+
+  <!-- 걷기: 다음 횡단보도 -->
+  <section class="walk-top" id="walk-top" aria-live="polite"></section>
+  <section class="walk-bot" id="walk-bot"></section>
+
+  <div class="home-ind" aria-hidden="true"></div>
+</div>
+
+<script>
+const PED='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="13" cy="4" r="2.1"/><path d="M10.2 8.3l2.6-.9c.9-.3 1.8.1 2.2 1l1.3 2.8 2.4 1.1-.7 1.6-3-1.3-.8-1.7-.9 3.6 2.4 2.6V22h-1.8v-4.4l-2.4-2.4-.9 3.7L7 22.6l-1.6-.9 3.3-4.3L10 12l-1.4.6-1 2.6-1.6-.6 1.3-3.4z"/></svg>';
+const qs=new URLSearchParams(location.search);
+const phone=document.getElementById('phone');
+let D, map, sel=qs.get('sel')==='fast'?'fast':'jjuk', markers=[];
+const fmtWait=s=>s<60?`${s}초`:`${Math.floor(s/60)}분${s%60?` ${s%60}초`:''}`;
+const km=m=>`${(m/1000).toFixed(1)}km`;
+const M=(a,b)=>{const dx=(a[0]-b[0])*88200,dy=(a[1]-b[1])*111000;return Math.hypot(dx,dy)};
+const sigClass=x=>x.arrival.kind==='wait'?'stop':(x.arrival.kind==='green'||x.arrival.kind==='short')?'go':'unk';
+const stateWord=x=>x.arrival.kind==='wait'?`약 ${x.expected_wait_s}초 대기`:'건널 수 있어요';
+function cum(c){const s=[0];for(let i=1;i<c.length;i++)s.push(s[i-1]+M(c[i-1],c[i]));return s}
+function proj(c,p){let best=1e9,bi=0;c.forEach((q,i)=>{const d=M(q,p);if(d<best){best=d;bi=i}});return bi}
+function along(c,cs,d){for(let i=1;i<c.length;i++){if(cs[i]>=d){const t=(d-cs[i-1])/(cs[i]-cs[i-1]);return[c[i-1][0]+t*(c[i][0]-c[i-1][0]),c[i-1][1]+t*(c[i][1]-c[i-1][1])]}}return c[c.length-1]}
+
+/* 지도 스타일: OpenFreeMap dark를 쭉고 '아스팔트' 톤으로 다시 칠한다 */
+function asphaltize(){
+  const L=map.getStyle().layers, set=(id,p,v)=>{try{map.setPaintProperty(id,p,v)}catch(e){}};
+  for(const l of L){
+    const id=l.id;
+    if(l.type==='background') set(id,'background-color','#1E252C');
+    else if(id==='water') set(id,'fill-color','#15212B');
+    else if(/park|wood/.test(id)) {set(id,'fill-color','#1F2B26');set(id,'fill-opacity',1)}
+    else if(/residential/.test(id)) set(id,'fill-color','#20272E');
+    else if(id==='building') {set(id,'fill-color','#272F38');set(id,'fill-outline-color','#2C343E')}
+    else if(l.type==='line'&&/highway_path/.test(id)) {set(id,'line-color','#2B333C')}
+    else if(l.type==='line'&&/highway_minor/.test(id)) set(id,'line-color','#323A44');
+    else if(l.type==='line'&&/highway_major|highway_motorway/.test(id)) set(id,'line-color',/casing/.test(id)?'#1E252C':'#3C4551');
+    else if(l.type==='line'&&/rail/.test(id)) set(id,'line-color','#2C333B');
+    else if(l.type==='line'&&/waterway/.test(id)) set(id,'line-color','#15212B');
+    else if(l.type==='line'&&/boundary/.test(id)) map.setLayoutProperty(id,'visibility','none');
+    if(l.type==='symbol'){
+      if(/oneway/.test(id)){map.setLayoutProperty(id,'visibility','none');continue}
+      try{map.setLayoutProperty(id,'text-field',['coalesce',['get','name:ko'],['get','name']])}catch(e){}
+      set(id,'text-color',/place/.test(id)?'#9BA4AF':'#6F7985');
+      set(id,'text-halo-color','#1E252C');set(id,'text-halo-width',1.4);
+    }
+  }
+}
+
+function el(html){const d=document.createElement('div');d.innerHTML=html.trim();return d.firstChild}
+function addMarker(node,ll,anchor='center',offset=[0,0]){const m=new maplibregl.Marker({element:node,anchor,offset}).setLngLat(ll).addTo(map);markers.push(m);return m}
+function clearMarkers(){markers.forEach(m=>m.remove());markers=[]}
+
+/* 경로 표지를 놓을 자리: 두 길이 가장 멀리 벌어진 구간에서, 다음 횡단보도에서 먼 점 */
+function platePoint(key){
+  const A=D[key].coords, B=D[key==='jjuk'?'fast':'jjuk'].coords, x=D.jjuk.crossings[0].at;
+  // 두 길이 가장 멀리 벌어진 점에 표지를 단다: 표지가 자기 경로 바깥쪽에 붙어 경로를 가리지 않는다
+  let best=A[0],sepMax=-1; A.forEach(p=>{const sep=Math.min(...B.map(q=>M(p,q)));if(sep>sepMax){sepMax=sep;best=p}});
+  const near=B[proj(B,best)]; return {p:best,below:best[1]<near[1]};
+}
+
+function drawRoutes(){
+  const other=sel==='jjuk'?'fast':'jjuk';
+  const line=c=>({type:'Feature',geometry:{type:'LineString',coordinates:c}});
+  map.getSource('alt').setData(line(D[other].coords));
+  map.getSource('sel').setData(line(D[sel].coords));
+}
+
+function renderResult(){
+  clearMarkers();
+  const R=D[sel], other=sel==='jjuk'?'fast':'jjuk', O=D[other];
+  drawRoutes();
+  map.setLayoutProperty('alt-line','visibility','visible');
+  map.setLayoutProperty('nearby','visibility','visible');
+  map.setLayoutProperty('passed','visibility','none');
+  // 출발·도착
+  const s=el(`<div style="display:flex;align-items:center;gap:6px"><span class="lbl-start">${D.from.name}</span><div class="pin-start"></div></div>`);
+  addMarker(s,D.from.ll,'right',[8,0]);
+  addMarker(el(`<div class="pin-end"><div class="head">${D.to.name}</div><div class="stem"></div><div class="dot"></div></div>`),D.to.ll,'bottom',[0,5]);
+  // 경로 표지 두 장 — 비교가 지도 위에 있다 (화면 밖으로 나가지 않게 옆으로 밀고, 꼬리는 경로를 가리킨다)
+  const W=phone.clientWidth;
+  for(const key of [other,sel]){
+    const r=D[key], pp=platePoint(key), isSel=key===sel;
+    const n=el(`<div class="plate ${isSel?'sel':'alt'} ${pp.below?'down':'up'}" role="button" tabindex="0" aria-label="${r.name} ${r.walk_min}분, 예상 신호 대기 ${fmtWait(r.wait_s)}${isSel?', 선택됨':', 이 길로 바꾸기'}">
+      <span class="nm">${r.name}${key==='jjuk'?' · 추천':''}</span>
+      <span class="mn">${r.walk_min}분<small>${km(r.meters)}</small></span>
+      <span class="wt">신호 대기 ${fmtWait(r.wait_s)}</span></div>`);
+    n.addEventListener('click',e=>{e.stopPropagation();if(!isSel){sel=key;renderAll()}});
+    if(phone.dataset.state==='detail') continue;
+    const m=addMarker(n,pp.p,pp.below?'top':'bottom',[0,pp.below?10:-10]);
+    requestAnimationFrame(()=>{const x=map.project(pp.p).x, w=n.offsetWidth;
+      const dx=Math.min(0,W-12-(x+w/2))+Math.max(0,12-(x-w/2));
+      m.setOffset([dx,pp.below?10:-10]); n.style.setProperty('--tail',`${w/2-dx}px`)});
+  }
+  // 선택 경로의 신호 횡단만. 첫 번째가 가장 크게.
+  R.crossings.slice(1).forEach(x=>addMarker(el(`<div class="sig ${sigClass(x)}" style="--s:24px">${PED}</div>`),x.at));
+  const x=R.crossings[0];
+  if(x){
+    const st=sigClass(x);
+    addMarker(el(`<div class="sig next ${st}">${PED}</div>`),x.at);
+    if(phone.dataset.state!=='detail'){
+      const b=el(`<div class="bubble notch">
+        <div class="k">다음 신호 횡단 · ${km(x.dist_from_start_m)} 앞</div>
+        <div class="v">${st==='go'?'<b>건널 수 있어요</b> (예상)':`<span style="color:var(--stop)">${stateWord(x)}</span> (예상)`}</div>
+        <div class="s">${st==='go'?'도착 때 초록 '+(x.arrival.text.match(/초록 (\d+초)/)||[,''])[1]+' 남음':''} <span class="tag">패턴 예상</span></div></div>`);
+      const m=addMarker(b,x.at,'top-right',[44,34]);
+      requestAnimationFrame(()=>{const px=map.project(x.at).x, w=b.offsetWidth; const left=px+44-w;
+        const dx=Math.max(0,12-left); m.setOffset([44+dx,34]); b.style.setProperty('--notch',`${44+dx-6}px`)});
+    }
+  }
+  const reason=document.getElementById('reason'), pick=document.getElementById('pick');
+  if(sel==='jjuk'){pick.textContent='쭉고 길을 추천해요';reason.textContent=`1분 더 걷고, 신호 대기는 ${fmtWait(O.wait_s-R.wait_s)} 줄여요`}
+  else{pick.textContent='빠른 길을 골랐어요';reason.textContent=`1분 빨리 걷지만, 신호에서 ${fmtWait(R.wait_s)} 더 기다릴 수 있어요`}
+}
+
+function renderDetail(){
+  const J=D.jjuk,F=D.fast, A=sel==='jjuk'?J:F, B=sel==='jjuk'?F:J;
+  const rows=[
+    ['예상 신호 대기',fmtWait(A.wait_s),fmtWait(B.wait_s),1],
+    ['걷는 시간',`${A.walk_min}분`,`${B.walk_min}분`,1],
+    ['거리',km(A.meters),km(B.meters)],
+    ['신호 횡단',`${A.signal_crossings}곳`,`${B.signal_crossings}곳`],
+    ['오르막',`${A.gain_m}m`,`${B.gain_m}m`],
+    ['급경사 구간',`${A.steep8_m}m`,`${B.steep8_m}m`],
+    ['계단',`${A.stairs}곳`,`${B.stairs}곳`],
+  ];
+  const noData=A.signal_crossings-A.crossings.length;
+  const xs=A.crossings.map(x=>{const st=sigClass(x);return `<div class="xrow"><div class="sig ${st}" style="--s:28px">${PED}</div><div><p class="t">${km(x.dist_from_start_m)} 지점 · ${st==='go'?'건널 수 있어요 (예상)':stateWord(x)+' (예상)'}</p><p class="d">${x.arrival.text}</p></div></div>`}).join('')
+   +(noData>0?`<div class="xrow"><div class="sig unk" style="--s:28px">${PED}</div><div><p class="t">${noData}곳은 신호 기록이 없어요</p><p class="d">대기 시간 계산에서 빠졌어요</p></div></div>`:'');
+  document.getElementById('sheet-body').innerHTML=`
+    <table class="cmp"><thead><tr><th></th><th class="me-col">${A.name}</th><th>${B.name}</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr class="${r[3]?'key':''}"><td>${r[0]}</td><td class="me-col">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>
+    <p class="sub-h">${A.name}에서 만날 신호 횡단</p>${xs}
+    <div class="basis">
+      <button class="brow"><span>신호 정보</span><b>${D.signal_source_label}</b></button>
+      <button class="brow"><span>걷는 속도</span><b>시속 3.6km · 내 걸음으로 바꾸기 <span class="go-arrow">›</span></b></button>
+      <button class="brow"><span>대기 시간은 어떻게 계산하나요</span><span class="go-arrow">›</span></button>
+    </div>`;
+}
+
+let walkPos;
+function renderWalk(){
+  clearMarkers();
+  const R=D.jjuk, c=R.coords, cs=cum(c), x=R.crossings[0];
+  const xi=proj(c,x.at), xd=cs[xi], userD=xd-74;
+  walkPos=along(c,cs,userD);
+  const passed=c.slice(0,cs.findIndex(v=>v>userD)).concat([walkPos]);
+  const ahead=[walkPos].concat(c.slice(cs.findIndex(v=>v>userD)));
+  map.getSource('sel').setData({type:'Feature',geometry:{type:'LineString',coordinates:ahead}});
+  map.getSource('passedsrc').setData({type:'Feature',geometry:{type:'LineString',coordinates:passed}});
+  map.setLayoutProperty('alt-line','visibility','none');
+  map.setLayoutProperty('nearby','visibility','none');
+  map.setLayoutProperty('passed','visibility','visible');
+  addMarker(el(`<div class="pin-end"><div class="head">${D.to.name}</div><div class="stem"></div><div class="dot"></div></div>`),D.to.ll,'bottom',[0,5]);
+  addMarker(el(`<div class="sig next go pulse" style="--s:46px">${PED}</div>`),x.at);
+  addMarker(el('<div class="me"></div>'),walkPos);
+  const remainM=R.meters-(x.dist_from_start_m-74);
+  document.getElementById('walk-top').innerHTML=`
+    <div class="row"><div class="sig go" style="--s:52px;border-color:#1f252c">${PED}</div>
+      <div><p class="k">다음 횡단보도</p><p class="dist">74<small>m</small></p></div></div>
+    <div class="state"><p><b>건널 수 있어요</b> <span>(예상)</span></p><span class="tag">패턴 예상</span></div>
+    <p class="hint">도착 때 초록 13초 남음 · 건너는 데 약 12초</p>`;
+  document.getElementById('walk-bot').innerHTML=`
+    <div class="left"><p class="big">${Math.round(remainM/60)}분<small>${km(remainM)} · ${D.to.name}까지</small></p><p class="s">14:45 도착 예상</p></div>
+    <button class="stop-btn" id="end-walk">안내 종료</button>`;
+  document.getElementById('end-walk').onclick=()=>go('result');
+}
+
+function fitResult(detail){
+  const all=D.jjuk.coords.concat(D.fast.coords);
+  const b=all.reduce((b,p)=>b.extend(p),new maplibregl.LngLatBounds(all[0],all[0]));
+  const h=phone.clientHeight;
+  map.fitBounds(b,{padding:detail?{top:118,bottom:h*.6+40,left:36,right:36}:{top:190,bottom:250,left:34,right:34},duration:0});
+}
+
+function renderAll(){
+  const st=phone.dataset.state;
+  document.getElementById('clock').textContent=st==='walk'?'14:30':'14:10';
+  const locate=document.getElementById('locate');
+  if(st==='walk'){renderWalk();locate.style.bottom='124px';
+    const x=D.jjuk.crossings[0].at;
+    map.jumpTo({center:[(walkPos[0]+x[0])/2,(walkPos[1]+x[1])/2],zoom:16.1,bearing:0});
+    map.panBy([0,-30],{duration:0});
+    document.querySelector('.maplibregl-ctrl-bottom-right').style.bottom='110px';
+  } else {
+    renderResult(); renderDetail();
+    locate.style.bottom=st==='detail'?'calc(60% + 12px)':'222px';
+    document.querySelector('.maplibregl-ctrl-bottom-right').style.bottom=st==='detail'?'60%':'208px';
+    fitResult(st==='detail');
+  }
+  const sh=document.getElementById('sheet');sh.classList.toggle('open',st==='detail');sh.setAttribute('aria-hidden',st!=='detail');
+  document.getElementById('open-detail').setAttribute('aria-expanded',st==='detail');
+}
+function go(st){phone.dataset.state=st;renderAll()}
+document.getElementById('open-detail').onclick=()=>go('detail');
+document.getElementById('close-detail').onclick=()=>go('result');
+document.getElementById('start').onclick=()=>go('walk');
+document.getElementById('start2').onclick=()=>go('walk');
+
+(async()=>{
+  D=await (await fetch('../fixture-seongsu.json')).json();
+  phone.dataset.state=['detail','walk'].includes(qs.get('state'))?qs.get('state'):'result';
+  map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/dark',center:D.from.ll,zoom:15,attributionControl:{compact:true},
+    localIdeographFontFamily:"'IBM Plex Sans KR','WenQuanYi Zen Hei',sans-serif",pitchWithRotate:false,dragRotate:false});
+  map.on('load',()=>{
+    asphaltize();
+    const empty={type:'Feature',geometry:{type:'LineString',coordinates:[]}};
+    map.addSource('alt',{type:'geojson',data:empty});
+    map.addSource('sel',{type:'geojson',data:empty});
+    map.addSource('passedsrc',{type:'geojson',data:empty});
+    // 주변(경로 밖) 횡단보도: 아주 작고 흐리게, 상태색 없이
+    const onRoute=D.jjuk.crossings.concat(D.fast.crossings).map(x=>x.at);
+    map.addSource('nearby',{type:'geojson',data:{type:'FeatureCollection',features:D.nearby_crossings_known.filter(n=>onRoute.every(p=>M(p,n.at)>25)).map(n=>({type:'Feature',geometry:{type:'Point',coordinates:n.at}}))}});
+    map.addLayer({id:'nearby',type:'circle',source:'nearby',paint:{'circle-radius':2.2,'circle-color':'#B7BEC8','circle-opacity':.28}});
+    map.addLayer({id:'alt-line',type:'line',source:'alt',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#97A1AE','line-width':5.5,'line-opacity':.85}});
+    map.addLayer({id:'passed',type:'line',source:'passedsrc',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#6B7480','line-width':7}});
+    map.addLayer({id:'sel-case',type:'line',source:'sel',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#14191E','line-width':12}});
+    map.addLayer({id:'sel-line',type:'line',source:'sel',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#F6C343','line-width':7}});
+    map.on('click','alt-line',()=>{if(phone.dataset.state==='result'){sel=sel==='jjuk'?'fast':'jjuk';renderAll()}});
+    renderAll();
+    map.once('idle',()=>setTimeout(()=>{window.__ready=true},400));
+  });
+})();
+</script>
+</body>
+</html>
