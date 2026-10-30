@@ -33,7 +33,7 @@ function renderSettings() {
   setText('settings-pace-copy',s.speed?'길찾기의 소요 시간에 반영해요. 횡단별 신호 검증은 별도로 필요해요.':'측정 전에는 임시 속도로 소요 시간을 계산해요. 설문 응답은 측정값이 아니에요.');
   setText('equipment-summary',!p.equipmentAnswered?'이동 조건 아직 미응답':p.equipment.length?p.equipment.map(e=>EQUIPMENT_LABELS[e]).join(' · '):'선택한 이동 보조기 없음');
   setText('location-environment',window.isSecureContext&&navigator.geolocation?'이 브라우저는 위치 요청 기능을 제공해요. 위치를 실제로 받을 수 있는지는 권한과 기기 설정에 따라 달라요.':'이 브라우저에서는 위치 기능을 사용할 수 없어요.');
-  setText('settings-message',''); $('reset-confirm').hidden=true;
+  setText('settings-message',''); $('reset-confirm').hidden=true; $('share-usage').checked=!store.get('nolog',false);
 }
 function updateManualOutput(){setText('manual-speed-value',Number($('manual-speed').value).toFixed(1)+' km/h');}
 function applySettings() {
@@ -41,7 +41,7 @@ function applySettings() {
   p.mode=$('manual-mode').checked?'manual':'auto';p.autoEnabled=$('auto-mode').checked;
   p.manualSpeed=clampSpeed(Number($('manual-speed').value)/3.6);p.saveSummary=$('save-summary').checked;
   if(p.avoidSteps!==$('avoid-steps').checked)p.avoidStepsSet=true;
-  p.avoidSteps=$('avoid-steps').checked;p.budgetSeconds=Number($('budget-select').value);
+  p.avoidSteps=$('avoid-steps').checked;p.budgetSeconds=Number($('budget-select').value);store.set('nolog',!$('share-usage').checked);
   const saved=writeProfile(p);applyPace();state.budget=p.budgetSeconds;state.routes=null;state.tripKey=null;state.fixedRoute=null;state.error=null;
   if(!saved){setText('settings-message','설정을 저장하지 못했어요. 이번 접속 동안에는 적용돼요.');return;}
   go(settingsReturn);
@@ -84,7 +84,12 @@ async function renderResult(){
   if(state.tripKey!==tripKeyNow()){state.routes=null;state.error=null;}
   status.hidden=false;content.hidden=true;$('result-footer').hidden=true;
   if(!state.routes&&!state.error){status.innerHTML='<b>내 걸음에 맞는 길을 찾고 있어요</b>서울 보행 도로망을 확인하고 있어요.';fitResultSheet();setRoutes(null,null);try{await computeTrip();}catch(e){console.error(e);state.error={title:'경로를 확인하지 못했어요',text:'다른 출입구를 선택하거나 다시 찾아 주세요.'};}if(current!=='result'||request!==resultRequest)return;}else refreshSims();
-  if(state.error){status.innerHTML=`<b>${esc(state.error.title)}</b>${esc(state.error.text)}<button class="btn btn-ghost" data-route-retry>다시 찾기</button><button class="btn btn-primary" data-search="from">출발지 바꾸기</button>`;setRoutes(null,null);clearDyn();fitResultSheet();return;}
+  if(state.error){logRouteSearch();const k=state.error.kind,retry=k==='network'||!k;
+    // 오류마다 다음 행동을 하나만 크게: 연결 문제면 다시 찾기, 지역 밖·너무 가까움·출입구면 장소 다시 고르기
+    const pick=state.error.pick||'to',pickLabel=pick==='from'?'출발지 다시 고르기':'도착지 다시 고르기';
+    status.innerHTML=`<b>${esc(state.error.title)}</b>${esc(state.error.text)}`+(retry?`<button class="btn btn-primary" data-route-retry>다시 찾기</button>`:`<button class="btn btn-primary" data-pick-again="${pick}">${pickLabel}</button><button class="btn btn-ghost" data-pick-again="${pick==='from'?'to':'from'}">${pick==='from'?'도착지':'출발지'} 바꾸기</button>`);
+    setRoutes(null,null);clearDyn();fitResultSheet();return;}
+  logRouteSearch();
   status.hidden=true;content.hidden=false;$('result-footer').hidden=false;
   const S=state.sims,ps=paceState(),R=state.routes,B=R.short.m,J=R.jjuk.m;setText('result-pace',paceRowText(ps));
   // 빠른 길 vs 쭉고 길: 걷는 시간과 이동 마찰 원시값만 보여 준다(점수 없음). 쭉고 길은 의미 있는 대안이 있을 때만.
@@ -104,8 +109,10 @@ async function renderResult(){
   $('route-metrics').classList.toggle('one',state.same);
   const sim=S[state.focus],r=state.routes[state.focus];
   $('unknown-xings').hidden=true;
-  setText('result-note','예상 도보 시간 · 신호 대기는 따로 표시');
-  {const wn=(m)=>m.waitTotal?`${m.waitKnown}/${m.waitTotal}곳`:'0곳';setText('wait-note',state.same?`예상 신호 대기는 신호 패턴이 확인된 곳만 더했어요(확인 ${wn(B)}) · ${planPeriodText()}`:`예상 신호 대기는 신호 패턴이 확인된 곳만 더했어요(쭉고 길 ${wn(J)}, 빠른 길 ${wn(B)}) · ${planPeriodText()}`);}
+  setText('result-note','예상 도보 시간 · 신호 대기는 따로 표시'+(state.snapNote?' · '+state.snapNote:''));
+  {const wn=(m)=>m.waitTotal?`${m.waitKnown}/${m.waitTotal}곳`:'0곳',shown=state.same?[B]:[J,B];
+    // 신호 정보 없음: 신호가 없거나, 있어도 패턴이 확인된 곳이 없으면 그렇게 말한다(0초로 보이지 않게).
+    setText('wait-note',shown.every(m=>!m.waitTotal)?'이 길에는 신호 횡단이 없어요.':shown.every(m=>!m.waitKnown)?'이 길의 신호는 아직 패턴이 확인되지 않아 예상 신호 대기를 더하지 않았어요.':state.same?`예상 신호 대기는 신호 패턴이 확인된 곳만 더했어요(확인 ${wn(B)}) · ${planPeriodText()}`:`예상 신호 대기는 신호 패턴이 확인된 곳만 더했어요(쭉고 길 ${wn(J)}, 빠른 길 ${wn(B)}) · ${planPeriodText()}`);}
   setText('route-facts',`거리 ${km(r.length)} · 시간은 걷는 시간만(신호 대기는 따로 표시) · 추가 ${Math.min(state.budget,180)/60}분 이내의 길만 비교`);
   $('cov-note').hidden=true;
   setText('result-safety',`신호 횡단은 서울시 횡단보도 자료(보행등 있음)로 세며 일부만 확인돼 실제보다 적을 수 있어요. 오르막·급경사는 서울시 등고선으로 계산한 추정이고, 계단은 지도에 표시된 곳만 세요. 실제 신호·턱·출입구는 현장에서 확인하고, 건널지는 직접 정해 주세요.${readProfile().avoidSteps?' 계단은 제외했어요.':''}`);

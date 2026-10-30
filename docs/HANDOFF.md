@@ -1,5 +1,7 @@
 # 쭉고 인수인계
 
+> **2026-10-30부터 공개 준비 단계: [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md)의 TODO를 줄이는 것만 한다.** 신호 예측은 튜닝 중지, 11/10~15에 `scripts/signal_readiness.cjs`로 재평가. 새 기능 금지. 결정 기록 `docs/discussions/2026-10-30-release-candidate.md`.
+
 > **다음 할 일은 [NEXT_STEPS](NEXT_STEPS.md)부터 본다**(배포 확인 → 신호 방향 검증 → 신호 횡단 세기 → 걷기 화면 → 문서 정리).
 
 > **최신(2026-10-29 밤, 빠른 길 vs 쭉고 길 MVP):** 결과 화면을 "빠른 길 vs 쭉고 길" 비교로 바꿨다. 빠른 길 = 걷는 시간만으로 가장 빠른 길. 쭉고 길 = 추가 3분(설정이 더 짧으면 그만큼) 안에서 신호 횡단 1개·계단 1구간·오르막 10m·8% 이상 급경사 100m 중 하나 이상을 줄이고 다른 지표는 나빠지지 않는 길(같은 길 겹침 90% 이상·추가 10초 이하 제외). 없으면 대안을 만들지 않는다. 표시: 걷는 시간·신호 횡단·계단·오르막·급경사(원시값, 점수 없음) + 한 줄 설명. 데이터: 그래프 조각의 `f`(scripts/build_friction_layer.py, 서울시 OA-22241 등고선 지면고도·서울 횡단보도 표준 자료), `seoul/crosswalks_std.json`. 근거 실험 `reports/experiments/FRICTION_OD_500_V3.md`, 수동 QA `reports/qa/QA_2026-10-29.md`. 신호 예측·출발 시각 추천은 이 비교판에서 쓰지 않는다. 링크로 길 열기: `?from=위도,경도&to=위도,경도&fn=&tn=`.

@@ -5,7 +5,7 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const elements = new Map();
 const element = id => {
-  if (!elements.has(id)) elements.set(id, { textContent: '', addEventListener() {},querySelector(){return null;},classList:{toggle(){}} });
+  if (!elements.has(id)) elements.set(id, { textContent: '', addEventListener() {},querySelector(){return null;},classList:{toggle(){},add(){},remove(){}} });
   return elements.get(id);
 };
 // 저장소·이벤트를 흉내 낸다: 저장 실패(용량 초과·사생활 보호 모드)와 pagehide를 시험하려면 필요하다.
@@ -52,26 +52,41 @@ vm.runInContext(`
   TERRAIN=null;
   // 빠른 길 vs 쭉고 길: 계단이 있는 짧은 길과 평지로 돌아가는 길. 쭉고 길은 의미 있는 대안일 때만 고른다.
   G.node.clear(); G.adj.clear();
-  G.node.set(1,{x:100,y:100,h:10}); G.node.set(2,{x:200,y:100,h:10}); G.node.set(3,{x:150,y:180,h:10});
-  const edges=[{a:1,b:2,len:89,cls:3,f:null},{a:1,b:3,len:99,cls:2,f:null},{a:3,b:2,len:99,cls:2,f:null}];
+  G.node.set(1,{x:100,y:100,h:10}); G.node.set(2,{x:800,y:100,h:10}); G.node.set(3,{x:450,y:200,h:10});
+  const edges=[{a:1,b:2,len:600,cls:3,f:null},{a:1,b:3,len:320,cls:2,f:null},{a:3,b:2,len:320,cls:2,f:null}];
   for(const e of edges) for(const id of [e.a,e.b]) { if(!G.adj.has(id))G.adj.set(id,[]);G.adj.get(id).push(e); }
-  state.src=1;state.dst=2;state.from={ll:fromQ(100,100)};state.to={ll:fromQ(200,100)};
+  state.src=1;state.dst=2;state.from={ll:fromQ(100,100)};state.to={ll:fromQ(800,100)};
   const mk=w=>{const st=searchFriction(1,2,w),r=buildRoute(st,1,state.from.ll,state.to.ll);r.steps=st;r.m=routeMetrics(r,st);return r;};
   const fast=mk([0,0,0,0,0]), level=mk([0,0,0,0,8]);
   assert.equal(fast.m.stairs,1);assert.equal(level.m.stairs,0);assert(level.m.walk>fast.m.walk);
   const extra=level.m.walk-fast.m.walk;
   assert.equal(pickAlternative(fast,[level],extra-1),null,'허용 시간을 넘으면 대안 없음');
   assert.equal(pickAlternative(fast,[level],180),level,'계단을 줄이면 대안');
-  assert.equal(compareLine(fast,level),extraText(extra)+'로 계단을 피할 수 있어요');
+  assert.equal(compareLine(fast,level),extraText(extra)+'로 계단 1구간을 피할 수 있어요');
   assert.equal(pickAlternative(fast,[fast],180),null,'같은 길은 대안이 아님');
+  // 추천 품질 기준: 억지 대안보다 대안 없음
+  const tweak=(m,len)=>({...level,length:len??level.length,m:{...level.m,...m}});
+  assert.equal(altRejectReason(tweak({walk:fast.m.walk+170}),fast,180),'detour','짧은 길에서 크게 돌아가면 대안 아님');
+  assert.equal(altRejectReason({...fast,m:{...fast.m,walk:fast.m.walk+30,stairs:0}},fast,180),'same','같은 길(겹침)은 대안 아님');
+  const B2={length:1200,steps:[],m:{walk:1000,sig:2,stairs:0,gain:30,steep:300,cross:3,big:0,wait:0,waitKnown:0,waitUnknown:0}};
+  const alt2=(m,len=1250)=>({length:len,steps:[],m:{...B2.m,...m}});
+  assert.equal(altRejectReason(alt2({walk:1100,sig:1}),B2,180),'small_gain','신호 1곳 줄이려고 100초 더 걷는 길은 대안 아님');
+  assert.equal(altRejectReason(alt2({walk:1050,sig:1}),B2,180),null,'신호 1곳에 50초 추가는 대안');
+  assert.equal(altRejectReason(alt2({walk:1060,stairs:0,steep:100,gain:40}),B2,180),'worse','오르막이 크게 늘면 대안 아님');
+  assert.equal(altRejectReason(alt2({walk:1100,gain:25}),B2,180),'no_gain','오르막 5m 감소는 개선 아님');
+  assert.equal(altRejectReason(alt2({walk:1130,gain:18}),B2,180),'small_gain','오르막 12m에 130초는 과함');
+  assert.equal(altRejectReason(alt2({walk:1100,steep:150}),B2,180),null,'급경사 150m에 100초는 대안');
+  // 문구 숫자는 비교표에 보이는 값의 차이: 급경사 137→0은 표에 140→0이므로 140m
+  assert.equal(compareLine(B2,alt2({walk:1048,steep:163})),'+48초로 급경사 140m를 줄일 수 있어요');
+  assert.equal(compareLine(fast,level),extraText(extra)+'로 계단 1구간을 피할 수 있어요');
   // 다른 지표가 나빠지면 대안 아님
   const worse={...level,m:{...level.m,sig:fast.m.sig+1}};
   assert.equal(pickAlternative(fast,[worse],180),null,'신호 횡단이 늘면 대안 아님');
   // 한 줄 설명 문장: 조사와 '피할/줄일'
   const B={m:{walk:600,sig:2,stairs:0,gain:30,steep:300,cross:3,big:0}};
   assert.equal(compareLine(B,{m:{...B.m,walk:625,sig:1}}),'+25초로 신호 횡단 1개를 줄일 수 있어요');
-  assert.equal(compareLine(B,{m:{...B.m,walk:617,steep:0}}),'+17초로 급경사 구간 300m를 피할 수 있어요');
-  assert.equal(compareLine(B,{m:{...B.m,walk:638,sig:1,steep:170}}),'+38초로 신호 횡단 1개와 급경사 구간 130m를 줄일 수 있어요');
+  assert.equal(compareLine(B,{m:{...B.m,walk:617,steep:0}}),'+17초로 급경사 300m를 피할 수 있어요');
+  assert.equal(compareLine(B,{m:{...B.m,walk:638,sig:1,steep:170}}),'+38초로 신호 횡단 1개와 급경사 130m를 줄일 수 있어요');
   assert.equal(compareLine(B,{m:{...B.m,walk:690,gain:15}}),'+1분 30초로 오르막 15m를 줄일 수 있어요');
   assert.equal(compareLine(B,{m:{...B.m,walk:660,gain:15}}),'+1분으로 오르막 15m를 줄일 수 있어요');
   // ---- 예상 신호 대기: 신뢰 조건을 모두 만족하는 패턴만 숫자로 쓴다 ----

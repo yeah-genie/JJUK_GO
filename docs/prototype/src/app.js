@@ -23,6 +23,34 @@ const store = {
 };
 
 /*WALKING_PROFILE*/
+// ---------- 익명 사용 기록 ----------
+// 제품 검증에 필요한 것만 보낸다: 대안 유무, 추가 시간, 줄어든 요소, 고른 길(빠른 길/쭉고 길), 걷기 시작.
+// 좌표·장소 이름·이동 궤적·기기 식별자는 보내지 않는다. trip은 길 찾기 1번마다 새로 만드는 임의 값(저장하지 않음)이라
+// 같은 검색 안의 기록끼리만 이어진다. 설정에서 끌 수 있고, 브라우저의 추적 거부(GPC/DNT)도 따른다.
+const LOG_EVENTS = ["route_search", "selected_route", "walking_started"];
+const logOff = () => !!(window.JJUKGO_NO_LOG || store.get("nolog", false) || navigator.globalPrivacyControl || navigator.doNotTrack === "1");
+const newTripId = () => Math.random().toString(36).slice(2, 10);
+const distBand = m => m < 500 ? "<0.5km" : m < 1000 ? "0.5-1km" : m < 2000 ? "1-2km" : m < 5000 ? "2-5km" : "5km+";
+function logEvent(name, props = {}) {
+  if (!LOG_EVENTS.includes(name) || logOff()) return false;
+  const body = JSON.stringify({ e: name, v: 1, ...props });
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }))) return true;
+    fetch("/api/event", { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true }).catch(() => {});
+    return true;
+  } catch { return false; }
+}
+// 길 찾기 결과 1번에 기록 1번(같은 결과를 다시 그릴 때는 보내지 않는다)
+function logRouteSearch() {
+  if (state.loggedTrip === state.tripKey) return;
+  state.loggedTrip = state.tripKey; state.tripId = newTripId();
+  const d = state.from && state.to ? distBand(distLL(state.from.ll, state.to.ll)) : null;
+  if (state.error) return logEvent("route_search", { trip: state.tripId, outcome: state.error.kind || "error", dist: d });
+  const R = state.routes, alt = !!R.alt;
+  logEvent("route_search", { trip: state.tripId, outcome: "ok", dist: d, alternative_available: alt,
+    time_delta: alt ? Math.round((R.jjuk.m.walk - R.short.m.walk) / 5) * 5 : 0,
+    improved_factors: alt ? altGains(R.jjuk, R.short) : [], compute_ms: Math.round((state.lastRouteMs || 0) / 50) * 50 });
+}
 const DEMO_MODE = false; // 공개 UI에서는 가짜 이동을 재생하지 않는다.
 
 // ---------- 좌표 ----------
@@ -166,11 +194,14 @@ function loadCell(k) {
   return G.cells.get(k);
 }
 let snapNodeId = -1;
-function snap(ll) {
+// 검색·지도에서 고른 장소는 점이 건물·시장·캠퍼스 한가운데일 수 있어 가장 가까운 보행로까지 150m 안에서 잇는다(화면에 거리를 알린다).
+// 내 위치(GPS)는 35m까지만.
+const SNAP_GPS_M = 35, SNAP_PLACE_M = 150;
+function snap(ll, maxD = SNAP_GPS_M, ok = null) {
   let nearest = null, best = Infinity;
   const seen = new Set();
   for (const edges of G.adj.values()) for (const edge of edges) {
-    if (seen.has(edge) || edge.cls > 2 || edge.sig || !G.node.has(edge.a) || !G.node.has(edge.b)) continue;
+    if (seen.has(edge) || edge.cls > 2 || edge.sig || !G.node.has(edge.a) || !G.node.has(edge.b) || (ok && !ok(edge))) continue;
     seen.add(edge);
     const pts = edgePts(edge, edge.a).map(p => fromQ(...p));
     const cum = [0];
@@ -178,7 +209,7 @@ function snap(ll) {
     const projection = projectOnRoute({coords:pts,cum}, ll);
     if (projection.offset < best) { best = projection.offset; nearest = {edge,pts,cum,projection}; }
   }
-  if (!nearest || best > 35) return {id:null,d:best};
+  if (!nearest || best > maxD) return {id:null,d:best};
   const {edge,pts,cum,projection} = nearest;
   const at = projection.distance, length = cum[cum.length - 1];
   if (at < 1) return {id:edge.a,d:distLL(ll,pts[0])};
@@ -653,6 +684,13 @@ const FRICTION_WEIGHTS = [[0,0,0,0,0,0], [0,20,0,0,0,0], [0,60,0,0,0,0], [0,150,
 const ALT_GAIN = [["sig", 1], ["stairs", 1], ["steep", 100], ["gain", 10], ["wait", 30]];          // 이만큼 줄면 의미 있는 개선
 const ALT_WORSE = { sig: 0, stairs: 0, big: 0, cross: 1, gain: 5, steep: 50, wait: 20 };        // 이만큼까지만 나빠져도 됨
 const ALT_MAX_EXTRA = 180, SAME_OVERLAP = 0.9, SAME_EXTRA = 10;
+// 추천 품질 기준: 억지 대안보다 '대안 없음'이 낫다.
+//  - 너무 많이 돌아가는 길: 추가 시간이 max(60초, 빠른 길 걷는 시간의 25%)를 넘으면 버린다(짧은 길에서 +3분 같은 우회 방지).
+//  - 사실상 같은 길: 빠른 길과 겹치지 않는 구간이 60m 미만이면 버린다.
+//  - 개선량에 비해 추가 시간이 큰 길: 줄인 요소별로 허용하는 추가 시간(초) 중 가장 큰 값까지만.
+//  - 다른 요소가 크게 나빠지는 길: ALT_WORSE.
+const ALT_DETOUR_MIN = 60, ALT_DETOUR_FRAC = 0.25, SAME_UNIQUE_M = 60;
+const ALT_WORTH = { sig: d => 60 * d, stairs: d => 180 * d, steep: d => 1.2 * d, gain: d => 9 * d, wait: d => d };
 function searchFriction(src, dst, w) {
   const [wx, ws, wr, wst, wt, ww = 0] = w, D = G.node.get(dst);
   const hEst = n => Math.hypot((n.x - D.x) * KXQ, (n.y - D.y) * KYQ) / SPEED * 0.999;
@@ -758,13 +796,24 @@ function altGains(alt, base) {
     return base.m[k] - alt.m[k] >= thr;
   }).map(([k]) => k);
 }
+// 대안이 아닌 이유(없으면 null). QA와 시험에서 왜 대안이 없는지 볼 수 있게 이름을 돌려준다.
+function altRejectReason(c, base, limit) {
+  const extra = c.m.walk - base.m.walk, overlap = routeOverlap(c, base);
+  if (extra <= SAME_EXTRA || overlap >= SAME_OVERLAP || c.length * (1 - overlap) < SAME_UNIQUE_M) return "same";
+  if (extra > limit) return "budget";
+  if (extra > Math.max(ALT_DETOUR_MIN, base.m.walk * ALT_DETOUR_FRAC)) return "detour";
+  if (Object.entries(ALT_WORSE).some(([k, lim]) => (k === "wait" ? (base.m.waitKnown > 0 && c.m.waitKnown >= base.m.waitKnown && c.m.waitUnknown <= base.m.waitUnknown ? c.m.wait - base.m.wait : 0) : c.m[k] - base.m[k]) > lim)) return "worse";
+  const g = altGains(c, base);
+  if (!g.length) return "no_gain";
+  if (extra > Math.max(...g.map(k => ALT_WORTH[k](base.m[k] - c.m[k])))) return "small_gain";
+  return null;
+}
 function pickAlternative(base, cands, limit) {
-  let best = null;
+  let best = null; pickAlternative.rejected = {};
   for (const c of cands) {
     const extra = c.m.walk - base.m.walk;
-    if (extra <= SAME_EXTRA || extra > limit || routeOverlap(c, base) >= SAME_OVERLAP) continue;
-    if (Object.entries(ALT_WORSE).some(([k, lim]) => (k === "wait" ? (base.m.waitKnown > 0 && c.m.waitKnown >= base.m.waitKnown && c.m.waitUnknown <= base.m.waitUnknown ? c.m.wait - base.m.wait : 0) : c.m[k] - base.m[k]) > lim)) continue;
-    if (!altGains(c, base).length) continue;
+    const why = altRejectReason(c, base, limit);
+    if (why) { pickAlternative.rejected[why] = (pickAlternative.rejected[why] || 0) + 1; continue; }
     if (!best || extra < best.m.walk - base.m.walk) best = c;
   }
   return best;
@@ -779,14 +828,17 @@ function hasBatchim(word) {
 }
 const josa = (w, a, b) => w + (hasBatchim(w) ? a : b);
 function extraText(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "+" + (m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"); }
+// 문구의 숫자는 비교표에 보이는 값(반올림한 값)끼리의 차이로 만든다. 그래야 표와 문구가 항상 맞는다.
+const shownValue = (k, m) => k === "steep" ? Math.round(m.steep / 10) * 10 : k === "gain" ? Math.round(m.gain) : m[k];
+const shownDiff = (k, b, a) => shownValue(k, b) - shownValue(k, a);
 function compareLine(base, alt) {
   const g = altGains(alt, base), parts = [], b = base.m, a = alt.m;
   let avoidAll = true;
   for (const k of g) {
     if (k === "sig") { parts.push(`신호 횡단 ${b.sig - a.sig}개`); avoidAll = avoidAll && a.sig === 0; }
-    if (k === "stairs") { parts.push(a.stairs === 0 ? "계단" : `계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
-    if (k === "steep") { parts.push(`급경사 구간 ${Math.round((b.steep - a.steep) / 10) * 10}m`); avoidAll = avoidAll && a.steep < 10; }
-    if (k === "gain") { parts.push(`오르막 ${Math.round(b.gain - a.gain)}m`); avoidAll = false; }
+    if (k === "stairs") { parts.push(`계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
+    if (k === "steep") { parts.push(`급경사 ${shownDiff("steep", b, a)}m`); avoidAll = avoidAll && shownValue("steep", a) === 0; }
+    if (k === "gain") { parts.push(`오르막 ${shownDiff("gain", b, a)}m`); avoidAll = false; }
     if (k === "wait") { parts.push(`신호 대기 ${waitText(b.wait - a.wait)}`); avoidAll = false; }
   }
   const list = parts.length === 1 ? parts[0] : parts.slice(0, -1).map((p, i) => i === parts.length - 2 ? josa(p, "과", "와") : p).join(", ") + " " + parts[parts.length - 1];
@@ -805,34 +857,37 @@ function routeSummary(base, alt, focus) {
   for (const k of order) {
     if (k === "stairs") { parts.push(`계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
     if (k === "sig") { parts.push(`신호 횡단 ${b.sig - a.sig}곳`); avoidAll = avoidAll && a.sig === 0; }
-    if (k === "steep") { parts.push(`급경사 ${Math.round((b.steep - a.steep) / 10) * 10}m`); avoidAll = avoidAll && a.steep < 10; }
-    if (k === "gain") { parts.push(`오르막 ${Math.round(b.gain - a.gain)}m`); avoidAll = false; }
+    if (k === "steep") { parts.push(`급경사 ${shownDiff("steep", b, a)}m`); avoidAll = avoidAll && shownValue("steep", a) === 0; }
+    if (k === "gain") { parts.push(`오르막 ${shownDiff("gain", b, a)}m`); avoidAll = false; }
   }
   const first = order[0], more = [`${aboutText(a.walk - b.walk)} 추가`];
   if (first === "wait") {
     // 예상 신호 대기가 줄어드는 길: 대표 문장은 대기시간. 건널 수 있는지는 말하지 않는다.
     for (const p of parts) more.push(`${p} 감소`);
     if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
-    if (a.gain - b.gain >= 1) more.push(`오르막 약 ${Math.round(a.gain - b.gain)}m 증가`);
-    if (a.steep - b.steep >= 10) more.push(`급경사 약 ${Math.round((a.steep - b.steep) / 10) * 10}m 증가`);
+    if (shownDiff("gain", a, b) >= 1) more.push(`오르막 ${shownDiff("gain", a, b)}m 증가`);
+    if (shownDiff("steep", a, b) >= 10) more.push(`급경사 ${shownDiff("steep", a, b)}m 증가`);
     return { badge: "덜 멈추고 걸어요", kind: "sig", headline: `신호에서 ${aboutText(b.wait - a.wait)} 덜 기다릴 것으로 예상돼요`, sub: more.join(" · "), wait: true };
   }
   const joined = parts.length === 1 ? parts[0] : josa(parts[0], "과", "와") + " " + parts.slice(1).join(", ");
   const badge = first === "stairs" ? (a.stairs === 0 ? "계단 없이 더 편하게 걸어요" : "계단을 줄여 더 편하게 걸어요")
     : first === "sig" ? "덜 멈추고 걸어요" : first === "steep" ? "가파른 길을 덜 걸어요" : "오르막을 덜 올라요";
   if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
-  if (a.gain - b.gain >= 1) more.push(`오르막 약 ${Math.round(a.gain - b.gain)}m 증가`);
-  if (a.steep - b.steep >= 10) more.push(`급경사 약 ${Math.round((a.steep - b.steep) / 10) * 10}m 증가`);
+  if (shownDiff("gain", a, b) >= 1) more.push(`오르막 ${shownDiff("gain", a, b)}m 증가`);
+  if (shownDiff("steep", a, b) >= 10) more.push(`급경사 ${shownDiff("steep", a, b)}m 증가`);
   return { badge, kind: first, headline: `${josa(joined, "을", "를")} ${avoidAll ? "피하는" : "줄이는"} 길`, sub: more.join(" · "), wait: false };
 }
 async function computeTrip() {
   const request = ++tripRequest;
   const key = tripKeyNow();
   if (state.tripKey === key && state.routes) { refreshSims(); return; }
-  state.tripKey = key; state.routes = null; state.error = null;
+  state.tripKey = key; state.routes = null; state.error = null; state.snapNote = ""; state.tripStartedAt = performance.now();
   const d = distLL(state.from.ll, state.to.ll);
-  if (d > 30000) { state.error = {title:"걷기 범위를 나눠 주세요",text:"직선30km를 넘는 구간은 중간 지점을 골라 나눠서 찾아 주세요."}; return; }
-  if (d < 30) { state.error = { title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
+  if (d > 30000) { state.error = {kind:"too_far",title:"걷기 범위를 나눠 주세요",text:"직선30km를 넘는 구간은 중간 지점을 골라 나눠서 찾아 주세요."}; return; }
+  if (d < 30) { state.error = { kind: "too_near", title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
+  // 지원 지역: 보행 그래프 조각이 있는 곳(서울). 밖이면 엉뚱한 출입구 안내 대신 지역 밖이라고 말한다.
+  const outside = [["출발지", state.from], ["도착지", state.to]].filter(([, p]) => !cellsFor(p.ll, p.ll, 60).length).map(([n]) => n);
+  if (outside.length) { state.error = { kind: "outside", title: `${outside.join("·")}가 지원 지역 밖이에요`, text: "쭉고는 서울 안의 보행 도로망에서만 길을 찾아요. 서울 안에서 다시 골라 주세요.", pick: outside[0] === "출발지" ? "from" : "to" }; return; }
   const cells = cellsFor(state.from.ll, state.to.ll, Math.max(700, d * 0.25));
   if (cells.some(k => !G.cells.has(k))) setStatus("길 찾는 중…", `지도 조각 ${cells.length}개를 받고 있어요${d > 5000 ? " (먼 길이라 조금 걸려요)" : ""}.`);
   try {
@@ -843,12 +898,29 @@ async function computeTrip() {
     REAL = plans;
   } catch (err) {
     if (request !== tripRequest || key !== tripKeyNow()) return;
-    state.error = {title:"지도 연결이 끊겼어요",text:"연결을 확인하고 아래에서 다시 시도해 주세요."};
+    state.error = {kind:"network",title:"지도 연결이 끊겼어요",text:"연결을 확인하고 아래에서 다시 시도해 주세요."};
     return;
   }
-  const a = snap(state.from.ll), b = snap(state.to.ll);
-  if (a.id == null || b.id == null || a.d > 35 || b.d > 35) { state.error = { title: "출입구 가까이에서 골라 주세요", text: "보행로와 35m 넘게 떨어져 있어 임의로 연결하지 않았어요. 지도의 실제 출입구나 보행로를 출발·도착으로 선택해 주세요." }; return; }
+  const lim = p => p.me ? SNAP_GPS_M : SNAP_PLACE_M;
+  let a = snap(state.from.ll, lim(state.from)), b = snap(state.to.ll, lim(state.to));
+  // 연결 실패인데 주변 500m에 보행로 점이 거의 없으면 지원 지역 밖(서울 경계 근처는 지도 조각만 있고 보행로 자료가 없다)
+  const sparse = ll => { let n = 0; for (const v of G.node.values()) if (distLL(fromQ(v.x, v.y), ll) < 500 && ++n >= 20) return false; return true; };
+  const far = [["출발지", state.from, a], ["도착지", state.to, b]].filter(([, p, s]) => (s.id == null || s.d > lim(p)) && sparse(p.ll)).map(([n]) => n);
+  if (far.length) { state.error = { kind: "outside", title: `${far.join("·")}가 지원 지역 밖이에요`, text: "쭉고는 서울 안의 보행 도로망에서만 길을 찾아요. 서울 안에서 다시 골라 주세요.", pick: far[0] === "출발지" ? "from" : "to" }; return; }
+  if (a.id == null || b.id == null || a.d > lim(state.from) || b.d > lim(state.to)) { const gps = (a.id == null || a.d > lim(state.from)) && state.from.me; state.error = { kind: "snap", title: "출입구 가까이에서 골라 주세요", text: `보행로와 ${gps ? SNAP_GPS_M : SNAP_PLACE_M}m 넘게 떨어져 있어 임의로 연결하지 않았어요. 지도의 실제 출입구나 보행로를 출발·도착으로 선택해 주세요.`, pick: gps || a.id == null || a.d > lim(state.from) ? "from" : "to" }; return; }
+  // 서로 이어지지 않은 작은 보행로 조각(캠퍼스·단지 안 길 등)에 붙었으면, 반대쪽과 이어진 보행로로 다시 붙인다
+  const reach = from => { const seen = new Set([from]), q = [from], avoid = readProfile().avoidSteps;
+    while (q.length) { const u = q.pop(); for (const e of G.adj.get(u) || []) { if (e.cls === 3 && avoid) continue; const v = e.a === u ? e.b : e.a; if (!seen.has(v) && G.node.has(v)) { seen.add(v); q.push(v); } } }
+    return seen; };
+  const ra = reach(a.id);
+  if (!ra.has(b.id)) {
+    const rb = reach(b.id);
+    if (ra.size >= rb.size) { const nb = snap(state.to.ll, lim(state.to), e => ra.has(e.a) && ra.has(e.b)); if (nb.id != null) b = nb; }
+    else { const na = snap(state.from.ll, lim(state.from), e => rb.has(e.a) && rb.has(e.b)); if (na.id != null) a = na; }
+  }
   state.src = a.id; state.dst = b.id;
+  // 장소 점에서 보행로까지 40m 넘게 떨어졌으면 결과 화면에 알린다(그 구간은 직선으로 걷는 시간에 더한다. buildRoute)
+  state.snapNote = [["출발지", a], ["도착지", b]].filter(([, s]) => s.d > 40).map(([n, s]) => `${n}에서 보행로까지 약 ${Math.round(s.d / 10) * 10}m는 직선으로 계산`).join(" · ");
   const t0 = performance.now();
   // 먼 길은 탐색 횟수를 줄인다(응답 시간)
   const weights = d > 5000 ? FRICTION_WEIGHTS.filter((_, i) => [0, 2, 5, 8, 11, 14, 17, 21].includes(i)) : FRICTION_WEIGHTS;
@@ -866,8 +938,9 @@ async function computeTrip() {
   const short = cands[0] || null;
   const alt = short ? pickAlternative(short, cands.slice(1), Math.min(state.budget ?? ALT_MAX_EXTRA, ALT_MAX_EXTRA)) : null;
   const jjuk = alt || short;
-  state.lastRouteMs = performance.now() - t0; state.candidateCount = cands.length;
-  if (!short || !jjuk) { state.error = { title: "길을 못 찾았어요", text: readProfile().avoidSteps ? "확인된 계단을 제외한 연결 경로를 찾지 못했어요. 이동 조건이나 출입구를 확인해 주세요." : "보행 도로망에서 두 곳의 연결을 찾지 못했어요. 다른 출입구를 골라 주세요." }; return; }
+  // 계산 시간: lastRouteMs = 후보 탐색만, lastTripMs = 지도 조각·신호 패턴 받기까지 포함(사용자가 기다리는 시간)
+  state.lastRouteMs = performance.now() - t0; state.lastTripMs = performance.now() - state.tripStartedAt; state.candidateCount = cands.length;
+  if (!short || !jjuk) { state.error = { kind: "no_route", title: "길을 못 찾았어요", text: readProfile().avoidSteps ? "확인된 계단을 제외한 연결 경로를 찾지 못했어요. 이동 조건이나 출입구를 확인해 주세요." : "보행 도로망에서 두 곳의 연결을 찾지 못했어요. 다른 출입구를 골라 주세요." }; return; }
   state.routes = { short, jjuk, dep: state.dep, budget: state.budget, alt: !!alt };
   refreshSims();
 }
@@ -1073,7 +1146,7 @@ function renderWalk(demo = false, resume = false) {
   setSheet("walk", "mid");
   if (route) fit([route.coords], { top: 170 });
   $("walk-end").hidden = free;
-  $("walk-done").textContent = "걷기 끝내기";
+  $("walk-done").textContent = "걷기 끝내기"; $("walk-done").classList.remove("arrived");
   // 신호 안내는 처음 5초만 눈에 띄게 보이고 이후엔 회색 한 줄로 줄인다
   const born = performance.now(), saySync = () => {
     const soft = performance.now() - born > 5000;
@@ -1106,7 +1179,7 @@ function renderWalk(demo = false, resume = false) {
     const left = dist == null ? null : Math.max(0, route.length - dist);
     $("w-left").textContent = left == null ? "—" : km(left);
     const eta = left == null ? "—" : left < 10 ? "도착 근처" : "약 " + mins(left / (trackSpeed(walkTrack) || SPEED));
-    setPeek("walk", `<span>${demo ? "움직임 시연" : "GPS 걷기"} · 남은 ${$("w-left").textContent}</span><small>${eta}</small>`);
+    setPeek("walk", `<span>${state.same || k === "short" ? "빠른 길" : "쭉고 길"} · 남은 ${$("w-left").textContent}</span><small>${eta}</small>`);
     const next = dist == null ? null : routeGuidance(route, dist);
     if (next) {
       setText("next-label", "다음 안내"); setText("next-dist", Math.round(next.d - dist) + "m"); setText("next-state", next.label);
@@ -1144,6 +1217,8 @@ function renderWalk(demo = false, resume = false) {
     try {
       gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
       if (walkTrack) trackAdd(walkTrack, gpsFix);
+      // 걷기 시작 = 이 길로 걷기를 누른 뒤 위치가 실제로 처음 잡힌 때(위치 값은 보내지 않는다)
+      if (!free && state.walkLogPending) { logEvent("walking_started", { trip: state.tripId, route: state.walkLogPending }); state.walkLogPending = null; }
       walkStats();
       if (free) { update(null, gpsFix.ll); gpsStatus(gpsOk(gpsFix)); return; }
       const progress = projectOnRoute(route, gpsFix.ll);
@@ -1162,13 +1237,20 @@ function renderWalk(demo = false, resume = false) {
       const nearEnd = route.length-progress.distance < 20 && distLL(gpsFix.ll,route.coords[route.coords.length-1]) < 25 && gpsFix.accuracy <= 25;
       arrivalFixes = nearEnd && (!previous || gpsFix.timestamp > (state.arrivalTimestamp || 0)) ? arrivalFixes+1 : 0;
       state.arrivalTimestamp=gpsFix.timestamp;
-      if (arrivalFixes>=2) { gpsStatus("도착지 근처예요. 걷기를 끝내면 기록을 볼 수 있어요"); return; }
+      if (arrivalFixes>=2) { showArrival(); return; }
       gpsStatus(gpsOk(gpsFix));
     } catch (err) { update(null); gpsError(err); }
   }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 });
   gpsStaleTimer = setInterval(() => {
     if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 30초 넘게 갱신이 없어요. 다시 연결해 주세요"); }
   }, 5000);
+}
+// 도착: 위쪽 카드를 도착으로 바꾸고, 끝내기 버튼을 기록 보기로 바꾼다(자동으로 화면을 넘기지 않는다)
+function showArrival() {
+  setText("next-label", "도착"); setText("next-dist", "도착지 근처예요"); setText("next-state", `${state.to?.name ?? "도착지"} 주변 출입구를 확인해 주세요`);
+  $("next-state").hidden = false; $("w-left-col").hidden = true; $("walk-reroute").hidden = true;
+  $("walk-done").textContent = "도착 · 기록 보기"; $("walk-done").classList.add("arrived");
+  gpsStatus("도착지 근처예요. 걷기를 끝내면 오늘 걸음을 볼 수 있어요");
 }
 // 걷는 중 상태 문구는 5m 단위로만 바뀐다(스크린 리더가 매번 읽지 않게)
 const gpsOk = fix => `GPS 연결 · 오차 약 ${Math.max(5, Math.round(fix.accuracy / 5) * 5)}m`;
@@ -1183,7 +1265,7 @@ function rerouteFromGPS() {
 // ---------- 검색 ----------
 const norm = s => s.replace(/\s+/g, "").toLowerCase();
 async function ensureSearch() {
-  if (!SEARCH) SEARCH = getJSON("search.json").then(rows => rows.map(([name, x, y, kind], i) => ({ name, kind, ll: fromQ(x, y), n: norm(name), r: i })));
+  if (!SEARCH) SEARCH = getJSON("search.json").then(rows => rows.map(([name, x, y, kind], i) => ({ name, kind, ll: fromQ(x, y), n: norm(name), r: i }))).catch(err => { SEARCH = null; throw err; });
   return SEARCH;
 }
 const KIND_WORDS = ["카페", "역", "병원", "학교", "공원", "도서관", "시장", "우체국", "대학교"];
@@ -1239,13 +1321,20 @@ async function renderSearchList() {
     return;
   }
   $("search-list").innerHTML = `<p class="note">찾는 중…</p>`;
-  const res = await runSearch(q);
+  let res;
+  try { res = await runSearch(q); }
+  catch (err) {
+    if (seq !== searchSeq) return;
+    $("search-list").results = [];
+    $("search-list").innerHTML = `<div class="empty-state"><b>검색 목록을 불러오지 못했어요</b><p>인터넷 연결을 확인하고 다시 시도해 주세요. 지도를 눌러 도착지를 고를 수도 있어요.</p><button class="btn btn-secondary" data-search-retry>다시 시도</button></div>`;
+    return;
+  }
   if (seq !== searchSeq) return;
   $("search-list").results = res;
   $("search-list").innerHTML = res.length ? res.map((p, i) => {
     const d = distLL(p.ll, origin);
     return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small><span class="km">${km(d)}</span></button>`;
-  }).join("") : `<p class="note">기본 목록에 맞는 곳이 없어요. 공개 검색으로 더 찾아볼 수 있어요.</p>`;
+  }).join("") : `<div class="empty-state"><b>‘${esc(q.trim())}’에 맞는 곳이 없어요</b><p>역·동네 이름으로 찾거나, 아래 공개 검색으로 더 찾아볼 수 있어요.</p></div>`;
   $("search-list").insertAdjacentHTML("beforeend",`<button class="btn btn-secondary" id="external-search">공개 지도에서 더 찾아보기</button><p class="note">누르면 검색어를 Photon에 보내요. 현재 GPS 위치는 보내지 않아요.</p>`);
 }
 function choosePlace(p) {
@@ -1326,7 +1415,13 @@ document.addEventListener("click", e => {
   if (t.closest("[data-reroute]")) { rerouteFromGPS(); return; }
   if (t.closest("[data-route-retry]")) { state.routes = null; state.error = null; state.tripKey = null; state.fixedRoute = null; renderResult(); return; }
   if (t.closest("[data-gps-retry]")) { renderWalk(false, true); return; }
-  if (t.closest("#start-walk")) { state.freeWalk = false; go("walk"); return; }
+  if (t.closest("#start-walk")) {
+    state.freeWalk = false;
+    const route = state.same || state.focus === "short" ? "fast" : "jjukgo";
+    logEvent("selected_route", { trip: state.tripId, route, alternative_available: !!state.routes?.alt });
+    state.walkLogPending = route;
+    go("walk"); return;
+  }
 
   if (t.closest("#walk-end")) { go("result"); return; }
   if (t.closest("#walk-done")) { endWalk(); go("done"); return; }
@@ -1339,6 +1434,8 @@ document.addEventListener("click", e => {
   if (t.closest("#hp-from")) { state.pick = "from"; choosePlace({ ...state.picked }); return; }
   if (t.closest("[data-trip='demo']")) { state.from = DEMO_FROM; state.to = DEMO_TO; state.mode = "example"; BASE = 31200; state.routes = null; state.tripKey = null; state.fixedRoute = null; state.dep = 0; go("result"); return; }
   if (t.closest("#swap")) { [state.from, state.to] = [state.to, state.from]; state.dep = 0; renderResult(); return; }
+  if (t.closest("[data-search-retry]")) { renderSearchList(); return; }
+  if (t.closest("[data-pick-again]")) { state.pick = t.closest("[data-pick-again]").dataset.pickAgain; $("sq").value = ""; go("search"); return; }
   if (t.closest("#sq-clear")) { $("sq").value = ""; renderSearchList(); $("sq").focus(); return; }
   const du = t.closest("[data-dep-use]");
   // 같은 길에서 출발 시각만 바꾼다(길을 다시 찾지 않음)

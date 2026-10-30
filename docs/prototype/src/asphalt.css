@@ -105,3 +105,4 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 /* 예상 신호 대기 출처 표시(작게) */
 .rsrc{margin:-8px 0 12px;font-size:12px;color:var(--muted)}
 .rsrc[hidden]{display:none}
+.empty-state{padding:20px 4px;color:var(--muted);font-size:14px;line-height:1.5}.empty-state b{display:block;color:var(--zebra);font-size:16px;margin-bottom:6px}.empty-state .btn{margin-top:14px;width:100%}#walk-done.arrived{background:var(--lane);color:var(--asphalt)}

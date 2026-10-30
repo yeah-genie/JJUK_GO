@@ -202,7 +202,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert(!(await visible(page, '#unknown-xings')), `${tag} 비교판에서는 미확인 횡단 행을 숨김`);
       assert.equal(await text(page, '#adjust-conditions'), '조건 조정'); assert.equal(await text(page, '#start-walk'), '이 길로 걷기');
       assert.equal(await text(page, '#route-headline'), '가장 빨리 가는 길'); assert.equal(await text(page, '#route-sub'), '비슷한 시간 안에 더 편한 길이 없어요'); assert(!(await visible(page, '#route-badge')), `${tag} 대안 없으면 배지 없음`);
-      assert.equal(await text(page, '#result-note'), '예상 도보 시간 · 신호 대기는 따로 표시'); await assertInViewport(page, '#result-note', tag, '도보 시간 안내');
+      assert((await text(page, '#result-note')).startsWith('예상 도보 시간 · 신호 대기는 따로 표시')); await assertInViewport(page, '#result-note', tag, '도보 시간 안내');
       await assertInViewport(page, '#adjust-conditions', tag, '조건 조정'); await assertInViewport(page, '#start-walk', tag, '걷기 시작');
       const vis = await page.evaluate(() => document.querySelector('#s-result').innerText); assert.doesNotMatch(vis, /뛰세요|안전|건널 수|건너도|한 번에|여유|~\s*12/, `${tag} 결과에 금지 문구(횡단 판단·안전·여유)`); assert.doesNotMatch(vis, /보장(?!하지)/);
       await mapDraw(helper, page, '#sheet-result', tag, '결과(같은 후보)');
@@ -216,8 +216,8 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       await page.click('#settings-back'); await page.waitForSelector('#s-result:not([hidden])');
       ok(`C ${tag} 대안 없음: 빠른 길 한 행·점선 없음·원시 지표·계산 기준·조건 조정→설정→복귀`);
 
-      await openLL(page, [37.5551, 126.9368], [37.5571, 126.9245]);   // 신촌역 → 홍대입구역(QA에서 쭉고 길이 나온 길, 서울숲처럼 큰 공원 때문에 지도 검사가 흔들리지 않는 곳)
-      assert(!(await page.evaluate(() => state.same)), '신촌역→홍대입구역은 쭉고 길이 있는 길(시험 전제)');
+      await openLL(page, [37.5346, 126.9867], [37.5420, 126.9855]);   // 녹사평역 → 해방촌 오거리(회귀 QA에서 추천 품질 기준을 통과한 쭉고 길이 나온 길)
+      assert(!(await page.evaluate(() => state.same)), '녹사평역→해방촌은 쭉고 길이 있는 길(시험 전제)');
       assert(await visible(page, '#card-jjuk')); assert(await visible(page, '#card-short'));
       const rows = await page.evaluate(() => ['jjuk', 'short'].map(k => { const c = document.getElementById('card-' + k), r = c.getBoundingClientRect(), n = c.querySelector('.mins').getBoundingClientRect(); return { name: c.querySelector('.name').textContent, t: c.querySelector('.mins').textContent, pressed: c.getAttribute('aria-pressed'), w: r.width, h: r.height, base: n.bottom - r.top }; }));
       assert.equal(rows[0].name, '쭉고 길'); assert.equal(rows[1].name, '빠른 길');
