@@ -2,8 +2,30 @@
   "framework": null,
   "buildCommand": "",
   "outputDirectory": "docs/prototype",
+  "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" = \"data\" ] && exit 0 || exit 1",
+  "git": {
+    "deploymentEnabled": {
+      "data": false
+    }
+  },
   "headers": [
-    { "source": "/(.*)", "headers": [{ "key": "Permissions-Policy", "value": "geolocation=(self)" }] },
-    { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self)"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
   ]
 }
