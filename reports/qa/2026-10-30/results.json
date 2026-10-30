@@ -1,0 +1,2192 @@
+[
+ {
+  "id": "flat-yeouido",
+  "kind": "평지",
+  "from": [
+   37.5216,
+   126.9243
+  ],
+  "to": [
+   37.5271,
+   126.9329
+  ],
+  "fn": "여의도역",
+  "tn": "여의나루역",
+  "straight_m": 972,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "rejected": {
+   "same": 1,
+   "budget": 2
+  },
+  "route_ms": 32,
+  "trip_ms": 367,
+  "fast": {
+   "walk_s": 1297,
+   "meters": 1297,
+   "sig": 3,
+   "cross": 3,
+   "big": 3,
+   "stairs": 0,
+   "gain_m": 4,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 4
+  },
+  "fast_x": {
+   "sig_x": 4,
+   "sig_dir": 3
+  },
+  "jjuk": null,
+  "load_ms": 5759,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "flat-gwanghwamun",
+  "kind": "평지",
+  "from": [
+   37.5759,
+   126.9769
+  ],
+  "to": [
+   37.5658,
+   126.9772
+  ],
+  "fn": "광화문",
+  "tn": "시청역",
+  "straight_m": 1117,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 6,
+  "rejected": {
+   "no_gain": 1,
+   "budget": 4
+  },
+  "route_ms": 87,
+  "trip_ms": 583,
+  "fast": {
+   "walk_s": 1217,
+   "meters": 1217,
+   "sig": 4,
+   "cross": 5,
+   "big": 5,
+   "stairs": 1,
+   "gain_m": 2,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 7
+  },
+  "fast_x": {
+   "sig_x": 7,
+   "sig_dir": 3
+  },
+  "jjuk": null,
+  "load_ms": 5981,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "hill-haebangchon",
+  "kind": "언덕",
+  "from": [
+   37.5346,
+   126.9867
+  ],
+  "to": [
+   37.542,
+   126.9855
+  ],
+  "fn": "녹사평역",
+  "tn": "해방촌 오거리",
+  "straight_m": 825,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 9,
+  "rejected": {
+   "worse": 1,
+   "budget": 3,
+   "same": 3,
+   "no_gain": 1
+  },
+  "route_ms": 58,
+  "trip_ms": 504,
+  "fast": {
+   "walk_s": 1010,
+   "meters": 1010,
+   "sig": 4,
+   "cross": 4,
+   "big": 4,
+   "stairs": 0,
+   "gain_m": 40,
+   "steep8_m": 216,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 3
+  },
+  "jjuk": null,
+  "load_ms": 5705,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "hill-namsan",
+  "kind": "언덕",
+  "from": [
+   37.5609,
+   126.9863
+  ],
+  "to": [
+   37.5573,
+   126.9837
+  ],
+  "fn": "명동역",
+  "tn": "남산 케이블카 승강장",
+  "straight_m": 459,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "rejected": {
+   "same": 1,
+   "detour": 1,
+   "budget": 1
+  },
+  "route_ms": 42,
+  "trip_ms": 359,
+  "fast": {
+   "walk_s": 569,
+   "meters": 569,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 29,
+   "steep8_m": 203,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 6300,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "hill-sungbuk",
+  "kind": "언덕",
+  "from": [
+   37.5893,
+   127.0167
+  ],
+  "to": [
+   37.5935,
+   127.001
+  ],
+  "fn": "성신여대입구역",
+  "tn": "성북동",
+  "straight_m": 1460,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 9,
+  "rejected": {
+   "worse": 2,
+   "budget": 4,
+   "same": 2
+  },
+  "route_ms": 67,
+  "trip_ms": 424,
+  "fast": {
+   "walk_s": 1912,
+   "meters": 1912,
+   "sig": 2,
+   "cross": 2,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 26,
+   "steep8_m": 17,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 2
+  },
+  "jjuk": null,
+  "load_ms": 5777,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "stairs-naksan",
+  "kind": "계단",
+  "from": [
+   37.5822,
+   127.0018
+  ],
+  "to": [
+   37.5806,
+   127.0074
+  ],
+  "fn": "혜화역",
+  "tn": "낙산공원",
+  "straight_m": 525,
+  "line": "+2분 29초로 계단 1구간을 피할 수 있어요",
+  "headline": "계단 1구간을 피하는 길",
+  "sub": "약 2분 29초 추가 · 오르막 1m 증가 · 급경사 30m 증가",
+  "error": null,
+  "alt": true,
+  "candidates": 4,
+  "rejected": {
+   "same": 1
+  },
+  "route_ms": 57,
+  "trip_ms": 326,
+  "fast": {
+   "walk_s": 761,
+   "meters": 761,
+   "sig": 1,
+   "cross": 2,
+   "big": 1,
+   "stairs": 1,
+   "gain_m": 58,
+   "steep8_m": 309,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 910,
+   "meters": 910,
+   "sig": 1,
+   "cross": 2,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 59,
+   "steep8_m": 336,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "load_ms": 6268,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "stairs-bukchon",
+  "kind": "계단",
+  "from": [
+   37.5765,
+   126.9854
+  ],
+  "to": [
+   37.5826,
+   126.983
+  ],
+  "fn": "안국역",
+  "tn": "북촌한옥마을",
+  "straight_m": 707,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "rejected": {
+   "worse": 1,
+   "no_gain": 1,
+   "budget": 1
+  },
+  "route_ms": 51,
+  "trip_ms": 317,
+  "fast": {
+   "walk_s": 874,
+   "meters": 874,
+   "sig": 0,
+   "cross": 0,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 31,
+   "steep8_m": 171,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 6174,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "junction-gangnam",
+  "kind": "대형 교차로",
+  "from": [
+   37.4979,
+   127.0276
+  ],
+  "to": [
+   37.5045,
+   127.025
+  ],
+  "fn": "강남역",
+  "tn": "신논현역",
+  "straight_m": 765,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "rejected": {
+   "worse": 2
+  },
+  "route_ms": 26,
+  "trip_ms": 398,
+  "fast": {
+   "walk_s": 932,
+   "meters": 932,
+   "sig": 0,
+   "cross": 2,
+   "big": 1,
+   "stairs": 1,
+   "gain_m": 7,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 4
+  },
+  "fast_x": {
+   "sig_x": 4,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5705,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "junction-seoulstation",
+  "kind": "대형 교차로",
+  "from": [
+   37.556,
+   126.9725
+  ],
+  "to": [
+   37.5591,
+   126.9773
+  ],
+  "fn": "서울역 광장",
+  "tn": "남대문시장",
+  "straight_m": 545,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 5,
+  "rejected": {
+   "no_gain": 2,
+   "worse": 1,
+   "budget": 1
+  },
+  "route_ms": 28,
+  "trip_ms": 459,
+  "fast": {
+   "walk_s": 733,
+   "meters": 733,
+   "sig": 0,
+   "cross": 2,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 21,
+   "steep8_m": 73,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 2
+  },
+  "jjuk": null,
+  "load_ms": 5953,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "bridge-nodeul",
+  "kind": "다리 주변",
+  "from": [
+   37.5128,
+   126.9535
+  ],
+  "to": [
+   37.5174,
+   126.9585
+  ],
+  "fn": "노들역",
+  "tn": "노들섬",
+  "straight_m": 673,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "rejected": {
+   "worse": 2
+  },
+  "route_ms": 18,
+  "trip_ms": 285,
+  "fast": {
+   "walk_s": 724,
+   "meters": 724,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 3,
+   "steep8_m": 2,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5653,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "bridge-banpo",
+  "kind": "다리 주변",
+  "from": [
+   37.5048,
+   127.0049
+  ],
+  "to": [
+   37.5105,
+   126.9958
+  ],
+  "fn": "고속터미널역",
+  "tn": "반포한강공원",
+  "straight_m": 1020,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 10,
+  "rejected": {
+   "same": 1,
+   "no_gain": 7,
+   "budget": 1
+  },
+  "route_ms": 61,
+  "trip_ms": 326,
+  "fast": {
+   "walk_s": 1370,
+   "meters": 1370,
+   "sig": 2,
+   "cross": 5,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 11,
+   "steep8_m": 46,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5629,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "alley-ikseon",
+  "kind": "골목길",
+  "from": [
+   37.5714,
+   126.9916
+  ],
+  "to": [
+   37.5741,
+   126.9893
+  ],
+  "fn": "종로3가역",
+  "tn": "익선동",
+  "straight_m": 361,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "rejected": {
+   "detour": 1,
+   "budget": 1
+  },
+  "route_ms": 29,
+  "trip_ms": 322,
+  "fast": {
+   "walk_s": 435,
+   "meters": 435,
+   "sig": 1,
+   "cross": 3,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 4,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5860,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "alley-seongsu",
+  "kind": "골목길",
+  "from": [
+   37.5446,
+   127.0559
+  ],
+  "to": [
+   37.5444,
+   127.0374
+  ],
+  "fn": "성수역",
+  "tn": "서울숲",
+  "straight_m": 1632,
+  "line": "+1분으로 신호 횡단 3개와 오르막 15m를 줄일 수 있어요",
+  "headline": "신호 횡단 3곳과 오르막 15m를 줄이는 길",
+  "sub": "약 1분 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 8,
+  "rejected": {
+   "same": 2,
+   "budget": 4
+  },
+  "route_ms": 44,
+  "trip_ms": 470,
+  "fast": {
+   "walk_s": 2057,
+   "meters": 2057,
+   "sig": 5,
+   "cross": 8,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 21,
+   "steep8_m": 80,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 4
+  },
+  "fast_x": {
+   "sig_x": 4,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 2117,
+   "meters": 2117,
+   "sig": 2,
+   "cross": 4,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 6,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "load_ms": 5772,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "short-deoksugung",
+  "kind": "짧은 경로",
+  "from": [
+   37.5657,
+   126.9769
+  ],
+  "to": [
+   37.5658,
+   126.9752
+  ],
+  "fn": "시청역",
+  "tn": "덕수궁",
+  "straight_m": 150,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 2,
+  "rejected": {
+   "budget": 1
+  },
+  "route_ms": 18,
+  "trip_ms": 461,
+  "fast": {
+   "walk_s": 539,
+   "meters": 539,
+   "sig": 0,
+   "cross": 0,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 5,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5882,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "long-gwanghwamun-dongdaemun",
+  "kind": "긴 경로",
+  "from": [
+   37.5759,
+   126.9769
+  ],
+  "to": [
+   37.5711,
+   127.0095
+  ],
+  "fn": "광화문",
+  "tn": "동대문",
+  "straight_m": 2924,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 11,
+  "rejected": {
+   "worse": 2,
+   "budget": 6,
+   "same": 2
+  },
+  "route_ms": 264,
+  "trip_ms": 891,
+  "fast": {
+   "walk_s": 3417,
+   "meters": 3417,
+   "sig": 7,
+   "cross": 10,
+   "big": 6,
+   "stairs": 3,
+   "gain_m": 10,
+   "steep8_m": 12,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 11
+  },
+  "fast_x": {
+   "sig_x": 11,
+   "sig_dir": 7
+  },
+  "jjuk": null,
+  "load_ms": 5821,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "long-sinchon-hongdae",
+  "kind": "긴 경로",
+  "from": [
+   37.5551,
+   126.9368
+  ],
+  "to": [
+   37.5571,
+   126.9245
+  ],
+  "fn": "신촌역",
+  "tn": "홍대입구역",
+  "straight_m": 1107,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 8,
+  "rejected": {
+   "worse": 2,
+   "same": 2,
+   "small_gain": 1,
+   "budget": 2
+  },
+  "route_ms": 80,
+  "trip_ms": 526,
+  "fast": {
+   "walk_s": 1270,
+   "meters": 1270,
+   "sig": 2,
+   "cross": 4,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 14,
+   "steep8_m": 15,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 6
+  },
+  "fast_x": {
+   "sig_x": 6,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5506,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-01",
+  "kind": "생활 이동",
+  "from": [
+   37.63689,
+   126.9188
+  ],
+  "to": [
+   37.6328,
+   126.92967
+  ],
+  "fn": "구파발역",
+  "tn": "신도 근린 공원",
+  "straight_m": 1060,
+  "line": "+24초로 신호 횡단 1개를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳을 줄이는 길",
+  "sub": "약 24초 추가 · 오르막 1m 증가",
+  "error": null,
+  "alt": true,
+  "candidates": 7,
+  "rejected": {
+   "worse": 2,
+   "budget": 2,
+   "same": 1
+  },
+  "route_ms": 58,
+  "trip_ms": 304,
+  "fast": {
+   "walk_s": 1304,
+   "meters": 1304,
+   "sig": 3,
+   "cross": 7,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 25,
+   "steep8_m": 18,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 5
+  },
+  "fast_x": {
+   "sig_x": 5,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 1327,
+   "meters": 1327,
+   "sig": 2,
+   "cross": 5,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 26,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 5
+  },
+  "load_ms": 5685,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-02",
+  "kind": "생활 이동",
+  "from": [
+   37.58076,
+   126.89555
+  ],
+  "to": [
+   37.58145,
+   126.90496
+  ],
+  "fn": "수색역",
+  "tn": "증산종합시장",
+  "straight_m": 833,
+  "detour_ok": "수색 철도 차량기지를 돌아가야 해서 실제로 우회(지도 확인 2026-10-30)",
+  "line": "+12초로 신호 횡단 1개를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳을 줄이는 길",
+  "sub": "약 12초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 9,
+  "rejected": {
+   "same": 1,
+   "no_gain": 2,
+   "budget": 3
+  },
+  "route_ms": 61,
+  "trip_ms": 290,
+  "fast": {
+   "walk_s": 1929,
+   "meters": 1929,
+   "sig": 3,
+   "cross": 4,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 10,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 2
+  },
+  "jjuk": {
+   "walk_s": 1941,
+   "meters": 1941,
+   "sig": 2,
+   "cross": 4,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 7,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "load_ms": 5589,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-03",
+  "kind": "생활 이동",
+  "from": [
+   37.61318,
+   127.03009
+  ],
+  "to": [
+   37.60637,
+   127.04258
+  ],
+  "fn": "미아사거리역",
+  "tn": "동덕여자대학교",
+  "straight_m": 1334,
+  "line": "+2분 47초로 급경사 220m와 오르막 11m를 줄일 수 있어요",
+  "headline": "급경사 220m와 오르막 11m를 줄이는 길",
+  "sub": "약 2분 47초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 9,
+  "rejected": {
+   "no_gain": 3,
+   "budget": 2,
+   "same": 2
+  },
+  "route_ms": 84,
+  "trip_ms": 555,
+  "fast": {
+   "walk_s": 1823,
+   "meters": 1823,
+   "sig": 2,
+   "cross": 6,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 41,
+   "steep8_m": 291,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 1990,
+   "meters": 1990,
+   "sig": 2,
+   "cross": 5,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 30,
+   "steep8_m": 67,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "load_ms": 5836,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-04",
+  "kind": "생활 이동",
+  "from": [
+   37.54797,
+   127.01592
+  ],
+  "to": [
+   37.55852,
+   127.0005
+  ],
+  "fn": "금호역",
+  "tn": "동국대학교 서울캠퍼스",
+  "straight_m": 1792,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 11,
+  "rejected": {
+   "same": 3,
+   "budget": 5,
+   "worse": 1,
+   "no_gain": 1
+  },
+  "route_ms": 150,
+  "trip_ms": 564,
+  "fast": {
+   "walk_s": 2296,
+   "meters": 2296,
+   "sig": 4,
+   "cross": 6,
+   "big": 6,
+   "stairs": 0,
+   "gain_m": 92,
+   "steep8_m": 563,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 5
+  },
+  "fast_x": {
+   "sig_x": 5,
+   "sig_dir": 5
+  },
+  "jjuk": null,
+  "load_ms": 5917,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-05",
+  "kind": "생활 이동",
+  "from": [
+   37.56366,
+   126.8106
+  ],
+  "to": [
+   37.57233,
+   126.812
+  ],
+  "fn": "공항시장역",
+  "tn": "Bangshin Market",
+  "straight_m": 966,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "rejected": {
+   "small_gain": 2
+  },
+  "route_ms": 21,
+  "trip_ms": 238,
+  "fast": {
+   "walk_s": 1037,
+   "meters": 1037,
+   "sig": 1,
+   "cross": 2,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 7,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5540,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-06",
+  "kind": "생활 이동",
+  "from": [
+   37.6701,
+   127.07892
+  ],
+  "to": [
+   37.66296,
+   127.0693
+  ],
+  "fn": "불암산역",
+  "tn": "상계5동문고",
+  "straight_m": 1159,
+  "line": "+49초로 신호 횡단 1개, 급경사 160m와 오르막 24m를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳과 급경사 160m, 오르막 24m를 줄이는 길",
+  "sub": "약 49초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 4,
+  "rejected": {},
+  "route_ms": 76,
+  "trip_ms": 406,
+  "fast": {
+   "walk_s": 1953,
+   "meters": 1953,
+   "sig": 2,
+   "cross": 5,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 46,
+   "steep8_m": 348,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 2002,
+   "meters": 2002,
+   "sig": 1,
+   "cross": 6,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 22,
+   "steep8_m": 185,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "load_ms": 5773,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-08",
+  "kind": "생활 이동",
+  "from": [
+   37.52612,
+   126.86452
+  ],
+  "to": [
+   37.5206,
+   126.85397
+  ],
+  "fn": "목동역",
+  "tn": "신정제일시장",
+  "straight_m": 1113,
+  "line": "+11초로 급경사 110m를 줄일 수 있어요",
+  "headline": "급경사 110m를 줄이는 길",
+  "sub": "약 11초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 10,
+  "rejected": {
+   "worse": 6,
+   "budget": 1
+  },
+  "route_ms": 65,
+  "trip_ms": 430,
+  "fast": {
+   "walk_s": 1390,
+   "meters": 1390,
+   "sig": 2,
+   "cross": 7,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 18,
+   "steep8_m": 212,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 1401,
+   "meters": 1401,
+   "sig": 2,
+   "cross": 5,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 18,
+   "steep8_m": 101,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 4
+  },
+  "load_ms": 5769,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-09",
+  "kind": "생활 이동",
+  "from": [
+   37.48522,
+   126.81181
+  ],
+  "to": [
+   37.48753,
+   126.82579
+  ],
+  "fn": "역곡역",
+  "tn": "성공회대학교",
+  "straight_m": 1259,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 1,
+  "rejected": {},
+  "route_ms": 31,
+  "trip_ms": 284,
+  "fast": {
+   "walk_s": 1638,
+   "meters": 1638,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 26,
+   "steep8_m": 251,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5557,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-10",
+  "kind": "생활 이동",
+  "from": [
+   37.46466,
+   126.9887
+  ],
+  "to": [
+   37.47559,
+   126.98786
+  ],
+  "fn": "남태령역",
+  "tn": "대항병원",
+  "straight_m": 1210,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "rejected": {
+   "same": 1,
+   "budget": 1,
+   "no_gain": 1
+  },
+  "route_ms": 43,
+  "trip_ms": 429,
+  "fast": {
+   "walk_s": 1878,
+   "meters": 1878,
+   "sig": 1,
+   "cross": 3,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 46,
+   "steep8_m": 589,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5791,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-11",
+  "kind": "생활 이동",
+  "from": [
+   37.49253,
+   127.11864
+  ],
+  "to": [
+   37.49376,
+   127.1103
+  ],
+  "fn": "가락시장역",
+  "tn": "가락농수산물종합도매시장",
+  "straight_m": 748,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 3,
+  "rejected": {
+   "same": 2
+  },
+  "route_ms": 44,
+  "trip_ms": 293,
+  "fast": {
+   "walk_s": 1049,
+   "meters": 1049,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 0,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5631,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-12",
+  "kind": "생활 이동",
+  "from": [
+   37.60164,
+   127.06729
+  ],
+  "to": [
+   37.60658,
+   127.05675
+  ],
+  "fn": "신이문역",
+  "tn": "예술정보관",
+  "straight_m": 1078,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 5,
+  "rejected": {
+   "no_gain": 1,
+   "worse": 2,
+   "same": 1
+  },
+  "route_ms": 35,
+  "trip_ms": 384,
+  "fast": {
+   "walk_s": 1366,
+   "meters": 1366,
+   "sig": 2,
+   "cross": 5,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 22,
+   "steep8_m": 20,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5712,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-13",
+  "kind": "생활 이동",
+  "from": [
+   37.47706,
+   126.96349
+  ],
+  "to": [
+   37.4839,
+   126.95423
+  ],
+  "fn": "낙성대역",
+  "tn": "중앙시장",
+  "straight_m": 1113,
+  "line": "+23초로 신호 횡단 3개를 줄일 수 있어요",
+  "headline": "신호 횡단 3곳을 줄이는 길",
+  "sub": "약 23초 추가 · 오르막 1m 증가",
+  "error": null,
+  "alt": true,
+  "candidates": 7,
+  "rejected": {
+   "same": 1
+  },
+  "route_ms": 47,
+  "trip_ms": 372,
+  "fast": {
+   "walk_s": 1268,
+   "meters": 1268,
+   "sig": 5,
+   "cross": 8,
+   "big": 3,
+   "stairs": 0,
+   "gain_m": 10,
+   "steep8_m": 56,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 5
+  },
+  "fast_x": {
+   "sig_x": 5,
+   "sig_dir": 2
+  },
+  "jjuk": {
+   "walk_s": 1291,
+   "meters": 1291,
+   "sig": 2,
+   "cross": 4,
+   "big": 3,
+   "stairs": 0,
+   "gain_m": 11,
+   "steep8_m": 13,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "load_ms": 5601,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-14",
+  "kind": "생활 이동",
+  "from": [
+   37.5884,
+   127.0876
+  ],
+  "to": [
+   37.58656,
+   127.09771
+  ],
+  "fn": "면목역",
+  "tn": "서일대학교",
+  "straight_m": 915,
+  "line": "+54초로 신호 횡단 1개를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳을 줄이는 길",
+  "sub": "약 54초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 10,
+  "rejected": {
+   "worse": 4,
+   "budget": 3,
+   "same": 1
+  },
+  "route_ms": 68,
+  "trip_ms": 461,
+  "fast": {
+   "walk_s": 1243,
+   "meters": 1243,
+   "sig": 2,
+   "cross": 10,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 44,
+   "steep8_m": 116,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 2
+  },
+  "jjuk": {
+   "walk_s": 1297,
+   "meters": 1297,
+   "sig": 1,
+   "cross": 10,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 41,
+   "steep8_m": 116,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "load_ms": 5728,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-15",
+  "kind": "생활 이동",
+  "from": [
+   37.5609,
+   126.98638
+  ],
+  "to": [
+   37.572,
+   126.98504
+  ],
+  "fn": "명동역",
+  "tn": "서울감리교신학원",
+  "straight_m": 1233,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 11,
+  "rejected": {
+   "small_gain": 2,
+   "budget": 6,
+   "no_gain": 1,
+   "same": 1
+  },
+  "route_ms": 151,
+  "trip_ms": 545,
+  "fast": {
+   "walk_s": 1627,
+   "meters": 1627,
+   "sig": 5,
+   "cross": 10,
+   "big": 6,
+   "stairs": 0,
+   "gain_m": 14,
+   "steep8_m": 90,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 5
+  },
+  "fast_x": {
+   "sig_x": 5,
+   "sig_dir": 3
+  },
+  "jjuk": null,
+  "load_ms": 5853,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-16",
+  "kind": "생활 이동",
+  "from": [
+   37.50504,
+   127.00492
+  ],
+  "to": [
+   37.50933,
+   127.02351
+  ],
+  "fn": "고속터미널역",
+  "tn": "영동시장",
+  "straight_m": 1707,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 10,
+  "rejected": {
+   "budget": 4,
+   "worse": 3,
+   "same": 2
+  },
+  "route_ms": 77,
+  "trip_ms": 503,
+  "fast": {
+   "walk_s": 2431,
+   "meters": 2431,
+   "sig": 2,
+   "cross": 7,
+   "big": 3,
+   "stairs": 2,
+   "gain_m": 37,
+   "steep8_m": 67,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5771,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-17",
+  "kind": "생활 이동",
+  "from": [
+   37.61125,
+   126.91722
+  ],
+  "to": [
+   37.60086,
+   126.91233
+  ],
+  "fn": "구산역",
+  "tn": "서울기독대학교",
+  "straight_m": 1227,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 7,
+  "rejected": {
+   "worse": 3,
+   "same": 2,
+   "budget": 1
+  },
+  "route_ms": 82,
+  "trip_ms": 471,
+  "fast": {
+   "walk_s": 1598,
+   "meters": 1598,
+   "sig": 2,
+   "cross": 7,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 16,
+   "steep8_m": 79,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 2
+  },
+  "fast_x": {
+   "sig_x": 2,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5541,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-18",
+  "kind": "생활 이동",
+  "from": [
+   37.66769,
+   127.0443
+  ],
+  "to": [
+   37.67852,
+   127.04757
+  ],
+  "fn": "방학역",
+  "tn": "성균관대학교 도봉선수촌",
+  "straight_m": 1231,
+  "line": "+1분 40초로 신호 횡단 1개와 오르막 15m를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳과 오르막 15m를 줄이는 길",
+  "sub": "약 1분 40초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 3,
+  "rejected": {
+   "no_gain": 1
+  },
+  "route_ms": 53,
+  "trip_ms": 345,
+  "fast": {
+   "walk_s": 1690,
+   "meters": 1690,
+   "sig": 1,
+   "cross": 4,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 22,
+   "steep8_m": 90,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 0
+  },
+  "fast_x": {
+   "sig_x": 0,
+   "sig_dir": 0
+  },
+  "jjuk": {
+   "walk_s": 1790,
+   "meters": 1790,
+   "sig": 0,
+   "cross": 0,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 7,
+   "steep8_m": 10,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "load_ms": 5646,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-19",
+  "kind": "생활 이동",
+  "from": [
+   37.51098,
+   127.02136
+  ],
+  "to": [
+   37.49918,
+   127.0274
+  ],
+  "fn": "논현역",
+  "tn": "서울한국어아카데미",
+  "straight_m": 1409,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 6,
+  "rejected": {
+   "same": 1,
+   "worse": 1,
+   "budget": 3
+  },
+  "route_ms": 39,
+  "trip_ms": 373,
+  "fast": {
+   "walk_s": 1443,
+   "meters": 1443,
+   "sig": 1,
+   "cross": 3,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 9,
+   "steep8_m": 0,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 5
+  },
+  "fast_x": {
+   "sig_x": 5,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5648,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-20",
+  "kind": "생활 이동",
+  "from": [
+   37.54365,
+   126.95081
+  ],
+  "to": [
+   37.54577,
+   126.96505
+  ],
+  "fn": "공덕역",
+  "tn": "숙명여자대학교",
+  "straight_m": 1278,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 8,
+  "rejected": {
+   "same": 2,
+   "worse": 2,
+   "budget": 3
+  },
+  "route_ms": 96,
+  "trip_ms": 516,
+  "fast": {
+   "walk_s": 1578,
+   "meters": 1578,
+   "sig": 3,
+   "cross": 5,
+   "big": 0,
+   "stairs": 0,
+   "gain_m": 60,
+   "steep8_m": 356,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 0
+  },
+  "fast_x": {
+   "sig_x": 0,
+   "sig_dir": 0
+  },
+  "jjuk": null,
+  "load_ms": 5614,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-21",
+  "kind": "생활 이동",
+  "from": [
+   37.60316,
+   127.02485
+  ],
+  "to": [
+   37.6026,
+   127.01223
+  ],
+  "fn": "길음역",
+  "tn": "아리랑 시장",
+  "straight_m": 1115,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 4,
+  "rejected": {
+   "worse": 3
+  },
+  "route_ms": 49,
+  "trip_ms": 326,
+  "fast": {
+   "walk_s": 1285,
+   "meters": 1285,
+   "sig": 2,
+   "cross": 5,
+   "big": 2,
+   "stairs": 0,
+   "gain_m": 25,
+   "steep8_m": 157,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5597,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-22",
+  "kind": "생활 이동",
+  "from": [
+   37.48765,
+   126.99355
+  ],
+  "to": [
+   37.50044,
+   127.00592
+  ],
+  "fn": "내방역",
+  "tn": "가톨릭대학교 성의교정",
+  "straight_m": 1786,
+  "line": "+12초로 신호 횡단 1개를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳을 줄이는 길",
+  "sub": "약 12초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 14,
+  "rejected": {
+   "worse": 1,
+   "budget": 4,
+   "same": 1
+  },
+  "route_ms": 76,
+  "trip_ms": 475,
+  "fast": {
+   "walk_s": 2407,
+   "meters": 2407,
+   "sig": 2,
+   "cross": 9,
+   "big": 2,
+   "stairs": 1,
+   "gain_m": 69,
+   "steep8_m": 778,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 2420,
+   "meters": 2420,
+   "sig": 1,
+   "cross": 6,
+   "big": 2,
+   "stairs": 1,
+   "gain_m": 69,
+   "steep8_m": 745,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "load_ms": 5488,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-23",
+  "kind": "생활 이동",
+  "from": [
+   37.4891,
+   127.06604
+  ],
+  "to": [
+   37.50165,
+   127.05349
+  ],
+  "fn": "개포동역",
+  "tn": "한림국제대학원대학교",
+  "straight_m": 1775,
+  "line": "+23초로 신호 횡단 1개를 줄일 수 있어요",
+  "headline": "신호 횡단 1곳을 줄이는 길",
+  "sub": "약 23초 추가",
+  "error": null,
+  "alt": true,
+  "candidates": 11,
+  "rejected": {
+   "budget": 2,
+   "same": 2,
+   "worse": 4
+  },
+  "route_ms": 110,
+  "trip_ms": 394,
+  "fast": {
+   "walk_s": 2222,
+   "meters": 2222,
+   "sig": 5,
+   "cross": 6,
+   "big": 5,
+   "stairs": 0,
+   "gain_m": 33,
+   "steep8_m": 115,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 6
+  },
+  "fast_x": {
+   "sig_x": 6,
+   "sig_dir": 4
+  },
+  "jjuk": {
+   "walk_s": 2245,
+   "meters": 2245,
+   "sig": 4,
+   "cross": 7,
+   "big": 4,
+   "stairs": 0,
+   "gain_m": 24,
+   "steep8_m": 28,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 6
+  },
+  "load_ms": 5658,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-24",
+  "kind": "생활 이동",
+  "from": [
+   37.50345,
+   126.88251
+  ],
+  "to": [
+   37.50097,
+   126.86754
+  ],
+  "fn": "구로역",
+  "tn": "동양미래대학교",
+  "straight_m": 1349,
+  "detour_ok": "구로 철도 차량기지를 돌아가야 해서 실제로 우회(지도 확인 2026-10-30)",
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 8,
+  "rejected": {
+   "worse": 3,
+   "budget": 2,
+   "same": 2
+  },
+  "route_ms": 111,
+  "trip_ms": 383,
+  "fast": {
+   "walk_s": 2657,
+   "meters": 2657,
+   "sig": 1,
+   "cross": 3,
+   "big": 3,
+   "stairs": 0,
+   "gain_m": 37,
+   "steep8_m": 236,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 3
+  },
+  "fast_x": {
+   "sig_x": 3,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5665,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-25",
+  "kind": "생활 이동",
+  "from": [
+   37.60097,
+   126.93573
+  ],
+  "to": [
+   37.59746,
+   126.94749
+  ],
+  "fn": "녹번역",
+  "tn": "서울여자간호대학교",
+  "straight_m": 1107,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 10,
+  "rejected": {
+   "worse": 3,
+   "same": 2,
+   "budget": 3,
+   "no_gain": 1
+  },
+  "route_ms": 75,
+  "trip_ms": 320,
+  "fast": {
+   "walk_s": 1664,
+   "meters": 1664,
+   "sig": 1,
+   "cross": 2,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 74,
+   "steep8_m": 811,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5843,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-26",
+  "kind": "생활 이동",
+  "from": [
+   37.45581,
+   126.8939
+  ],
+  "to": [
+   37.45407,
+   126.90229
+  ],
+  "fn": "금천구청역",
+  "tn": "대명시장",
+  "straight_m": 765,
+  "line": "+35초로 계단 1구간을 피할 수 있어요",
+  "headline": "계단 1구간을 피하는 길",
+  "sub": "약 35초 추가 · 급경사 10m 증가",
+  "error": null,
+  "alt": true,
+  "candidates": 9,
+  "rejected": {
+   "no_gain": 1,
+   "worse": 2,
+   "budget": 2,
+   "same": 2
+  },
+  "route_ms": 52,
+  "trip_ms": 471,
+  "fast": {
+   "walk_s": 969,
+   "meters": 969,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 1,
+   "gain_m": 11,
+   "steep8_m": 50,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 4
+  },
+  "fast_x": {
+   "sig_x": 4,
+   "sig_dir": 1
+  },
+  "jjuk": {
+   "walk_s": 1004,
+   "meters": 1004,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 11,
+   "steep8_m": 55,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 4
+  },
+  "load_ms": 5776,
+  "page_errors": [],
+  "flags": []
+ },
+ {
+  "id": "life-27",
+  "kind": "생활 이동",
+  "from": [
+   37.58869,
+   126.94425
+  ],
+  "to": [
+   37.5775,
+   126.95437
+  ],
+  "fn": "홍제역",
+  "tn": "독립문총신사회교육원 사회복지학과",
+  "straight_m": 1525,
+  "line": "비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요",
+  "headline": "가장 빨리 가는 길",
+  "sub": "비슷한 시간 안에 더 편한 길이 없어요",
+  "error": null,
+  "alt": false,
+  "candidates": 9,
+  "rejected": {
+   "worse": 6,
+   "budget": 2
+  },
+  "route_ms": 25,
+  "trip_ms": 396,
+  "fast": {
+   "walk_s": 1584,
+   "meters": 1584,
+   "sig": 1,
+   "cross": 1,
+   "big": 1,
+   "stairs": 0,
+   "gain_m": 53,
+   "steep8_m": 308,
+   "wait_s": 0,
+   "wait_known": 0,
+   "wait_total": 1
+  },
+  "fast_x": {
+   "sig_x": 1,
+   "sig_dir": 1
+  },
+  "jjuk": null,
+  "load_ms": 5592,
+  "page_errors": [],
+  "flags": []
+ }
+]

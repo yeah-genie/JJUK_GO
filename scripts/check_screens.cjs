@@ -216,8 +216,8 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       await page.click('#settings-back'); await page.waitForSelector('#s-result:not([hidden])');
       ok(`C ${tag} 대안 없음: 빠른 길 한 행·점선 없음·원시 지표·계산 기준·조건 조정→설정→복귀`);
 
-      await openLL(page, [37.5346, 126.9867], [37.5420, 126.9855]);   // 녹사평역 → 해방촌 오거리(회귀 QA에서 추천 품질 기준을 통과한 쭉고 길이 나온 길)
-      assert(!(await page.evaluate(() => state.same)), '녹사평역→해방촌은 쭉고 길이 있는 길(시험 전제)');
+      await openLL(page, [37.5822, 127.0018], [37.5806, 127.0074]);   // 혜화역 → 낙산공원(회귀 QA, 평일 08:40에 추천 품질 기준을 통과한 쭉고 길이 나온 길)
+      assert(!(await page.evaluate(() => state.same)), '혜화역→낙산공원은 쭉고 길이 있는 길(시험 전제)');
       assert(await visible(page, '#card-jjuk')); assert(await visible(page, '#card-short'));
       const rows = await page.evaluate(() => ['jjuk', 'short'].map(k => { const c = document.getElementById('card-' + k), r = c.getBoundingClientRect(), n = c.querySelector('.mins').getBoundingClientRect(); return { name: c.querySelector('.name').textContent, t: c.querySelector('.mins').textContent, pressed: c.getAttribute('aria-pressed'), w: r.width, h: r.height, base: n.bottom - r.top }; }));
       assert.equal(rows[0].name, '쭉고 길'); assert.equal(rows[1].name, '빠른 길');

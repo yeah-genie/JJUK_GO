@@ -1,0 +1,380 @@
+{
+ "flat-yeouido": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1297,
+  "fast_sig": 3,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "flat-gwanghwamun": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1217,
+  "fast_sig": 4,
+  "fast_stairs": 1,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "hill-haebangchon": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1010,
+  "fast_sig": 4,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "hill-namsan": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 569,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "hill-sungbuk": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1912,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "stairs-naksan": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 761,
+  "fast_sig": 1,
+  "fast_stairs": 1,
+  "jjuk_walk_s": 910,
+  "headline": "계단 1구간을 피하는 길"
+ },
+ "stairs-bukchon": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 874,
+  "fast_sig": 0,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "junction-gangnam": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 932,
+  "fast_sig": 0,
+  "fast_stairs": 1,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "junction-seoulstation": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 733,
+  "fast_sig": 0,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "bridge-nodeul": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 724,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "bridge-banpo": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1370,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "alley-ikseon": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 435,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "alley-seongsu": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 2057,
+  "fast_sig": 5,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 2117,
+  "headline": "신호 횡단 3곳과 오르막 15m를 줄이는 길"
+ },
+ "short-deoksugung": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 539,
+  "fast_sig": 0,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "long-gwanghwamun-dongdaemun": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 3417,
+  "fast_sig": 7,
+  "fast_stairs": 3,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "long-sinchon-hongdae": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1270,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-01": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1304,
+  "fast_sig": 3,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1327,
+  "headline": "신호 횡단 1곳을 줄이는 길"
+ },
+ "life-02": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1929,
+  "fast_sig": 3,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1941,
+  "headline": "신호 횡단 1곳을 줄이는 길"
+ },
+ "life-03": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1823,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1990,
+  "headline": "급경사 220m와 오르막 11m를 줄이는 길"
+ },
+ "life-04": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 2296,
+  "fast_sig": 4,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-05": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1037,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-06": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1953,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 2002,
+  "headline": "신호 횡단 1곳과 급경사 160m, 오르막 24m를 줄이는 길"
+ },
+ "life-08": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1390,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1401,
+  "headline": "급경사 110m를 줄이는 길"
+ },
+ "life-09": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1638,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-10": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1878,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-11": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1049,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-12": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1366,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-13": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1268,
+  "fast_sig": 5,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1291,
+  "headline": "신호 횡단 3곳을 줄이는 길"
+ },
+ "life-14": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1243,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1297,
+  "headline": "신호 횡단 1곳을 줄이는 길"
+ },
+ "life-15": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1627,
+  "fast_sig": 5,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-16": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 2431,
+  "fast_sig": 2,
+  "fast_stairs": 2,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-17": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1598,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-18": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 1690,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 1790,
+  "headline": "신호 횡단 1곳과 오르막 15m를 줄이는 길"
+ },
+ "life-19": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1443,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-20": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1578,
+  "fast_sig": 3,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-21": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1285,
+  "fast_sig": 2,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-22": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 2407,
+  "fast_sig": 2,
+  "fast_stairs": 1,
+  "jjuk_walk_s": 2420,
+  "headline": "신호 횡단 1곳을 줄이는 길"
+ },
+ "life-23": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 2222,
+  "fast_sig": 5,
+  "fast_stairs": 0,
+  "jjuk_walk_s": 2245,
+  "headline": "신호 횡단 1곳을 줄이는 길"
+ },
+ "life-24": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 2657,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-25": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1664,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ },
+ "life-26": {
+  "alt": true,
+  "error": null,
+  "fast_walk_s": 969,
+  "fast_sig": 1,
+  "fast_stairs": 1,
+  "jjuk_walk_s": 1004,
+  "headline": "계단 1구간을 피하는 길"
+ },
+ "life-27": {
+  "alt": false,
+  "error": null,
+  "fast_walk_s": 1584,
+  "fast_sig": 1,
+  "fast_stairs": 0,
+  "jjuk_walk_s": null,
+  "headline": "가장 빨리 가는 길"
+ }
+}

@@ -13,8 +13,8 @@
 | 빠른 길 = 걷는 시간만으로 가장 빠른 길 | DONE | `searchFriction` 가중치 0 |
 | 쭉고 길 후보 찾기(가중치 23세트, 먼 길은 8세트) | DONE | |
 | 추천 품질 기준(억지 대안 금지) | DONE | 아래 '추천 품질 기준' |
-| 고정 회귀 QA 묶음(서울 실제 출발·도착) | DONE | `reports/qa/regression_od.json`, 기준값 `regression_baseline.json`, `node scripts/qa_routes.cjs --check` |
-| 경로 계산 시간 median/p95 | DONE | `reports/qa/QA_2026-10-30.md` |
+| 고정 회귀 QA 묶음(서울 실제 출발·도착 42곳, 평일 08:40 고정) | DONE | 42곳 모두 길 찾음, 쭉고 길 13곳(31%), 이상 표시 0곳. `regression_od.json`·`regression_baseline.json`, `node scripts/qa_routes.cjs --check` |
+| 경로 계산 시간 median/p95 | DONE | 지도 조각 받기 포함 median 397ms · p95 564ms · 최대 891ms(광화문→동대문). `reports/qa/QA_2026-10-30.md` |
 | 회귀 QA를 CI에서 자동 실행 | TODO | 브라우저·지도 조각이 필요해 지금은 손으로 돌린다 |
 
 ### 추천 품질 기준 (app.js `altRejectReason`)
@@ -33,7 +33,8 @@
 | 오르막·급경사(서울시 OA-22241 지면고도, 40m 간격, 다리 보정) | DONE | `reports/experiments/FRICTION_OD_500_V3.md` |
 | 계단(OSM `highway=steps`) | DONE | 지도에 없는 계단은 모름(화면에 안내) |
 | 회귀 QA에서 이상 사례 확인 | DONE | 이상 사례는 `QA_2026-10-30.md`에 따로 적고 회귀 묶음에서 뺐다 |
-| 이상 사례의 원인 고치기(자료 오류) | TODO | QA 보고서 '뺀 곳' 목록 |
+| 장소 점이 보행로에서 먼 경우·끊긴 보행로 조각 | DONE | 150m 안 연결(40m 넘으면 화면에 알림), 이어진 보행로로 다시 연결 |
+| 서울 경계 신도시 보행로 자료 빠짐(남위례역→위례고운초) | TODO | 회귀 묶음에서 뺌. 자료 보완 필요 |
 
 ## 3. Result UI (결과 화면)
 | 항목 | 상태 | 메모 |
@@ -92,6 +93,6 @@
 | 항목 | 상태 | 메모 |
 |---|---|---|
 | 390×844 화면 시험(`check_screens.cjs`) | DONE | |
-| 360×640 작은 화면 | TODO | 결과·걷기·오류 화면 확인 |
+| 360×640 작은 화면 | DONE | 결과(대안 있음/없음)·지역 밖 오류·검색 결과 없음: 가로 넘침 없음, 버튼 화면 안. `check_screens.cjs`도 360×640 포함 |
 | 회귀 QA 화면 캡처 | DONE | `reports/qa/2026-10-30/` |
 | 실제 기기(iOS Safari·Android Chrome) | BLOCKED | 사용자 확인 필요 |
