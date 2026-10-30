@@ -70,7 +70,7 @@
 | 이벤트 보내기: `route_search`(대안 유무·추가 시간·줄어든 요소·결과 종류·거리 구간·계산 시간), `selected_route`(fast/jjukgo), `walking_started` | DONE | 좌표·장소 이름·궤적·기기 ID 없음. 길 찾기마다 새 임의 값만 |
 | 받는 쪽 `/api/event`(허용 칸만 저장) | DONE | `check_events.cjs` |
 | 설정에서 끄기, 브라우저 추적 거부(GPC/DNT) 따르기 | DONE | |
-| **저장소 연결** | BLOCKED | Vercel 프로젝트에 Upstash Redis(Storage) 연결 필요. 연결 전에는 받기만 하고 버린다 |
+| 저장소 연결 | DONE | Vercel Redis(`REDIS_URL`, Node Redis 클라이언트, 연결 재사용). 2026-10-30 production에서 경로 검색·경로 선택 → `stored:true` 2건 확인(시험 기록 trip `yid4ekno`) |
 | 집계 보기(선택률 등) | TODO | 저장소 연결 뒤 |
 
 ## 7. Signal prediction (예상 신호 대기)
