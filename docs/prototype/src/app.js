@@ -59,7 +59,9 @@ function signalPlan(id, t = BASE, dir) {
   const local = ((t % 86400) + 86400) % 86400;
   const band = bands.find(b => local >= b.start && local < b.end);
   if (!band || dir === null) return null;
-  return dir ? band.legs[dir] || null : Object.values(band.legs)[0] || null;
+  // 평일 패턴(legs)과 주말 패턴(legsWe)을 따로 둔다. 오늘의 요일 종류에 맞는 쪽을 쓴다.
+  const legs = dayTypeNow() === "we" ? (band.legsWe || {}) : (band.legs || {});
+  return dir ? legs[dir] || null : Object.values(legs)[0] || null;
 }
 async function loadSignalPlans(hours = [8, 9, 10]) {
   const index = await getJSON("signal-plans.json");
@@ -72,6 +74,43 @@ async function loadSignalPlans(hours = [8, 9, 10]) {
   return index;
 }
 const known = (id, t = BASE, dir) => !!signalPlan(id, t, dir);
+// ---------- 예상 신호 대기(경로 비교용) ----------
+// 건널 수 있는지는 판단하지 않는다. '고정 초록(건너기 시작 가능) 시작까지 얼마나 기다리나'만 과거 신호 기록으로 추정한다.
+// 아래 조건을 모두 만족하는 신호 패턴만 숫자에 쓴다(하나라도 아니면 '신호 시간 정보 없음'):
+//  1) 방향 매칭 확인: 패턴이 어느 다리를 건너는지 검증된 4방위 코드로 붙어 있음(대각 코드·모르는 코드는 패턴에서 빠져 있음)
+//  2) 해당 시간대 기록이 충분: 관측 900초 이상, 별도 검증 표본 300개 이상
+//  3) 날짜별 변동이 크지 않음: 같은 요일 종류(평일/주말)의 다른 날 1일 이상에 대본 일치율이 모두 0.9 이상(중앙값 0.95 이상). 기록이 쌓이면 날짜 수를 올린다
+//  4) 패턴이 안정적으로 반복: 검증 일치율 0.95 이상, 불순도 0.02 이하(내보내기에서 이미 통과), 주기가 정수에 가까움
+//  5) 지금 요일 종류(평일/주말)가 패턴이 만들어진 날과 같음
+const TRUST = { minObs: 900, minTest: 300, xdPairs: 1, xdMedian: .95, xdMin: .9, holdout: .95, impurity: .02, cycleFrac: .06 };
+const dayTypeOf = d => { const w = new Date(d + "T12:00:00+09:00").getDay(); return w === 0 || w === 6 ? "we" : "wd"; };
+let DAYTYPE_NOW = null;                                             // 시험용으로 덮어쓸 수 있음
+const dayTypeNow = () => DAYTYPE_NOW || (() => { const w = new Date(Date.now() + 9 * 3600e3).getUTCDay(); return w === 0 || w === 6 ? "we" : "wd"; })();
+function planConfidence(r) {
+  if (!r || !r.win || !r.win.length || !r.c) return 0;
+  if ((r.observed_samples || 0) < TRUST.minObs || (r.test_samples || 0) < TRUST.minTest) return 0;
+  if ((r.holdout_accuracy || 0) < TRUST.holdout || (r.impurity ?? 1) > TRUST.impurity) return 0;
+  if (Math.abs(r.c - Math.round(r.c)) > TRUST.cycleFrac) return 0;
+  const xd = r.xd;
+  if (!xd || xd[0] < TRUST.xdPairs || xd[1] == null || xd[1] < TRUST.xdMedian || xd[2] < TRUST.xdMin) return 0;
+  if (r.date && dayTypeOf(r.date) !== dayTypeNow()) return 0;
+  return Math.min(r.holdout_accuracy, 1 - r.impurity, xd[1]);       // 내부 신뢰도(화면에는 숫자로 보이지 않는다)
+}
+function trustedPlan(id, t, dir) { const r = signalPlan(id, t, dir); return planConfidence(r) > 0 ? r : null; }
+// 도착 시각 t에 이 신호가 고정 초록이 아니면 다음 고정 초록 시작까지의 초. 신뢰 조건을 못 채우면 null.
+function expectedWait(id, t, dir) {
+  const r = trustedPlan(id, t, dir);
+  if (!r) return null;
+  const ph = (((r.day0 + ((t % 86400) + 86400) % 86400 - r.ref) % r.c) + r.c) % r.c;
+  let wait = Infinity;
+  for (const [a, b] of r.win) {
+    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) return 0;
+    wait = Math.min(wait, ((a - ph) % r.c + r.c) % r.c);
+  }
+  return wait === Infinity ? null : wait;
+}
+const planPeriodText = () => { const d = REAL.source_dates || []; if (!d.length) return "과거 신호 기록 기준 추정"; const f = s => `${+s.slice(4, 6)}/${+s.slice(6, 8)}`; return `${f(d[0])}~${f(d[d.length - 1])} 신호 기록 기준 추정`; };
+const planNoteText = () => planPeriodText() + " · 패턴이 확인된 신호만 더했어요";
 const MIN_GREEN = 8;
 function sigState(id, t, dir) {
   const r = signalPlan(id, t, dir);
@@ -607,15 +646,17 @@ const nowSeconds = () => { const n = new Date(); return n.getHours() * 3600 + n.
 const fGain = (e, u) => e.f ? (u === e.a ? e.f[0] : e.f[1]) / 10 : 0;   // 오르는 높이(m)
 const fSteep = e => e.f ? e.f[2] : 0;                                    // 8% 이상 경사 거리(m)
 // [근처 횡단보도당 초, 보행등 횡단보도당 초, 상승 m당 초, 급경사 m당 초, 계단 m당 초] — 실험 v3와 같은 후보 탐색
-const FRICTION_WEIGHTS = [[0,0,0,0,0], [0,20,0,0,0], [0,60,0,0,0], [0,150,0,0,0], [0,0,2,0,0], [0,0,6,0,0], [0,0,15,0,0],
-  [0,0,0,0.3,0], [0,0,0,1,0], [0,0,0,3,0], [0,0,0,0,1], [0,0,0,0,3], [0,0,0,0,8], [20,20,2,0.3,1], [60,60,6,1,3], [150,150,15,3,8]];
-const ALT_GAIN = [["sig", 1], ["stairs", 1], ["steep", 100], ["gain", 10]];          // 이만큼 줄면 의미 있는 개선
-const ALT_WORSE = { sig: 0, stairs: 0, big: 0, cross: 1, gain: 5, steep: 50 };        // 이만큼까지만 나빠져도 됨
+// 여섯째 값은 예상 신호 대기(초)당 비용(신뢰되는 신호만).
+const FRICTION_WEIGHTS = [[0,0,0,0,0,0], [0,20,0,0,0,0], [0,60,0,0,0,0], [0,150,0,0,0,0], [0,0,2,0,0,0], [0,0,6,0,0,0], [0,0,15,0,0,0],
+  [0,0,0,0.3,0,0], [0,0,0,1,0,0], [0,0,0,3,0,0], [0,0,0,0,1,0], [0,0,0,0,3,0], [0,0,0,0,8,0], [20,20,2,0.3,1,0], [60,60,6,1,3,0], [150,150,15,3,8,0],
+  [0,0,0,0,0,0.5], [0,0,0,0,0,1], [0,0,0,0,0,2], [0,20,0,0,0,1], [0,60,2,0,1,1], [20,20,2,0.3,1,1], [60,60,6,1,3,2]];
+const ALT_GAIN = [["sig", 1], ["stairs", 1], ["steep", 100], ["gain", 10], ["wait", 30]];          // 이만큼 줄면 의미 있는 개선
+const ALT_WORSE = { sig: 0, stairs: 0, big: 0, cross: 1, gain: 5, steep: 50, wait: 20 };        // 이만큼까지만 나빠져도 됨
 const ALT_MAX_EXTRA = 180, SAME_OVERLAP = 0.9, SAME_EXTRA = 10;
 function searchFriction(src, dst, w) {
-  const [wx, ws, wr, wst, wt] = w, D = G.node.get(dst);
+  const [wx, ws, wr, wst, wt, ww = 0] = w, D = G.node.get(dst);
   const hEst = n => Math.hypot((n.x - D.x) * KXQ, (n.y - D.y) * KYQ) / SPEED * 0.999;
-  const cost = new Map([[src, 0]]), prev = new Map(), done = new Set(), h = new Heap(), avoid = readProfile().avoidSteps;
+  const cost = new Map([[src, 0]]), time = new Map([[src, 0]]), prev = new Map(), done = new Set(), h = new Heap(), avoid = readProfile().avoidSteps;
   h.push(hEst(G.node.get(src)), src);
   while (h.size) {
     const u = h.pop()[1], c = cost.get(u);
@@ -626,10 +667,12 @@ function searchFriction(src, dst, w) {
       if (e.cls === 3 && avoid) continue;
       const v = e.a === u ? e.b : e.a, nv = G.node.get(v);
       if (!nv || done.has(v)) continue;
-      let cv = c + e.len / SPEED;
+      const tu = time.get(u) ?? 0;
+      let cv = c + e.len / SPEED, tv = tu + e.len / SPEED;
       if (e.f) cv += wx * e.f[3] + ws * e.f[4] + wr * fGain(e, u) + wst * e.f[2];
       if (wt && e.cls === 3) cv += wt * e.len;
-      if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); prev.set(v, [u, e]); h.push(cv + hEst(nv), v); }
+      if (ww && e.sig) { const wt_ = expectedWait(e.sig, BASE + state.dep + tu, e.dir); if (wt_ != null) { cv += ww * wt_; tv += wt_; } }
+      if (cv < (cost.get(v) ?? Infinity)) { cost.set(v, cv); time.set(v, tv); prev.set(v, [u, e]); h.push(cv + hEst(nv), v); }
     }
   }
   if (!done.has(dst)) return null;
@@ -688,23 +731,39 @@ function routeCrossings(steps) {
   for (const g of groups) { if (g.some(x => stdNear(x.at, 25).some(p => p[1] === 1))) sig++; if (g.some(x => x.big)) big++; }
   return { cross: groups.length, sig, big };
 }
+// 경로의 신호 횡단별 예상 대기: 신뢰되는 패턴이 있는 곳만 더하고, 없는 곳은 '정보 없음'으로 센다(45초 같은 가정값은 쓰지 않는다).
+function routeWaits(route) {
+  let t = 0, wait = 0, known = 0, unknown = 0;
+  for (const x of route.x || []) {
+    const arrive = BASE + state.dep + x.d / SPEED + t, w = x.dir ? expectedWait(x.s, arrive, x.dir) : null;
+    if (w == null) { unknown++; continue; }
+    known++; wait += w; t += w;
+  }
+  return { wait, waitKnown: known, waitUnknown: unknown, waitTotal: known + unknown };
+}
 function routeMetrics(route, steps) {
   let gain = 0, steep = 0;
   for (const [u, , e] of steps) { gain += fGain(e, u); steep += fSteep(e); }
-  return { walk: route.length / SPEED, meters: route.length, stairs: route.stairs, gain, steep, ...routeCrossings(steps) };
+  return { walk: route.length / SPEED, meters: route.length, stairs: route.stairs, gain, steep, ...routeCrossings(steps), ...routeWaits(route) };
 }
 function routeOverlap(a, b) {
   const set = new Set(b.steps.map(s => s[2])); let shared = 0;
   for (const s of a.steps) if (set.has(s[2])) shared += s[2].len;
   return a.length ? shared / a.length : 1;
 }
-function altGains(alt, base) { return ALT_GAIN.filter(([k, thr]) => base.m[k] - alt.m[k] >= thr).map(([k]) => k); }
+function altGains(alt, base) {
+  return ALT_GAIN.filter(([k, thr]) => {
+    // 대기 감소는 비교가 공정할 때만: 쭉고 길도 빠른 길만큼(이상) 신호 패턴이 확인돼 있어야 한다. 정보가 없어서 0초로 보이는 것을 '덜 기다림'으로 세지 않는다.
+    if (k === "wait") return base.m.waitKnown > 0 && alt.m.waitKnown >= base.m.waitKnown && alt.m.waitUnknown <= base.m.waitUnknown && base.m.wait - alt.m.wait >= thr;
+    return base.m[k] - alt.m[k] >= thr;
+  }).map(([k]) => k);
+}
 function pickAlternative(base, cands, limit) {
   let best = null;
   for (const c of cands) {
     const extra = c.m.walk - base.m.walk;
     if (extra <= SAME_EXTRA || extra > limit || routeOverlap(c, base) >= SAME_OVERLAP) continue;
-    if (Object.entries(ALT_WORSE).some(([k, lim]) => c.m[k] - base.m[k] > lim)) continue;
+    if (Object.entries(ALT_WORSE).some(([k, lim]) => (k === "wait" ? (base.m.waitKnown > 0 && c.m.waitKnown >= base.m.waitKnown && c.m.waitUnknown <= base.m.waitUnknown ? c.m.wait - base.m.wait : 0) : c.m[k] - base.m[k]) > lim)) continue;
     if (!altGains(c, base).length) continue;
     if (!best || extra < best.m.walk - base.m.walk) best = c;
   }
@@ -728,6 +787,7 @@ function compareLine(base, alt) {
     if (k === "stairs") { parts.push(a.stairs === 0 ? "계단" : `계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
     if (k === "steep") { parts.push(`급경사 구간 ${Math.round((b.steep - a.steep) / 10) * 10}m`); avoidAll = avoidAll && a.steep < 10; }
     if (k === "gain") { parts.push(`오르막 ${Math.round(b.gain - a.gain)}m`); avoidAll = false; }
+    if (k === "wait") { parts.push(`신호 대기 ${waitText(b.wait - a.wait)}`); avoidAll = false; }
   }
   const list = parts.length === 1 ? parts[0] : parts.slice(0, -1).map((p, i) => i === parts.length - 2 ? josa(p, "과", "와") : p).join(", ") + " " + parts[parts.length - 1];
   const joined = parts.length <= 2 ? (parts.length === 2 ? josa(parts[0], "과", "와") + " " + parts[1] : parts[0]) : list;
@@ -735,11 +795,12 @@ function compareLine(base, alt) {
 }
 // 결과 시트 머리말: 배지·제목·부제(원시값으로만, 점수 없음)
 function aboutText(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "약 " + (m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"); }
+function waitText(sec) { sec = Math.max(0, Math.round(sec)); const m = Math.floor(sec / 60), r = sec % 60; return m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"; }
 function routeSummary(base, alt, focus) {
   const b = base.m, a = alt.m;
-  if (!alt || alt === base) return { badge: "", headline: "가장 빨리 가는 길", sub: "비슷한 시간 안에 더 편한 길이 없어요" };
-  if (focus === "short") return { badge: "", headline: "가장 빨리 가는 길", sub: `쭉고 길보다 ${aboutText(a.walk - b.walk)} 빨라요` };
-  const g = altGains(alt, base), order = ["stairs", "sig", "steep", "gain"].filter(k => g.includes(k)), parts = [];
+  if (!alt || alt === base) return { badge: "", headline: "가장 빨리 가는 길", sub: "비슷한 시간 안에 더 편한 길이 없어요", wait: false };
+  if (focus === "short") return { badge: "", headline: "가장 빨리 가는 길", sub: `쭉고 길보다 ${aboutText(a.walk - b.walk)} 빨라요`, wait: false };
+  const g = altGains(alt, base), order = ["wait", "stairs", "sig", "steep", "gain"].filter(k => g.includes(k)), parts = [];
   let avoidAll = true;
   for (const k of order) {
     if (k === "stairs") { parts.push(`계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
@@ -747,15 +808,22 @@ function routeSummary(base, alt, focus) {
     if (k === "steep") { parts.push(`급경사 ${Math.round((b.steep - a.steep) / 10) * 10}m`); avoidAll = avoidAll && a.steep < 10; }
     if (k === "gain") { parts.push(`오르막 ${Math.round(b.gain - a.gain)}m`); avoidAll = false; }
   }
+  const first = order[0], more = [`${aboutText(a.walk - b.walk)} 추가`];
+  if (first === "wait") {
+    // 예상 신호 대기가 줄어드는 길: 대표 문장은 대기시간. 건널 수 있는지는 말하지 않는다.
+    for (const p of parts) more.push(`${p} 감소`);
+    if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
+    if (a.gain - b.gain >= 1) more.push(`오르막 약 ${Math.round(a.gain - b.gain)}m 증가`);
+    if (a.steep - b.steep >= 10) more.push(`급경사 약 ${Math.round((a.steep - b.steep) / 10) * 10}m 증가`);
+    return { badge: "덜 멈추고 걸어요", kind: "sig", headline: `신호에서 ${aboutText(b.wait - a.wait)} 덜 기다릴 것으로 예상돼요`, sub: more.join(" · "), wait: true };
+  }
   const joined = parts.length === 1 ? parts[0] : josa(parts[0], "과", "와") + " " + parts.slice(1).join(", ");
-  const first = order[0];
   const badge = first === "stairs" ? (a.stairs === 0 ? "계단 없이 더 편하게 걸어요" : "계단을 줄여 더 편하게 걸어요")
     : first === "sig" ? "덜 멈추고 걸어요" : first === "steep" ? "가파른 길을 덜 걸어요" : "오르막을 덜 올라요";
-  const more = [`${aboutText(a.walk - b.walk)} 추가`];
   if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
   if (a.gain - b.gain >= 1) more.push(`오르막 약 ${Math.round(a.gain - b.gain)}m 증가`);
   if (a.steep - b.steep >= 10) more.push(`급경사 약 ${Math.round((a.steep - b.steep) / 10) * 10}m 증가`);
-  return { badge, kind: first, headline: `${josa(joined, "을", "를")} ${avoidAll ? "피하는" : "줄이는"} 길`, sub: more.join(" · ") };
+  return { badge, kind: first, headline: `${josa(joined, "을", "를")} ${avoidAll ? "피하는" : "줄이는"} 길`, sub: more.join(" · "), wait: false };
 }
 async function computeTrip() {
   const request = ++tripRequest;
@@ -783,7 +851,7 @@ async function computeTrip() {
   state.src = a.id; state.dst = b.id;
   const t0 = performance.now();
   // 먼 길은 탐색 횟수를 줄인다(응답 시간)
-  const weights = d > 5000 ? FRICTION_WEIGHTS.filter((_, i) => [0, 2, 5, 8, 11, 14].includes(i)) : FRICTION_WEIGHTS;
+  const weights = d > 5000 ? FRICTION_WEIGHTS.filter((_, i) => [0, 2, 5, 8, 11, 14, 17, 21].includes(i)) : FRICTION_WEIGHTS;
   const seen = new Set(), cands = [];
   for (const w of weights) {
     const steps = searchFriction(state.src, state.dst, w);

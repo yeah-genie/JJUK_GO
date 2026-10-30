@@ -19,8 +19,8 @@ fs.mkdirSync(out, { recursive: true });
     try { await p.waitForSelector('#s-result:not([hidden]) #result-content:not([hidden]), #s-result:not([hidden]) #result-status b', { timeout: 120000 }); } catch (e) { errs.push('시간 초과'); }
     await p.waitForTimeout(2000);
     const r = await p.evaluate(() => {
-      const pick = m => m && { walk_s: Math.round(m.walk), meters: Math.round(m.meters), sig: m.sig, cross: m.cross, big: m.big, stairs: m.stairs, gain_m: Math.round(m.gain), steep8_m: Math.round(m.steep) };
-      return { line: document.getElementById('compare-line').textContent, error: state.error, alt: !!(state.routes && state.routes.alt),
+      const pick = m => m && { walk_s: Math.round(m.walk), meters: Math.round(m.meters), sig: m.sig, cross: m.cross, big: m.big, stairs: m.stairs, gain_m: Math.round(m.gain), steep8_m: Math.round(m.steep), wait_s: Math.round(m.wait), wait_known: m.waitKnown, wait_total: m.waitTotal };
+      return { line: document.getElementById('compare-line').textContent, headline: document.getElementById('route-headline').textContent, sub: document.getElementById('route-sub').textContent, error: state.error, alt: !!(state.routes && state.routes.alt),
         candidates: state.candidateCount, route_ms: Math.round(state.lastRouteMs || 0), fast: pick(state.routes && state.routes.short.m), jjuk: state.routes && state.routes.alt ? pick(state.routes.jjuk.m) : null };
     });
     await p.screenshot({ path: path.join(out, od.id + '.png') });

@@ -93,20 +93,22 @@ async function renderResult(){
   for(const k of ['jjuk','short']){const c=$('card-'+k),m=R[k].m;c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.same||state.focus===k));c.setAttribute('role','tab');c.setAttribute('aria-selected',String(state.same||state.focus===k));
     c.innerHTML=`${WALK}<span class="tl"><span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span><span class="mins">${mins(m.walk)}</span></span>`;}
   setText('compare-line',state.same?'비슷한 시간 안에 더 편한 길이 없어서 빠른 길을 안내해요':compareLine(R.short,R.jjuk));
-  {const sm=routeSummary(R.short,state.same?R.short:R.jjuk,state.same?'jjuk':state.focus);$('route-badge').hidden=!sm.badge;setText('route-badge-text',sm.badge);$('route-badge-ico').setAttribute('d',{stairs:'M4 19h4v-4h4v-4h4V7h4',sig:'M9 3h6a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3',steep:'M3 20 10 8l4 6 2-3 5 9z',gain:'M3 20 10 8l4 6 2-3 5 9z'}[sm.kind]||'M4 19h4v-4h4v-4h4V7h4');setText('route-headline',sm.headline);setText('route-sub',sm.sub);}
+  {const sm=routeSummary(R.short,state.same?R.short:R.jjuk,state.same?'jjuk':state.focus);$('route-src').hidden=!sm.wait;setText('route-src',planNoteText());$('route-badge').hidden=!sm.badge;setText('route-badge-text',sm.badge);$('route-badge-ico').setAttribute('d',{stairs:'M4 19h4v-4h4v-4h4V7h4',sig:'M9 3h6a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3',steep:'M3 20 10 8l4 6 2-3 5 9z',gain:'M3 20 10 8l4 6 2-3 5 9z',wait:'M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9'}[sm.kind]||'M4 19h4v-4h4v-4h4V7h4');setText('route-headline',sm.headline);setText('route-sub',sm.sub);}
   // 지표 아이콘(선 아이콘, 글자색을 따름)
   const ic=d=>`<svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-  const MICO={walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>')};
-  const rows=[['걷는 시간',m=>mins(m.walk),'walk'],['신호 횡단',m=>m.sig+'곳','sig'],['계단',m=>m.stairs+'구간','stairs'],['오르막',m=>Math.round(m.gain)+'m','gain'],['급경사(8% 이상)',m=>Math.round(m.steep/10)*10+'m','steep']];
-  const cell=(m,o,k)=>{const v=m[k],w=o?o[k]:v,better=o&&(k==='walk'?v<w-30:v<w-(k==='gain'?5:k==='steep'?50:0.5));return `<span${better?' class="better"':''}>`;};
+  const MICO={wait:ic('<path d="M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>'),walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>')};
+  const waitCell=m=>m.waitKnown?waitText(m.wait):'정보 없음';
+  const rows=[['걷는 시간',m=>mins(m.walk),'walk'],['예상 신호 대기',waitCell,'wait'],['신호 횡단',m=>m.sig+'곳','sig'],['계단',m=>m.stairs+'구간','stairs'],['오르막',m=>Math.round(m.gain)+'m','gain'],['급경사(8% 이상)',m=>Math.round(m.steep/10)*10+'m','steep']];
+  const cell=(m,o,k)=>{const v=m[k],w=o?o[k]:v,better=o&&(k==='wait'?(m.waitKnown>0&&o.waitKnown>0&&m.waitUnknown<=o.waitUnknown&&v<w-30):k==='walk'?v<w-30:v<w-(k==='gain'?5:k==='steep'?50:0.5));return `<span${better?' class="better"':''}>`;};
   $('route-metrics').innerHTML=`<div class="mrow mhead"><span></span>${state.same?'':`<span class="mh-j">${WALK}쭉고 길</span>`}<span>${WALK}빠른 길</span></div>`+rows.map(([label,f,k])=>`<div class="mrow"><span>${MICO[k]}${label}</span>${state.same?'':`${cell(J,B,k)}${f(J)}</span>`}${cell(B,state.same?null:J,k)}${f(B)}</span></div>`).join('');
   $('route-metrics').classList.toggle('one',state.same);
   const sim=S[state.focus],r=state.routes[state.focus];
   $('unknown-xings').hidden=true;
-  setText('result-note','예상 도보 시간 · 신호 대기 제외');
-  setText('route-facts',`거리 ${km(r.length)} · 시간은 걷는 시간만(신호 기다림 제외) · 추가 ${Math.min(state.budget,180)/60}분 이내의 길만 비교`);
+  setText('result-note','예상 도보 시간 · 신호 대기는 따로 표시');
+  {const wn=(m)=>m.waitTotal?`${m.waitKnown}/${m.waitTotal}곳`:'0곳';setText('wait-note',state.same?`예상 신호 대기는 신호 패턴이 확인된 곳만 더했어요(확인 ${wn(B)}) · ${planPeriodText()}`:`예상 신호 대기는 신호 패턴이 확인된 곳만 더했어요(쭉고 길 ${wn(J)}, 빠른 길 ${wn(B)}) · ${planPeriodText()}`);}
+  setText('route-facts',`거리 ${km(r.length)} · 시간은 걷는 시간만(신호 대기는 따로 표시) · 추가 ${Math.min(state.budget,180)/60}분 이내의 길만 비교`);
   $('cov-note').hidden=true;
-  setText('result-safety',`신호 횡단은 서울시 횡단보도 자료(보행등 있음)로 세며 일부만 확인돼 실제보다 적을 수 있어요. 오르막·급경사는 서울시 등고선으로 계산한 추정이고, 계단은 지도에 표시된 곳만 세요. 실제 신호·턱·출입구는 현장에서 확인해 주세요.${readProfile().avoidSteps?' 계단은 제외했어요.':''}`);
+  setText('result-safety',`신호 횡단은 서울시 횡단보도 자료(보행등 있음)로 세며 일부만 확인돼 실제보다 적을 수 있어요. 오르막·급경사는 서울시 등고선으로 계산한 추정이고, 계단은 지도에 표시된 곳만 세요. 실제 신호·턱·출입구는 현장에서 확인하고, 건널지는 직접 정해 주세요.${readProfile().avoidSteps?' 계단은 제외했어요.':''}`);
   setRoutes(r,state.same?null:state.routes[state.focus==='jjuk'?'short':'jjuk']);markTrip(null,state.focus,false);
   // 회색 길 위에 이름표: 두 길이 가장 멀리 떨어진 지점(겹치지 않는 곳)에 붙인다
   if(!state.same){const ok=state.focus==='jjuk'?'short':'jjuk',oc=state.routes[ok].coords,fc=r.coords;let best=null,bd=-1;

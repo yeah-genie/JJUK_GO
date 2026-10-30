@@ -202,9 +202,9 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert(!(await visible(page, '#unknown-xings')), `${tag} 비교판에서는 미확인 횡단 행을 숨김`);
       assert.equal(await text(page, '#adjust-conditions'), '조건 조정'); assert.equal(await text(page, '#start-walk'), '이 길로 걷기');
       assert.equal(await text(page, '#route-headline'), '가장 빨리 가는 길'); assert.equal(await text(page, '#route-sub'), '비슷한 시간 안에 더 편한 길이 없어요'); assert(!(await visible(page, '#route-badge')), `${tag} 대안 없으면 배지 없음`);
-      assert.equal(await text(page, '#result-note'), '예상 도보 시간 · 신호 대기 제외'); await assertInViewport(page, '#result-note', tag, '도보 시간 안내');
+      assert.equal(await text(page, '#result-note'), '예상 도보 시간 · 신호 대기는 따로 표시'); await assertInViewport(page, '#result-note', tag, '도보 시간 안내');
       await assertInViewport(page, '#adjust-conditions', tag, '조건 조정'); await assertInViewport(page, '#start-walk', tag, '걷기 시작');
-      const vis = await page.evaluate(() => document.querySelector('#s-result').innerText); assert.doesNotMatch(vis, /\d+\s*초|뛰세요|안전|~\s*12/, `${tag} 결과에 숫자 초·금지 문구`); assert.doesNotMatch(vis, /보장(?!하지)/);
+      const vis = await page.evaluate(() => document.querySelector('#s-result').innerText); assert.doesNotMatch(vis, /뛰세요|안전|건널 수|건너도|한 번에|여유|~\s*12/, `${tag} 결과에 금지 문구(횡단 판단·안전·여유)`); assert.doesNotMatch(vis, /보장(?!하지)/);
       await mapDraw(helper, page, '#sheet-result', tag, '결과(같은 후보)');
       await page.click('#calc-basis'); await wait(300);   // 계산 기준 열기/닫기
       assert.equal(await page.getAttribute('#calc-basis', 'aria-expanded'), 'true'); assert(await visible(page, '#result-options'));
@@ -240,6 +240,18 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert.equal(ov, 0, `${tag} 지도 조작 버튼이 결과 시트와 겹쳐요`);
       await page.click('#calc-basis'); await wait(300); assert(!(await visible(page, '#mapctl')) || (await page.evaluate(() => { const sh = document.getElementById('sheet-result').getBoundingClientRect(); return [...document.querySelectorAll('#mapctl button')].filter(b => b.offsetParent).every(b => b.getBoundingClientRect().bottom <= sh.top + 0.5); })), `${tag} 계산 기준을 열면 조작 버튼이 시트 위에 떠요`); await assertInViewport(page, '#start-walk', tag, '계산 기준 연 상태 걷기 시작'); await page.click('#calc-basis'); await wait(200);
       await assertNoOverflow(page, tag, '결과(두 후보)');
+      // 예상 신호 대기 문구(신뢰된 패턴이 있을 때): 두 길의 대기 값을 고정해 화면 문구만 시험한다(계산은 check_walk_logic이 시험)
+      await page.click('#card-jjuk'); await wait(300);
+      await page.evaluate(() => { const R = state.routes; Object.assign(R.short.m, { wait: 130, waitKnown: 2, waitUnknown: 0, waitTotal: 2 }); Object.assign(R.jjuk.m, { wait: 80, waitKnown: 2, waitUnknown: 0, waitTotal: 2 }); DAYTYPE_NOW = 'wd'; renderResult(); });
+      await wait(800);
+      assert.equal(await text(page, '#route-headline'), '신호에서 약 50초 덜 기다릴 것으로 예상돼요', `${tag} 대기 감소 대표 문장`);
+      assert(await visible(page, '#route-src')); assert.match(await text(page, '#route-src'), /신호 기록 기준 추정/, `${tag} 출처 표시`);
+      assert.match(await text(page, '#route-sub'), /^약 .+ 추가/);
+      await page.click('#calc-basis'); await wait(400);
+      assert.match(await text(page, '#route-metrics'), /예상 신호 대기[\s\S]*1분 20초[\s\S]*2분 10초/, `${tag} 자세히 비교에 예상 신호 대기 행`);
+      assert.match(await text(page, '#wait-note'), /신호 패턴이 확인된 곳만/, `${tag} 확인된 곳만 더했다는 안내`);
+      assert.doesNotMatch(await page.evaluate(() => document.querySelector('#s-result').innerText), /건널 수|건너도|한 번에|여유|안전/, `${tag} 횡단 판단 문구 금지`);
+      await page.click('#calc-basis'); await wait(200);
       ok(`C ${tag} 쭉고 길: 두 행·추가 시간·한 줄 설명·두 열 지표·점선 대안·선택 일치·버튼 화면 안`);
       await page.context().close();
 

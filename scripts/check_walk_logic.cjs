@@ -74,6 +74,38 @@ vm.runInContext(`
   assert.equal(compareLine(B,{m:{...B.m,walk:638,sig:1,steep:170}}),'+38초로 신호 횡단 1개와 급경사 구간 130m를 줄일 수 있어요');
   assert.equal(compareLine(B,{m:{...B.m,walk:690,gain:15}}),'+1분 30초로 오르막 15m를 줄일 수 있어요');
   assert.equal(compareLine(B,{m:{...B.m,walk:660,gain:15}}),'+1분으로 오르막 15m를 줄일 수 있어요');
+  // ---- 예상 신호 대기: 신뢰 조건을 모두 만족하는 패턴만 숫자로 쓴다 ----
+  DAYTYPE_NOW='wd';
+  const good={c:120,ref:0,day0:0,win:[[0,40]],date:'2026-10-27',observed_samples:1500,test_samples:500,holdout_accuracy:.99,impurity:.005,xd:[4,.97,.96,0,null]};
+  REAL={signals:{A:{bands:[{start:28800,end:32400,legs:{n:good},legsWe:{n:{...good,date:'2026-10-24'}}}]}},source_dates:['20261014','20261027']};
+  const T0=28800;                                              // 08:00, 주기 0초에 초록 시작
+  assert(planConfidence(good)>0,'기준 충족');
+  assert.equal(expectedWait('A',T0+10,'n'),0,'초록 안에서 도착하면 대기 0');
+  assert.equal(Math.round(expectedWait('A',T0+50,'n')),70,'빨강에서 도착하면 다음 초록까지');
+  assert.equal(expectedWait('A',T0+50,'s'),null,'방향 패턴이 없으면 정보 없음');
+  assert.equal(expectedWait('B',T0+50,'n'),null,'패턴이 없으면 정보 없음');
+  for(const [why,bad] of [['관측 부족',{...good,observed_samples:600}],['검증 표본 부족',{...good,test_samples:100}],['검증 일치율 낮음',{...good,holdout_accuracy:.9}],['불순도 높음',{...good,impurity:.05}],['주기가 정수가 아님',{...good,c:120.4}],
+    ['날짜 비교 없음',{...good,xd:null}],['비교 날짜 없음',{...good,xd:[0,null,null,0,null]}],['날짜별 변동 큼(중앙값)',{...good,xd:[4,.8,.8,0,null]}],['날짜별 변동 큼(최솟값)',{...good,xd:[4,.97,.5,0,null]}],['요일 종류 다름',{...good,date:'2026-10-24'}]]) {
+    assert.equal(planConfidence(bad),0,why);
+  }
+  DAYTYPE_NOW='we';assert.equal(planConfidence(good),0,'오늘이 주말이면 평일 패턴은 쓰지 않음');assert.equal(expectedWait('A',T0+50,'n'),Math.round(0)+expectedWait('A',T0+50,'n'),'주말에는 주말 패턴을 씀');assert.notEqual(expectedWait('A',T0+50,'n'),null,'주말 패턴이 있으면 숫자가 나옴');DAYTYPE_NOW='wd';
+  assert.equal(planPeriodText(),'10/14~10/27 신호 기록 기준 추정');
+  // 경로 합산: 확인된 신호만 더하고 모르는 곳은 정보 없음으로 센다(45초 같은 가정값 없음)
+  BASE=T0;state.dep=0;SPEED=1.2;
+  const rt={x:[{s:'A',dir:'n',d:0},{s:'B',dir:'n',d:60},{s:'A',dir:null,d:120}]};
+  const w=routeWaits(rt);assert.equal(w.waitKnown,1);assert.equal(w.waitUnknown,2);assert.equal(w.waitTotal,3);assert.equal(w.wait,0);
+  const rt2={x:[{s:'A',dir:'n',d:60}]};const w2=routeWaits(rt2);assert.equal(Math.round(w2.wait),70-50>0?Math.round(expectedWait('A',T0+50,'n')):0);
+  // 대안 조건: 대기가 30초 이상 줄고, 확인 안 된 신호가 더 많지 않을 때만
+  const bw={m:{walk:600,sig:2,stairs:0,gain:10,steep:0,cross:3,big:0,wait:120,waitKnown:2,waitUnknown:0,waitTotal:2}};
+  const aw=(wait,unk)=>({steps:[],m:{...bw.m,walk:660,wait,waitKnown:2-unk,waitUnknown:unk,waitTotal:2}});
+  assert.deepEqual(altGains(aw(60,0),bw),['wait']);
+  assert.deepEqual(altGains(aw(100,0),bw),[],'20초만 줄면 의미 없음');
+  assert.deepEqual(altGains(aw(60,1),bw),[],'확인된 신호가 줄어서 이기면 안 됨(정보 없음을 0초로 세지 않는다)');
+  assert.deepEqual(altGains({steps:[],m:{...bw.m,walk:660,wait:0,waitKnown:0,waitUnknown:2,waitTotal:2}},bw),[],'쭉고 길의 신호가 전부 정보 없음이면 대기 감소로 세지 않음');
+  assert.equal(routeSummary(bw,aw(70,0),'jjuk').headline,'신호에서 약 50초 덜 기다릴 것으로 예상돼요');
+  assert(!/건널 수|건너도|안전|한 번에/.test(routeSummary(bw,aw(70,0),'jjuk').headline+routeSummary(bw,aw(70,0),'jjuk').sub),'횡단 가능 판단 문구 금지');
+  assert.equal(compareLine(bw,aw(70,0)),'+1분으로 신호 대기 50초를 줄일 수 있어요');
+  REAL={signals:{},source_dates:[]};DAYTYPE_NOW=null;
   // 계단 제외 설정이면 계단 길을 쓰지 않는다
   const baseProfile=readProfile();writeProfile({...baseProfile,avoidSteps:true});
   assert.equal(mk([0,0,0,0,0]).m.stairs,0);

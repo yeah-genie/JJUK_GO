@@ -28,3 +28,6 @@ docs/prototype/_qa.html
 reports/ui/asphalt-implementation/*-full.png
 
 reports/ui/walk-card-location/*-full.png
+
+# 공식 일별 신호 기록(원본 변환본)은 Release에 두고 저장소에는 올리지 않는다(2026-10-27 표본 하나만 추적)
+official-history/????????.csv.gz
