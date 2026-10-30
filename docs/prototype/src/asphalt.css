@@ -106,3 +106,13 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 .rsrc{margin:-8px 0 12px;font-size:12px;color:var(--muted)}
 .rsrc[hidden]{display:none}
 .empty-state{padding:20px 4px;color:var(--muted);font-size:14px;line-height:1.5}.empty-state b{display:block;color:var(--zebra);font-size:16px;margin-bottom:6px}.empty-state .btn{margin-top:14px;width:100%}#walk-done.arrived{background:var(--lane);color:var(--asphalt)}
+
+/* 2026-10-31 모바일 사용성: 검색 맥락, 장단점 칩, 조건 패널, 고정 열 머리글 */
+.search-trip{display:grid;gap:6px;margin:4px 20px 6px}.st-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:none;color:var(--zebra);text-align:left;font-size:15px}.st-row.on{border-color:var(--lane);box-shadow:inset 3px 0 var(--lane)}.st-row .st-l{color:var(--muted);font-size:13px;min-width:28px}.st-row b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.st-row i{width:10px;height:10px;border-radius:50%;flex:none}.st-row .pt-from{border:2px solid var(--zebra)}.st-row .pt-to{background:var(--lane)}.search-basis{margin:2px 20px 0;font-size:12px;color:var(--muted)}
+.tradeoffs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.tradeoffs[hidden]{display:none}.tc{font-size:14px;line-height:1.3;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--zebra)}.tc.pro::before{content:"＋ ";color:var(--lane)}.tc.con::before{content:"－ ";color:#FF8A6B}.tc.con{border-color:#5A4A46}
+.rtime{margin:0 0 8px;font-size:12px;color:var(--muted)}
+.mhead{position:sticky;top:0;z-index:2;background:var(--asphalt)}.mlink{display:flex;align-items:center;gap:10px;background:none;border:0;color:inherit;font:inherit;padding:0;min-height:30px;text-align:left}
+.basis summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:13px;color:var(--muted)}.key-limit{margin-top:4px}
+.cond-panel{margin:8px 0;padding:12px;border:1px solid var(--line);border-radius:12px}.cond-panel[hidden]{display:none}.cond-panel h3{margin:0 0 6px;font-size:15px}.cond-label{margin:10px 0 6px;font-size:13px;color:var(--muted)}.cond-pace{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:10px 0}.cond-panel .actions{margin-top:6px}
+.detail-sum{margin:12px 20px;font-size:15px}.xing .xs{color:var(--lane)}.xing .xo{color:var(--muted)}
+.trip-pt{min-height:44px}

@@ -29,12 +29,12 @@
  <div class="home-header"><div class="home-brand-row"><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" data-go="settings" aria-label="설정">⚙</button></div>
  <button class="searchbox" data-search="to"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span>어디로 걸어갈까요?</span></button>
  <div class="home-origin"><span id="home-origin">출발지를 정해 주세요</span><button data-search="from">변경</button></div></div>
- <button class="layer-control" id="layer-toggle" aria-pressed="true">횡단 시간 표시 켜짐</button>
+ <button class="layer-control" id="layer-toggle" aria-pressed="false">횡단 시간 지도</button>
  <div class="xw-panel" id="xw-panel" aria-label="횡단 시간 지도"><div class="xw-top"><span class="xw-name">걷는 속도</span><output class="xw-value" id="xw-value" for="xw-speed">시속 3.6km</output><button class="xw-mine" id="xw-mine" type="button">내 걸음</button></div>
  <input id="xw-speed" type="range" min="1.4" max="6" step="0.1" value="3.6" aria-label="걷는 속도 시속 킬로미터">
  <div class="xw-bot"><strong id="xw-stat"></strong><span class="xw-leg"><i style="background:#8FA3B3"></i>~20초<i style="background:#F6C343"></i>~35초<i style="background:#FF6B4A"></i>35초~</span></div><small id="xw-sub"></small></div>
  <div class="sheet" id="sheet-home"><div class="grip-area"><div class="grip"></div></div><div class="sheet-body">
- <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" id="home-pace-row" data-go="settings"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="home-pace">내 걸음 · 아직 측정 전</span><span class="go">설정 ›</span></button>
+ <div data-peek class="peek-sum"></div><div id="home-intro"><button class="pace-row" id="home-pace-row" data-go="settings" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5c0-2.6.3-5.6.8-7.4l2.8 1.6c.9.5 1.9.8 3 .8h.9l2.1 2.3c.8.9 1.8 1.3 2.9 1.5l3.1.6c1 .2 1.4.7 1.4 1.4v.7c0 .5-.4.9-.9.9H4c-.6 0-1-.5-1-1.2z"/><path d="M4 19.5h17"/></svg><span id="home-pace">내 걸음 · 아직 측정 전</span><span class="go">설정 ›</span></button>
  <div class="recent-heading">최근 찾은 곳</div><div id="home-chips"></div></div>
  <div id="home-place" class="place" hidden><h2 id="hp-name"></h2><p id="hp-sub"></p></div>
  <p class="safety" id="location-status" role="status">위치는 허용할 때만 연결해요.</p></div>
@@ -101,18 +101,31 @@
           <p class="rbadge" id="route-badge" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path id="route-badge-ico" d="M4 19h4v-4h4v-4h4V7h4"/></svg><span id="route-badge-text"></span></p>
           <h2 class="rhead" id="route-headline"></h2>
           <p class="rsub" id="route-sub"></p>
+          <div class="tradeoffs" id="route-tradeoffs" aria-label="이 길의 장단점"></div>
+          <p class="rtime" id="route-time-note">시간은 걷는 시간만이에요 · 신호 대기 제외</p>
           <p class="rsrc" id="route-src" hidden></p>
           <p class="compare-line" id="compare-line" hidden></p>
           <button class="detail-toggle" id="calc-basis" aria-expanded="false" aria-controls="result-options">자세히 비교<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
           <div class="result-options" id="result-options" hidden>
             <div class="metrics" id="route-metrics"></div>
             <p class="safety" id="wait-note"></p>
+            <button class="link-btn" data-go="detail" id="xing-link">이 길의 횡단보도 보기 ›</button>
+            <p class="safety key-limit">계단은 지도에 표시된 곳만 세요 · 신호 횡단은 실제보다 적게 셀 수 있어요</p>
+            <details class="basis" id="data-basis"><summary>데이터 기준</summary>
             <p class="safety" id="result-pace">내 걸음 · 아직 측정 전</p>
             <p class="safety" id="basis-signal">예상 신호 대기는 과거 신호 기록으로 추정한 값이에요. 실시간 신호가 아니며, 건널지는 실제 신호를 보고 직접 정해 주세요.</p>
             <p class="safety" id="route-facts"></p>
             <p class="cov" id="cov-note" hidden><span id="cov-text"></span></p>
             <p class="safety" id="result-safety"></p>
-            <button class="link-btn" data-go="detail">횡단보도 자세히 보기</button>
+            </details>
+          </div>
+          <div class="cond-panel" id="cond-panel" hidden role="group" aria-labelledby="cond-title">
+            <h3 id="cond-title">이 길찾기 조건</h3>
+            <label class="setting-row" for="cond-steps">확인된 계단 피하기<input class="switch" id="cond-steps" type="checkbox"></label>
+            <p class="cond-label" id="cond-budget-label">쭉고 길에 더 걸어도 되는 시간</p>
+            <div class="chips" id="cond-budget" role="radiogroup" aria-labelledby="cond-budget-label"><button class="chip" data-cond-budget="60" role="radio">1분</button><button class="chip" data-cond-budget="120" role="radio">2분</button><button class="chip" data-cond-budget="180" role="radio">3분</button></div>
+            <p class="cond-pace"><span id="cond-pace">걷는 속도</span><button class="text-action" data-go="settings">걸음 설정 ›</button></p>
+            <div class="actions"><button class="btn btn-ghost" id="cond-cancel">취소</button><button class="btn btn-primary" id="cond-apply">이 조건으로 다시 찾기</button></div>
           </div>
           <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
           <p class="rfoot" id="result-note"></p>
@@ -121,7 +134,7 @@
       </div>
       <div class="sheet-footer" id="result-footer">
         <div class="actions" id="result-actions">
-          <button class="btn btn-ghost" id="adjust-conditions" data-go="settings">조건 조정</button>
+          <button class="btn btn-ghost" id="adjust-conditions" aria-expanded="false" aria-controls="cond-panel">조건 조정</button>
           <button class="btn btn-primary" data-go="walk" id="start-walk">이 길로 걷기</button>
         </div>
       </div>
@@ -161,8 +174,8 @@
       </div>
       <div class="sheet-footer">
         <div class="actions">
-          <button class="btn btn-ghost" id="walk-end">그만 걷기</button>
-          <button class="btn btn-primary" id="walk-done">걷기 끝내기</button>
+          <button class="btn btn-ghost" id="walk-end">경로로 돌아가기</button>
+          <button class="btn btn-primary" id="walk-done">걷기 끝내고 기록 보기</button>
         </div>
       </div>
     </div>

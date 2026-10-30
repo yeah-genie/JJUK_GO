@@ -433,7 +433,8 @@ const XW = {
   },
   setSpeed(mps) { this.v = Math.min(1.7, Math.max(0.35, mps)); this.paint(); },
   // 횡단 시간 칠하기는 홈 지도에서만 보이고, 켜짐 토글이 꺼져 있으면 숨긴다.
-  sync() { if (!map) return; const vis = current === "home" && this.userOn !== false; this.on = vis; $("xw-panel").hidden = !vis; ready(() => { for (const id of ["xw-dot", "xw-line"]) map.setLayoutProperty(id, "visibility", vis ? "visible" : "none"); }); },
+  // 횡단 시간 지도는 따로 켜는 모드(기본 꺼짐). 홈의 중심은 목적지 검색
+  sync() { if (!map) return; const vis = current === "home" && this.userOn === true; this.on = vis; $("xw-panel").hidden = !vis; ready(() => { for (const id of ["xw-dot", "xw-line"]) map.setLayoutProperty(id, "visibility", vis ? "visible" : "none"); }); },
   show(on) { this.userOn = on; this.sync(); },
 };
 function mapStyle() {
@@ -765,9 +766,13 @@ function routeCrossings(steps) {
   ev.sort((p, q) => p.d - q.d);
   const groups = [];
   for (const x of ev) { const g = groups[groups.length - 1]; if (g && x.d - g[g.length - 1].d <= 25) g.push(x); else groups.push([x]); }
-  let sig = 0, big = 0;
-  for (const g of groups) { if (g.some(x => stdNear(x.at, 25).some(p => p[1] === 1))) sig++; if (g.some(x => x.big)) big++; }
-  return { cross: groups.length, sig, big };
+  let sig = 0, big = 0; const xlist = [];
+  for (const g of groups) {
+    const s = g.some(x => stdNear(x.at, 25).some(p => p[1] === 1)), b = g.some(x => x.big);
+    if (s) sig++; if (b) big++; xlist.push({ d: g[0].d, at: g[0].at, sig: s, big: b });
+  }
+  // xlist: 비교표의 '신호 횡단'과 횡단 상세 목록이 같은 기준을 쓰도록 같이 돌려준다
+  return { cross: groups.length, sig, big, xlist };
 }
 // 경로의 신호 횡단별 예상 대기: 신뢰되는 패턴이 있는 곳만 더하고, 없는 곳은 '정보 없음'으로 센다(45초 같은 가정값은 쓰지 않는다).
 function routeWaits(route) {
@@ -827,7 +832,9 @@ function hasBatchim(word) {
   return false;
 }
 const josa = (w, a, b) => w + (hasBatchim(w) ? a : b);
-function extraText(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "+" + (m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"); }
+// 추정 시간은 1분이 넘으면 30초 단위로 반올림한다("약 2분 1초" → "약 2분"). 1분 안쪽은 초 그대로.
+function roundedDur(s) { s = Math.max(0, Math.round(s)); if (s >= 60) s = Math.round(s / 30) * 30; const m = Math.floor(s / 60), r = s % 60; return m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"; }
+function extraText(s) { return "+" + roundedDur(s); }
 // 문구의 숫자는 비교표에 보이는 값(반올림한 값)끼리의 차이로 만든다. 그래야 표와 문구가 항상 맞는다.
 const shownValue = (k, m) => k === "steep" ? Math.round(m.steep / 10) * 10 : k === "gain" ? Math.round(m.gain) : m[k];
 const shownDiff = (k, b, a) => shownValue(k, b) - shownValue(k, a);
@@ -846,36 +853,48 @@ function compareLine(base, alt) {
   return `${josa(extraText(a.walk - b.walk), "으로", "로")} ${josa(joined, "을", "를")} ${avoidAll ? "피할" : "줄일"} 수 있어요`;
 }
 // 결과 시트 머리말: 배지·제목·부제(원시값으로만, 점수 없음)
-function aboutText(s) { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "약 " + (m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"); }
+function aboutText(s) { return "약 " + roundedDur(s); }
 function waitText(sec) { sec = Math.max(0, Math.round(sec)); const m = Math.floor(sec / 60), r = sec % 60; return m ? m + "분" + (r ? " " + r + "초" : "") : r + "초"; }
+// 결과 시트 머리말: 배지·제목·장단점 칩. "더 편한" 같은 단정 대신 무엇을 피하고 무엇이 늘어나는지 원시값으로 말한다(점수 없음).
+// pros/cons는 비교표에 보이는 값끼리의 차이(shownDiff)로 만든다. 시간은 걷는 시간만(신호 대기 제외)이라 '빨리 도착'이라고 하지 않는다.
+function tradeoffs(me, other) {
+  const a = me.m, b = other.m, pros = [], cons = [];
+  const dt = a.walk - b.walk;
+  if (dt <= -10) pros.push(`${aboutText(-dt)} 덜 걸어요`); else if (dt >= 10) cons.push(`${aboutText(dt)} 더 걸어요`);
+  const items = [["stairs", "확인된 계단", "구간", 1], ["sig", "신호 횡단", "곳", 1], ["steep", "급경사", "m", 10], ["gain", "오르막", "m", 5]];   // 비교표의 강조 기준과 같은 최소 차이
+  for (const [k, name, unit, min] of items) {
+    const d = shownDiff(k, other.m, me.m);   // 양수면 내가 적음
+    if (d >= min) pros.push(`${name} ${d}${unit} 적어요`); else if (-d >= min) cons.push(`${name} ${-d}${unit} 많아요`);
+  }
+  if (a.waitKnown > 0 && b.waitKnown > 0 && a.waitUnknown <= b.waitUnknown && b.waitUnknown <= a.waitUnknown) {
+    const w = b.wait - a.wait;
+    if (w >= 30) pros.push(`예상 신호 대기 ${aboutText(w)} 짧아요`); else if (-w >= 30) cons.push(`예상 신호 대기 ${aboutText(-w)} 길어요`);
+  }
+  return { pros, cons };
+}
 function routeSummary(base, alt, focus) {
+  if (!alt || alt === base) return { badge: "", headline: "걷는 시간이 가장 짧은 길", sub: "비슷한 시간 안에 계단·신호 횡단·경사를 줄이는 다른 길이 없어요", pros: [], cons: [], wait: false };
   const b = base.m, a = alt.m;
-  if (!alt || alt === base) return { badge: "", headline: "가장 빨리 가는 길", sub: "비슷한 시간 안에 더 편한 길이 없어요", wait: false };
-  if (focus === "short") return { badge: "", headline: "가장 빨리 가는 길", sub: `쭉고 길보다 ${aboutText(a.walk - b.walk)} 빨라요`, wait: false };
+  if (focus === "short") {
+    const t = tradeoffs(base, alt);
+    return { badge: "", headline: "걷는 시간이 가장 짧은 길", sub: [...t.pros, ...t.cons].join(" · "), pros: t.pros, cons: t.cons, wait: false };
+  }
   const g = altGains(alt, base), order = ["wait", "stairs", "sig", "steep", "gain"].filter(k => g.includes(k)), parts = [];
   let avoidAll = true;
   for (const k of order) {
-    if (k === "stairs") { parts.push(`계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
+    if (k === "stairs") { parts.push(`확인된 계단 ${b.stairs - a.stairs}구간`); avoidAll = avoidAll && a.stairs === 0; }
     if (k === "sig") { parts.push(`신호 횡단 ${b.sig - a.sig}곳`); avoidAll = avoidAll && a.sig === 0; }
     if (k === "steep") { parts.push(`급경사 ${shownDiff("steep", b, a)}m`); avoidAll = avoidAll && shownValue("steep", a) === 0; }
     if (k === "gain") { parts.push(`오르막 ${shownDiff("gain", b, a)}m`); avoidAll = false; }
   }
-  const first = order[0], more = [`${aboutText(a.walk - b.walk)} 추가`];
+  const first = order[0], t = tradeoffs(alt, base);
   if (first === "wait") {
     // 예상 신호 대기가 줄어드는 길: 대표 문장은 대기시간. 건널 수 있는지는 말하지 않는다.
-    for (const p of parts) more.push(`${p} 감소`);
-    if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
-    if (shownDiff("gain", a, b) >= 1) more.push(`오르막 ${shownDiff("gain", a, b)}m 증가`);
-    if (shownDiff("steep", a, b) >= 10) more.push(`급경사 ${shownDiff("steep", a, b)}m 증가`);
-    return { badge: "덜 멈추고 걸어요", kind: "sig", headline: `신호에서 ${aboutText(b.wait - a.wait)} 덜 기다릴 것으로 예상돼요`, sub: more.join(" · "), wait: true };
+    return { badge: "신호 대기가 짧을 것으로 예상", kind: "wait", headline: `신호에서 ${aboutText(b.wait - a.wait)} 덜 기다릴 것으로 예상돼요`, sub: [...t.pros, ...t.cons].join(" · "), pros: t.pros, cons: t.cons, wait: true };
   }
   const joined = parts.length === 1 ? parts[0] : josa(parts[0], "과", "와") + " " + parts.slice(1).join(", ");
-  const badge = first === "stairs" ? (a.stairs === 0 ? "계단 없이 더 편하게 걸어요" : "계단을 줄여 더 편하게 걸어요")
-    : first === "sig" ? "덜 멈추고 걸어요" : first === "steep" ? "가파른 길을 덜 걸어요" : "오르막을 덜 올라요";
-  if (a.sig > b.sig) more.push(`신호 횡단 ${a.sig - b.sig}곳 증가`);
-  if (shownDiff("gain", a, b) >= 1) more.push(`오르막 ${shownDiff("gain", a, b)}m 증가`);
-  if (shownDiff("steep", a, b) >= 10) more.push(`급경사 ${shownDiff("steep", a, b)}m 증가`);
-  return { badge, kind: first, headline: `${josa(joined, "을", "를")} ${avoidAll ? "피하는" : "줄이는"} 길`, sub: more.join(" · "), wait: false };
+  const badge = { stairs: a.stairs === 0 ? "확인된 계단을 피해요" : "확인된 계단이 적어요", sig: "신호 횡단이 적어요", steep: "급경사 구간이 짧아요", gain: "오르막이 적어요" }[first];
+  return { badge, kind: first, headline: `${josa(joined, "을", "를")} ${avoidAll ? "피하는" : "줄이는"} 길`, sub: [...t.pros, ...t.cons].join(" · "), pros: t.pros, cons: t.cons, wait: false };
 }
 async function computeTrip() {
   const request = ++tripRequest;
@@ -1026,6 +1045,8 @@ function locate(useAsStart) {
         if (walker) walker.setLngLat(gpsFix.ll);
         else addDyn(el("m-me", "<i></i>"), gpsFix.ll);
         map.easeTo({ center: gpsFix.ll, zoom: 16.5 });
+        // 출발지를 아직 안 정했으면 내 위치를 출발지로 둔다(목적지만 고르면 바로 길 비교)
+        if (!state.from && current === "home") { state.from = { name: "내 위치", sub: "GPS", ll: [...gpsFix.ll], me: true }; setText("home-origin", "내 위치"); }
       }
     } catch (err) { gpsError(err); }
   }, err => { if (request === gpsRequest && current === screen) gpsError(err); });
@@ -1146,7 +1167,7 @@ function renderWalk(demo = false, resume = false) {
   setSheet("walk", "mid");
   if (route) fit([route.coords], { top: 170 });
   $("walk-end").hidden = free;
-  $("walk-done").textContent = "걷기 끝내기"; $("walk-done").classList.remove("arrived");
+  $("walk-done").textContent = "걷기 끝내고 기록 보기"; $("walk-done").classList.remove("arrived");
   // 신호 안내는 처음 5초만 눈에 띄게 보이고 이후엔 회색 한 줄로 줄인다
   const born = performance.now(), saySync = () => {
     const soft = performance.now() - born > 5000;
@@ -1304,19 +1325,37 @@ function hl(name, q) {
   return a < 0 || b < 0 ? esc(name) : esc(name.slice(0, a)) + "<mark>" + esc(name.slice(a, b)) + "</mark>" + esc(name.slice(b));
 }
 let searchSeq = 0;
+// 검색 목록의 거리 기준: 실제로 계산에 쓰는 점과 그 설명. 기준이 없으면 거리를 숨긴다(지도 기준점 서울광장으로 잰 거리는 보여 주지 않는다).
+const gpsFresh = () => gpsFix && Date.now() - gpsFix.timestamp < 120000 && gpsFix.accuracy <= 100;
+function searchRef() {
+  const other = state.pick === "from" ? state.to : state.from;
+  if (other) return { ll: other.ll, label: state.pick === "from" ? `거리: 도착지 ${other.name}까지 직선` : other.me ? "거리: 내 위치(GPS)에서 직선" : `거리: 출발지 ${other.name}에서 직선` };
+  if (gpsFresh()) return { ll: gpsFix.ll, label: "거리: 현재 위치에서 직선" };
+  return null;
+}
+// 검색 중에도 출발·도착 중 무엇을 고르는지, 이미 고른 곳이 무엇인지 함께 보여 준다(누르면 그쪽을 고른다)
+function searchTripHTML() {
+  const row = (k, label, p) => `<button class="st-row${state.pick === k ? " on" : ""}" data-pick-switch="${k}" aria-pressed="${state.pick === k}"><i class="pt-${k}"></i><span class="st-l">${label}</span><b>${p ? esc(tripLabel(p)) : state.pick === k ? "고르는 중" : "아직 안 정함"}</b></button>`;
+  return `<div class="search-trip">${row("from", "출발", state.from)}${row("to", "도착", state.to)}</div>`;
+}
 async function renderSearchList() {
-  const q = $("sq").value, seq = ++searchSeq, origin = (state.pick === "from" ? state.to?.ll : state.from?.ll) || ME.ll;
+  const q = $("sq").value, seq = ++searchSeq, ref = searchRef(), origin = ref?.ll || ME.ll;
+  const kmCell = p => ref ? `<span class="km">${km(distLL(p.ll, ref.ll))}</span>` : "";
   $("sq-clear").hidden = !q;
-  setText("search-location", ""); $("search-location").hidden=true;
-  $("search-for").textContent = state.pick === "from" ? "출발지를 골라요" : (state.from ? `도착지를 골라요 · 거리는 ${state.from.me ? "내 위치(GPS)" : state.from.name}에서 직선` : "도착지를 고른 다음 출발지를 확인해요");
+  if (!gpsPending) { setText("search-location", ""); $("search-location").hidden = true; }
+  $("search-for").innerHTML = searchTripHTML() + (ref ? `<p class="search-basis">${esc(ref.label)}</p>` : "");
+  $("sq").placeholder = state.pick === "from" ? "출발지: 역, 동네, 장소 이름" : "도착지: 역, 동네, 장소 이름";
   if (!q.trim()) {
-    const recent = store.get("recent", []);
+    // 반대쪽에서 이미 고른 곳은 최근 목록에서 뺀다(도착지가 출발지 후보 맨 위에 0m로 나오던 문제)
+    const otherName = (state.pick === "from" ? state.to : state.from)?.name;
+    const recent = store.get("recent", []).map((p, i) => ({ ...p, i })).filter(p => p.name !== otherName);
     const sugg = ["강남역", "시청역", "홍대입구역", "잠실역", "여의도역", "성수동 카페"];
     let h = "";
     if (state.pick === "from") h += `<button class="res-item" data-res-me><b>내 위치</b><small>GPS로 현재 위치 연결</small></button>`;
-    if (recent.length) h += `<p class="sec-title">최근</p>` + recent.map((p, i) => `<button class="res-item" data-res-recent="${i}"><b>${esc(p.name)}</b><small>${esc(p.kind || "")}</small><span class="km">${km(distLL(p.ll, origin))}</span></button>`).join("");
+    if (recent.length) h += `<p class="sec-title">최근</p>` + recent.map(p => `<button class="res-item" data-res-recent="${p.i}"><b>${esc(p.name)}</b><small>${esc(p.kind || "")}</small>${kmCell(p)}</button>`).join("");
     h += `<p class="sec-title">이렇게 찾아보세요</p>` + sugg.map(s => `<button class="res-item" data-res-sugg="${esc(s)}"><b>${esc(s)}</b><small>${s.includes(" ") ? "동네 + 종류로 근처 찾기" : "역 이름"}</small></button>`).join("");
-    h += `<p class="note">지도를 직접 눌러 도착지를 고를 수도 있어요. 검색 목록: OpenStreetMap에 이름이 있는 역·동네·대학·병원·명소·카페 등 약 1.7만 곳.</p>`;
+    h += `<button class="res-item" data-map-pick><b>지도에서 직접 고르기</b><small>지도를 눌러 ${state.pick === "from" ? "출발지" : "도착지"}를 골라요</small></button>`;
+    h += `<p class="note">검색 목록: OpenStreetMap에 이름이 있는 역·동네·대학·병원·명소·카페 등 약 1.7만 곳.</p>`;
     $("search-list").innerHTML = h;
     return;
   }
@@ -1332,9 +1371,8 @@ async function renderSearchList() {
   if (seq !== searchSeq) return;
   $("search-list").results = res;
   $("search-list").innerHTML = res.length ? res.map((p, i) => {
-    const d = distLL(p.ll, origin);
-    return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small><span class="km">${km(d)}</span></button>`;
-  }).join("") : `<div class="empty-state"><b>‘${esc(q.trim())}’에 맞는 곳이 없어요</b><p>역·동네 이름으로 찾거나, 아래 공개 검색으로 더 찾아볼 수 있어요.</p></div>`;
+    return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small>${kmCell(p)}</button>`;
+  }).join("") : `<div class="empty-state"><b>‘${esc(q.trim())}’에 맞는 곳이 없어요</b><p>역·동네 이름으로 찾거나, 아래 공개 검색으로 더 찾아볼 수 있어요.</p><button class="btn btn-ghost" data-map-pick>지도에서 직접 고르기</button></div>`;
   $("search-list").insertAdjacentHTML("beforeend",`<button class="btn btn-secondary" id="external-search">공개 지도에서 더 찾아보기</button><p class="note">누르면 검색어를 Photon에 보내요. 현재 GPS 위치는 보내지 않아요.</p>`);
 }
 function choosePlace(p) {
@@ -1348,6 +1386,14 @@ function choosePlace(p) {
   state.mode = "actual"; state.routes = null; state.tripKey = null; state.fixedRoute = null;
   state.dep = 0; state.focus = "jjuk";
   resetHomeSheet();
+  // 도착지를 먼저 골랐고 출발지가 없으면: 내 위치를 이미 알거나 위치 권한이 이미 허용돼 있으면 내 위치에서 바로 출발(네이버·카카오지도처럼).
+  // 권한을 아직 묻지 않았으면 출발지 화면에서 '내 위치'를 맨 위에 두고 사용자가 고르게 한다(앱을 열자마자 권한을 묻지 않는다).
+  if (state.pick === "to" && !state.from) {
+    if (gpsFresh()) { state.from = { name: "내 위치", sub: "GPS", ll: [...gpsFix.ll], me: true }; go("result"); return; }
+    state.pick = "from"; $("sq").value = "";
+    if (state.geoGranted) { state.autoLocate = true; go("search"); return; }
+    go("search"); return;
+  }
   go("result");
 }
 
@@ -1386,7 +1432,11 @@ function show(name) {
   if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); endWalk(); }
   gpsStatus("");
   if (name === "home") renderHome();
-  if (name === "search") { renderSearchList(); setTimeout(() => $("sq").focus(), 50); }
+  if (name === "search") {
+    renderSearchList();
+    // 위치 권한이 이미 있으면 출발지 화면에서 바로 내 위치를 찾는다(키보드는 띄우지 않는다)
+    if (state.autoLocate) { state.autoLocate = false; locate(true); } else setTimeout(() => $("sq").focus(), 50);
+  }
   if (name === "result") renderResult();
   if (name === "detail") renderDetail();
   if (name === "walk") renderWalk();
@@ -1435,6 +1485,9 @@ document.addEventListener("click", e => {
   if (t.closest("[data-trip='demo']")) { state.from = DEMO_FROM; state.to = DEMO_TO; state.mode = "example"; BASE = 31200; state.routes = null; state.tripKey = null; state.fixedRoute = null; state.dep = 0; go("result"); return; }
   if (t.closest("#swap")) { [state.from, state.to] = [state.to, state.from]; state.dep = 0; renderResult(); return; }
   if (t.closest("[data-search-retry]")) { renderSearchList(); return; }
+  const ps = t.closest("[data-pick-switch]");
+  if (ps) { state.pick = ps.dataset.pickSwitch; $("sq").value = ""; renderSearchList(); $("sq").focus(); return; }
+  if (t.closest("[data-map-pick]")) { state.mapPick = state.pick; go("home"); gpsStatus(`지도를 눌러 ${state.pick === "from" ? "출발지" : "도착지"}를 골라 주세요`); return; }
   if (t.closest("[data-pick-again]")) { state.pick = t.closest("[data-pick-again]").dataset.pickAgain; $("sq").value = ""; go("search"); return; }
   if (t.closest("#sq-clear")) { $("sq").value = ""; renderSearchList(); $("sq").focus(); return; }
   const du = t.closest("[data-dep-use]");
@@ -1471,6 +1524,13 @@ async function boot() {
   XW.v = Math.min(1.7, Math.max(0.35, SPEED)); XW.paint();
   XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
   booted = true;
+  // 위치 권한이 이미 허용돼 있으면 묻지 않고 내 위치를 지도에 표시하고 출발지로 쓴다. 허용 전에는 앱을 열자마자 묻지 않는다.
+  try {
+    navigator.permissions?.query({ name: "geolocation" }).then(st => {
+      const sync = () => { state.geoGranted = st.state === "granted"; if (state.geoGranted && current === "home" && !gpsFix) locate(false); };
+      sync(); st.onchange = sync;
+    }).catch(() => {});
+  } catch {}
   $("splash-foot").textContent = "서울 걷기 · 공식 신호 이력 기반 비교";
   // 링크로 길을 바로 열기: ?from=위도,경도&to=위도,경도&fn=출발 이름&tn=도착 이름 (수동 QA·공유용)
   const qs = new URLSearchParams(location.search), pt = v => { const [la, lo] = (v || "").split(",").map(Number); return Number.isFinite(la) && Number.isFinite(lo) && la > 37.3 && la < 37.8 && lo > 126.6 && lo < 127.3 ? [lo, la] : null; };
@@ -1481,7 +1541,9 @@ async function boot() {
   }
   const target = pendingScreen || location.hash.slice(1);
   pendingScreen = target && target !== "splash" ? target : "home";
-  splashTimer=setTimeout(()=>go(pendingScreen),Math.max(0,3200-(Date.now()-splashStarted)));
+  // 시작 로고는 첫 방문에만 3.2초 보여 준다. 다시 열 때는 자료가 준비되면 바로 넘어간다.
+  const seen = store.get("seenSplash", false); store.set("seenSplash", true);
+  splashTimer=setTimeout(()=>go(pendingScreen),seen?0:Math.max(0,3200-(Date.now()-splashStarted)));
 }
 /*ASPHALT_UI*/
 boot();
