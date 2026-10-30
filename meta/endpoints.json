@@ -4,8 +4,8 @@
  "v2xSignalPhaseTimingFusionInformation": {
   "url": "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionInformation/1.0",
   "first_ok_utc": "2026-10-30T03:37:35Z",
-  "last_ok_utc": "2026-10-30T04:33:33Z",
-  "ok_calls": 6,
+  "last_ok_utc": "2026-10-30T04:48:42Z",
+  "ok_calls": 7,
   "fields": [
    "dataId",
    "eqmnId",
@@ -119,6 +119,7 @@
   ],
   "itst_ids": [
    "2219",
+   "22902",
    "2407",
    "2875",
    "2899",
