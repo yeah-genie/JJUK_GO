@@ -380,3 +380,6 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-10-30T01:30:43,2974,2200,net_error,,TimeoutError
 2026-10-30T01:35:48,2876,2200,net_error,,TimeoutError
 2026-10-30T01:40:39,2876,2200,ok,,
+2026-10-30T01:45:58,2212,2200,net_error,,TimeoutError
+2026-10-30T01:51:02,2212,2200,net_error,,TimeoutError
+2026-10-30T01:56:07,2212,2200,net_error,,TimeoutError
