@@ -137,6 +137,8 @@ function expectedWait(id, t, dir) {
   }
   return wait === Infinity ? null : wait;
 }
+// 한국 시각 기준 하루 중 초(지도 신호 아이콘의 '지금'). 기기 시간대가 달라도 서울 시각으로 계산한다.
+const kstSec = (ms = Date.now()) => ((ms / 1000 + 9 * 3600) % 86400 + 86400) % 86400;
 const planPeriodText = () => { const d = REAL.source_dates || []; if (!d.length) return "과거 신호 기록 기준 추정"; const f = s => `${+s.slice(4, 6)}/${+s.slice(6, 8)}`; return `${f(d[0])}~${f(d[d.length - 1])} 신호 기록 기준 추정`; };
 const planNoteText = () => planPeriodText() + " · 패턴이 확인된 신호만 더했어요";
 const MIN_GREEN = 8;
@@ -292,8 +294,10 @@ function buildRoute(steps, src, fromLL, toLL) {
   const s0 = G.node.get(src);
   add(fromQ(s0.x, s0.y));
   // 같은 신호를 60m 안에서 또 건너면(왕복 도로를 두 번에 나눠 건너기) 한 번으로 센다
-  const push = (s, dir, d, at) => { if (!x.some(z => z.s === s && d - z.d < 60)) x.push({ s, dir, d, at }); };
-  for (const [u, v, e] of steps) {
+  // len: 횡단보도 길이(그래프의 신호 횡단 간선 길이, '건널 수 있어요' 판단에 씀), mid: 지도 아이콘 위치(횡단보도 가운데)
+  const push = (s, dir, d, at, len = null, mid = at, dirs = null) => { if (!x.some(z => z.s === s && d - z.d < 60)) x.push({ s, dir, d, at, len, mid, dirs }); };
+  for (let si = 0; si < steps.length; si++) {
+    const [u, v, e] = steps[si];
     if (e.cls === 3) { if (!lastStairs) { stairs++; guides.push({d:cum[cum.length-1],label:"계단 구간 · 발밑을 확인하세요"}); } stairMeters += e.len; }
     lastStairs = e.cls === 3;
     const up = edgeRise(e, u, v);
@@ -302,8 +306,9 @@ function buildRoute(steps, src, fromLL, toLL) {
     const pts = edgePts(e, u);
     for (let i = 1; i < pts.length; i++) add(fromQ(...pts[i]), e.cls === 4);
     const nu = G.node.get(u), nv = G.node.get(v);
-    if (e.sig) push(e.sig, e.dir, start, startAt);
-    else if (nv.s && nv.s !== nu.s) push(nv.s, null, cum[cum.length - 1], coords[coords.length - 1]);
+    if (e.sig) push(e.sig, e.dir, start, startAt, e.len, fromQ(...pts[pts.length >> 1]));
+    // 교차로 점에서 건너면 어느 쪽 횡단보도인지 비어 있었다(2026-10-30 발견). 건너는 도로의 양쪽 다리를 후보(dirs)로 둔다.
+    else if (nv.s && nv.s !== nu.s) push(nv.s, null, cum[cum.length - 1], coords[coords.length - 1], null, coords[coords.length - 1], nodeCrossLegs(v, e, steps[si + 1]?.[2]));
   }
   add(toLL);
   return { coords, cum, length: cum[cum.length - 1], x, under, guides, stairs, stairMeters, rise, terrainMeters, key: steps.map(s => s[2].a + "-" + s[2].b).join(",") };
@@ -489,7 +494,7 @@ function mapStyle() {
       // 횡단 시간 지도: 길이 ÷ 걷는 속도로 칠한다(신호와 무관). 색 기준은 XW.colorExpr()이 속도에 따라 바꾼다.
       { id: "xw-dot", type: "circle", source: "xwp", maxzoom: 15.5, paint: { "circle-color": XW.colorExpr(), "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 1.1, 13, 2.4, 15, 4], "circle-opacity": .92 } },
       { id: "xw-line", type: "line", source: "xwl", minzoom: 14.5, layout: { "line-cap": "round" }, paint: { "line-color": XW.colorExpr(), "line-width": ["interpolate", ["linear"], ["zoom"], 14.5, 2.2, 17, 6, 19, 11], "line-opacity": .96 } },
-      { id: "sig-all", type: "circle", source: "sigall", minzoom: 15, paint: {
+      { id: "sig-all", type: "circle", source: "sigall", minzoom: 15, layout: { visibility: "none" }, paint: {   // 2026-10-30: signal-view.js 아이콘으로 대체
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, ["case", ["==", ["get", "k"], 1], 5, 3], 18, ["case", ["==", ["get", "k"], 1], 9, 6]],
         "circle-color": ["case", ["==", ["get", "k"], 1], "#2A3140", ["==", ["get", "c"], 1], "#59617A", "#959CAB"],
         "circle-stroke-color": ["case", ["==", ["get", "k"], 1], "#F6C343", "#343D43"], "circle-stroke-width": ["case", ["==", ["get", "k"], 1], 2.5, 1.2] } },
@@ -521,7 +526,7 @@ function ensureMap() {
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
   map.on("click", onMapClick);
-  map.on("moveend", () => { if (typeof LIVE !== "undefined") LIVE.sync(); });
+  map.on("moveend", () => { if (typeof LIVE !== "undefined") LIVE.sync(); if (typeof SIG !== "undefined") { SIG.loadView(); SIG.tick(); if (current === "result") SIG.showCallout(); } });   // 지도가 맞춰진 뒤 말풍선 방향을 다시 정한다
   for (const l of ["sig-all"]) { map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer"); map.on("mouseleave", l, () => map.getCanvas().style.cursor = ""); }
   return map;
 }
@@ -775,11 +780,34 @@ function routeCrossings(steps) {
   // xlist: 비교표의 '신호 횡단'과 횡단 상세 목록이 같은 기준을 쓰도록 같이 돌려준다
   return { cross: groups.length, sig, big, xlist };
 }
+// 교차로 점 v를 e로 들어와 eNext로 나갈 때 건너는 도로의 다리(n/e/s/w). routeCrossings와 같은 판정(마주 보는 두 차도, 들어온 쪽과 나간 쪽이 반대편).
+// 남북으로 지나가며 동서 도로를 건너면 ['e','w'](동쪽 또는 서쪽 횡단보도). 건너지 않으면 [].
+const legOf = b => ["n", "e", "s", "w"][Math.round((((b % 360) + 360) % 360) / 90) % 4];
+function nodeCrossLegs(v, e, eNext) {
+  if (!eNext) return [];
+  const roads = (G.adj.get(v) || []).filter(x => x !== e && x !== eNext && x.cls <= 1).map(x => [rayBearing(x, v), x]);
+  if (roads.length < 2) return [];
+  const bIn = rayBearing(e, v), bOut = rayBearing(eNext, v), legs = new Set();
+  for (let i = 0; i < roads.length; i++) for (let j = i + 1; j < roads.length; j++) {
+    if (Math.abs(((roads[i][0] - roads[j][0] + 540) % 360) - 180) < 140) continue;
+    const side = b => Math.sin((b - roads[i][0]) * Math.PI / 180), si = side(bIn), so = side(bOut);
+    if (si * so < 0 && Math.abs(si) > 0.17 && Math.abs(so) > 0.17) { legs.add(legOf(roads[i][0])); legs.add(legOf(roads[j][0])); }
+  }
+  return [...legs];
+}
+// 횡단 x의 t초 예상 대기: 방향이 정해졌으면 그 다리, 후보만 있으면 후보 다리 패턴이 모두 같은 답일 때만(다르면 모름)
+function crossingWait(x, t) {
+  if (x.dir) return expectedWait(x.s, t, x.dir);
+  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d)).filter(w => w != null);
+  if (!ws.length || (ws.some(w => w === 0) && ws.some(w => w > 0))) return null;
+  return Math.max(...ws);
+}
 // 경로의 신호 횡단별 예상 대기: 신뢰되는 패턴이 있는 곳만 더하고, 없는 곳은 '정보 없음'으로 센다(45초 같은 가정값은 쓰지 않는다).
 function routeWaits(route) {
   let t = 0, wait = 0, known = 0, unknown = 0;
   for (const x of route.x || []) {
-    const arrive = BASE + state.dep + x.d / SPEED + t, w = x.dir ? expectedWait(x.s, arrive, x.dir) : null;
+    if (!x.dir && x.dirs && !x.dirs.length) continue;   // 교차로 점을 지나기만 하고 도로를 건너지 않음
+    const arrive = BASE + state.dep + x.d / SPEED + t, w = crossingWait(x, arrive);
     if (w == null) { unknown++; continue; }
     known++; wait += w; t += w;
   }
@@ -1162,7 +1190,7 @@ function walkStats(update) {
   $("w-pace").innerHTML = speedHTML(trackSpeed(tr));
   if (update) update();
 }
-const SAY_FIRST = "실시간 신호는 제공하지 않아요. 건널 때 실제 신호를 확인하세요.", SAY_AFTER = "실시간 신호 정보 없음";
+const SAY_FIRST = "신호 안내는 과거 기록으로 예상한 상태예요. 실제 신호를 함께 확인하세요.", SAY_AFTER = "신호: 과거 기록 패턴 예상";
 function renderWalk(demo = false, resume = false) {
   const free = !!state.freeWalk;
   if (!free && !state.sims) return go("result");
@@ -1174,7 +1202,7 @@ function renderWalk(demo = false, resume = false) {
   const session = ++gpsRequest;
   const k = state.same ? "jjuk" : state.focus, sim = free ? null : state.sims[k], route = free ? null : state.routes[k];
   mountMap("map-walk"); clearDyn();
-  if (free) setRoutes(null, null); else { setRoutes(route, null); markTrip({ [k]: sim }, k, false); }
+  if (free) setRoutes(null, null); else { setRoutes(route, null); markTrip(null, k); }
   setSheet("walk", "mid");
   if (route) fit([route.coords], { top: 170 });
   $("walk-end").hidden = free;
@@ -1212,6 +1240,15 @@ function renderWalk(demo = false, resume = false) {
     $("w-left").textContent = left == null ? "—" : km(left);
     const eta = left == null ? "—" : left < 10 ? "도착 근처" : "약 " + mins(left / (trackSpeed(walkTrack) || SPEED));
     setPeek("walk", `<span>${state.same || k === "short" ? "빠른 길" : "쭉고 길"} · 남은 ${$("w-left").textContent}</span><small>${eta}</small>`);
+    // 다음 신호 횡단이 300m 안이면 그것을 먼저 안내한다(도착 시각의 예상 신호로)
+    const nx = dist == null ? null : route.x.find(x => SIG.isCrossing(x) && x.d > dist + 3);
+    if (typeof SIG !== "undefined") SIG.nextX = nx || null;
+    if (nx && nx.d - dist <= 300) {
+      const sp = trackSpeed(walkTrack) || SPEED, v = SIG.verdict(nx, SIG.now() + (nx.d - dist) / sp, sp);
+      setText("next-label", `다음 횡단보도 · ${v.label}`); setText("next-dist", Math.round(nx.d - dist) + "m"); setText("next-state", v.text);
+      $("next-state").hidden = false; $("w-left-col").hidden = false; $("sheet-walk").dataset.next = v.kind;
+      saySync(); return;
+    }
     const next = dist == null ? null : routeGuidance(route, dist);
     if (next) {
       setText("next-label", "다음 안내"); setText("next-dist", Math.round(next.d - dist) + "m"); setText("next-state", next.label);
@@ -1528,7 +1565,7 @@ async function boot() {
   const splashStarted=Date.now();
   show("splash");
   try {
-    [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans().catch(() => ({signals:{},date:null,source_dates:[]}))]);
+    [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans((h => [h, (h + 1) % 24, 8, 9, 10])(Math.floor(kstSec() / 3600))).catch(() => ({signals:{},date:null,source_dates:[]}))]);
   } catch (err) {
     $("splash-foot").textContent = "지도 데이터를 못 불러왔어요. 새로고침해 주세요.";
     console.error(err);
@@ -1544,6 +1581,7 @@ async function boot() {
   XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
   booted = true;
   if (typeof LIVE !== "undefined") LIVE.init();
+  if (typeof SIG !== "undefined") SIG.start();   // 지도 신호 아이콘 1초마다 갱신(패턴 예상)
   // 위치 권한이 이미 허용돼 있으면 묻지 않고 내 위치를 지도에 표시하고 출발지로 쓴다. 허용 전에는 앱을 열자마자 묻지 않는다.
   try {
     navigator.permissions?.query({ name: "geolocation" }).then(st => {

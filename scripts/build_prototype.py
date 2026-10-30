@@ -20,7 +20,7 @@ def main():
     app = (SRC / "app.js").read_text(encoding="utf-8")
     app = app.replace("/*WALKING_PROFILE*/", (SRC / "walking-profile.js").read_text(encoding="utf-8"), 1)
     app = app.replace("/*ASPHALT_UI*/", (SRC / "screens.js").read_text(encoding="utf-8"), 1)
-    app += "\n" + (SRC / "walk-card.js").read_text(encoding="utf-8") + "\n" + (SRC / "external-search.js").read_text(encoding="utf-8") + "\n" + (SRC / "live-signals.js").read_text(encoding="utf-8")
+    app += "\n" + (SRC / "walk-card.js").read_text(encoding="utf-8") + "\n" + (SRC / "external-search.js").read_text(encoding="utf-8") + "\n" + (SRC / "live-signals.js").read_text(encoding="utf-8") + "\n" + (SRC / "signal-view.js").read_text(encoding="utf-8")
     html = html.replace("/*MAPLIBRE_CSS*/", css, 1).replace("/*ASPHALT_CSS*/", (SRC / "asphalt.css").read_text(encoding="utf-8"), 1).replace("/*APP_JS*/", app, 1)
     OUT.write_text(html, encoding="utf-8")
     print(f"{OUT} ({len(html):,}자)")

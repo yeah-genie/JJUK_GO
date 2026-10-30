@@ -126,3 +126,39 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 /* freeze 전 수정: 지도 출발(흰 테두리)·도착(노란 점)을 위쪽 출발·도착 표시와 같게 / 결과 지도 아래 20px가 시트 밑에 깔려 축척이 가려지던 것 */
 .m-start{border-color:var(--zebra)}.m-dest i{background:var(--lane);border-color:var(--asphalt)}
 #map-result .maplibregl-ctrl-bottom-right,#map-result .maplibregl-ctrl-bottom-left{margin-bottom:24px}
+
+/* 2026-10-30 신호 중심 개편: 목업 구조(경로 카드 두 장, 신호 아이콘·범례, 다음 횡단보도 말풍선). 색은 쭉고 토큰 유지 */
+.rtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 12px;border-bottom:0}
+.rtab{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;height:auto;min-height:150px;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:var(--panel);color:var(--zebra);text-align:left}
+.rtab[aria-pressed=true]{border-color:var(--lane);box-shadow:0 0 0 1px var(--lane) inset}
+.rtab[aria-pressed=true]::after{display:none}
+.rtab .rc-top{display:flex;align-items:center;gap:6px;min-height:20px}
+.rtab .name{font-size:15px;font-weight:700;line-height:20px;color:var(--zebra)}
+.rtab em{font-style:normal;font-size:11px;font-weight:700;color:var(--asphalt);background:var(--lane);border-radius:999px;padding:2px 7px}
+.rtab .rc-check{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--lane);color:var(--asphalt);font-style:normal;font-weight:800;font-size:13px;display:grid;place-items:center}
+.rtab .rc-time{display:flex;align-items:baseline;gap:8px}
+.rtab .mins{font-size:28px;line-height:32px;font-weight:800;color:var(--zebra)}
+.rtab[aria-pressed=true] .mins{color:var(--lane)}
+.rtab .rc-time small{font-size:13px;color:var(--muted)}
+.rtab .rc-row{display:flex;align-items:center;gap:6px;font-size:13px;line-height:18px;color:#D3D7DC}
+.rtab .rc-row .mi{width:16px;height:16px;flex:none}
+.rtab .rc-row.muted{color:var(--muted)}
+.rtab .rc-row.pro::before{content:"✓";color:var(--lane);font-weight:800;width:16px;text-align:center}
+.rtab .rc-row.con::before{content:"−";color:#FF8A6B;font-weight:800;width:16px;text-align:center}
+.rtabs.one .rtab{min-height:0}
+/* 지도 신호 범례·근거(신뢰도) */
+.sig-legend{position:absolute;left:10px;right:10px;bottom:calc(var(--sheet-h) + 34px);z-index:9;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:6px 10px;border-radius:10px;background:#242A32e6;color:var(--zebra);font-size:12px;pointer-events:none}
+.sig-legend[hidden]{display:none}.sig-legend span{display:inline-flex;align-items:center;gap:5px}
+.sig-legend .lg{width:12px;height:12px;border-radius:50%;display:inline-block;border:1.5px dashed #F4F2E9}.lg-walk{background:#2FA866}.lg-stop{background:#D9443F}.lg-unk{background:#6B7480;border-style:solid!important}
+.sig-legend .lg-src{margin-left:auto;color:var(--muted)}.lg-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}.lg-dot.live{background:#2FA866}
+/* 다음 횡단보도 말풍선(결과 지도) */
+.sv-call{display:grid;gap:1px;max-width:190px;padding:7px 10px;border-radius:10px;background:var(--asphalt);border:1.5px solid var(--line);color:var(--zebra);font-size:12px;line-height:1.35;box-shadow:0 2px 10px #0006}
+.sv-call small{color:var(--muted);font-size:11px}.sv-call b{font-size:15px}.sv-call span{color:#D3D7DC}
+.sv-call.go{border-color:#2FA866}.sv-call.go b{color:#5ED193}.sv-call.wait b,.sv-call.short b{color:#FF8A6B}.sv-call.wait,.sv-call.short{border-color:#8A4A42}
+/* 걷기: 다음 횡단보도 안내 색 */
+#sheet-walk[data-next=go]~.next #next-label,.next #next-label{color:#A7B0C0}
+
+.sig-legend{flex-wrap:nowrap;gap:9px;padding:5px 9px;font-size:11px;white-space:nowrap;overflow:hidden;bottom:calc(var(--sheet-h) + 30px);right:auto;max-width:calc(100% - 20px)}
+.sig-legend .lg{width:10px;height:10px}.sig-legend .lg-src{margin-left:2px}
+.rtab .rc-top{height:22px;min-height:22px}
+@media(max-height:700px){.rtabs{margin:6px 0 8px}.rtab{min-height:0;padding:9px 10px;gap:4px}.rtab .mins{font-size:24px;line-height:28px}.rtab .rc-row.pro~.rc-row.pro{display:none}.rhead{font-size:18px;margin:4px 0}}

@@ -18,6 +18,7 @@
     <button class="solo" id="ctl-north" aria-label="북쪽 보기" hidden>N</button>
     <button class="solo" id="ctl-loc" aria-label="내 위치"><svg viewBox="0 0 24 24" fill="none" stroke="#2F5BFF" stroke-width="2.2"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#2F5BFF"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
   </div>
+  <div class="sig-legend" id="sig-legend" hidden aria-label="신호 아이콘 설명"><span><i class="lg lg-walk"></i>횡단 가능</span><span><i class="lg lg-stop"></i>대기 중</span><span><i class="lg lg-unk"></i>정보 없음</span><span class="lg-src"><i class="lg-dot"></i><span id="sig-src"></span></span></div>
   <div class="map-attrib" id="map-attrib" hidden>© OpenStreetMap · 지형 Mapzen / USGS</div>
 
   <!-- 0 로고 -->
@@ -135,7 +136,7 @@
       <div class="sheet-footer" id="result-footer">
         <div class="actions" id="result-actions">
           <button class="btn btn-ghost" id="adjust-conditions" aria-expanded="false" aria-controls="cond-panel">조건 조정</button>
-          <button class="btn btn-primary" data-go="walk" id="start-walk">이 길로 걷기</button>
+          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
         </div>
       </div>
     </div>

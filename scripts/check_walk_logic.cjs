@@ -22,8 +22,29 @@ const context = vm.createContext({
 });
 const app = fs.readFileSync(path.join(__dirname, '../docs/prototype/src/app.js'), 'utf8').replace('/*WALKING_PROFILE*/',fs.readFileSync(path.join(__dirname,'../docs/prototype/src/walking-profile.js'),'utf8')).replace('/*ASPHALT_UI*/',fs.readFileSync(path.join(__dirname,'../docs/prototype/src/screens.js'),'utf8')).replace(/boot\(\);\s*$/, '');
 vm.runInContext(app+'\n'+fs.readFileSync(path.join(__dirname,'../docs/prototype/src/walk-card.js'),'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../docs/prototype/src/signal-view.js'),'utf8'), context);
+// '건널 수 있어요'는 근거가 모두 있을 때만(2026-10-30 사용자 결정, docs/discussions/2026-10-30-signal-core-redesign.md)
 vm.runInContext(`
-  SPEED=1.2;
+  DAYTYPE_NOW='wd'; SPEED=1.2;
+  const P={c:120,ref:0,day0:0,win:[[0,40]],date:'2026-10-27',observed_samples:1500,test_samples:500,holdout_accuracy:.99,impurity:.005,xd:[4,.97,.96,0,null]};
+  REAL={signals:{A:{bands:[{start:28800,end:32400,legs:{n:P}}]}},source_dates:['20261014','20261027']};
+  const T=28800, x={s:'A',dir:'n',len:24};
+  let v=SIG.verdict(x,T+5);                       // 초록 35초 남음, 건너는 데 20초 → 건널 수 있어요(예상)
+  assert.equal(v.kind,'go'); assert.match(v.text,/건널 수 있어요.예상./); assert.match(v.text,/35초 남음/);
+  v=SIG.verdict(x,T+25);                          // 초록 15초 남음 < 20+3초 → 짧다, 다음 초록까지
+  assert.equal(v.kind,'short'); assert.doesNotMatch(v.text,/건널 수 있어요/); assert.match(v.text,/다음 초록까지 약 95초/);
+  v=SIG.verdict(x,T+60);                          // 빨강 → 60초 대기
+  assert.equal(v.kind,'wait'); assert.match(v.text,/약 60초 기다릴/);
+  assert.equal(SIG.verdict({s:'A',dir:'n',len:null},T+5).kind,'green','길이를 모르면 건널 수 있다고 하지 않음');
+  assert.equal(SIG.verdict({s:'A',dir:null,len:24},T+5).kind,'unknown','방향을 모르면 정보 없음');
+  assert.equal(SIG.verdict({s:'B',dir:'n',len:24},T+5).kind,'unknown','패턴이 없으면 정보 없음');
+  REAL.signals.A.bands[0].legs.n={...P,holdout_accuracy:.8};
+  assert.equal(SIG.verdict(x,T+5).kind,'unknown','신뢰 조건을 못 넘은 패턴은 쓰지 않음');
+  REAL={signals:{},source_dates:[]};
+`, context);
+console.log('PASS crossing verdict: 건널 수 있어요 only with trusted pattern + length + enough green');
+vm.runInContext(`
+  SPEED=1.2; DAYTYPE_NOW='wd';   // 요일 종류 고정(주말에 돌리면 평일 패턴 시험이 실패하던 문제)
   REAL = {signals:{'test':{bands:[{start:28800,end:32400,legs:{n:{day0:0,ref:0,c:120,win:[[0,30]]}}}]}},source_dates:[]};
   assert.equal(known('test',28800,'n'),true);
   assert.equal(known('test',32400,'n'),false);
@@ -120,7 +141,7 @@ vm.runInContext(`
   assert.equal(routeSummary(bw,aw(70,0),'jjuk').headline,'신호에서 약 50초 덜 기다릴 것으로 예상돼요');
   assert(!/건널 수|건너도|안전|한 번에/.test(routeSummary(bw,aw(70,0),'jjuk').headline+routeSummary(bw,aw(70,0),'jjuk').sub),'횡단 가능 판단 문구 금지');
   assert.equal(compareLine(bw,aw(70,0)),'+1분으로 신호 대기 50초를 줄일 수 있어요');
-  REAL={signals:{},source_dates:[]};DAYTYPE_NOW=null;
+  REAL={signals:{},source_dates:[]};DAYTYPE_NOW='wd';   // 요일 고정 유지(주말에 돌려도 같은 결과)
   // 계단 제외 설정이면 계단 길을 쓰지 않는다
   const baseProfile=readProfile();writeProfile({...baseProfile,avoidSteps:true});
   assert.equal(mk([0,0,0,0,0]).m.stairs,0);
