@@ -1,0 +1,1523 @@
+diff --git a/api/map-config.js b/api/map-config.js
+new file mode 100644
+index 0000000..4c90a4d
+--- /dev/null
++++ b/api/map-config.js
+@@ -0,0 +1,8 @@
++// 지도 설정: 네이버 지도 Client ID(ncpKeyId). 네이버 지도 키는 브라우저가 지도 스크립트를 부를 때 주소에 드러나는 '공개 키'이고,
++// 네이버 클라우드 콘솔에 등록한 웹 서비스 URL(도메인)에서만 동작한다. 저장소에는 넣지 않고 Vercel 환경변수 NAVER_MAP_KEY_ID에 둔다.
++module.exports = function handler(req, res) {
++  res.setHeader('Content-Type', 'application/json; charset=utf-8');
++  res.setHeader('Cache-Control', 'public, max-age=300');
++  const id = process.env.NAVER_MAP_KEY_ID;
++  res.end(JSON.stringify({ naver_key_id: id && /^[A-Za-z0-9_-]{4,64}$/.test(id) ? id : null }));
++};
+diff --git a/docs/prototype/index.html b/docs/prototype/index.html
+index 6bce3c5..4e64f9a 100644
+--- a/docs/prototype/index.html
++++ b/docs/prototype/index.html
+@@ -79,16 +79,6 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+ #sheet-result .grip-area{display:flex;justify-content:center;align-items:center;height:20px;padding:0;cursor:grab}
+ #sheet-result .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0}
+ #sheet-result .sheet-body{padding:0 20px}
+-.rtabs{display:grid;grid-template-columns:1fr 1fr;margin:0 -20px;border-bottom:1px solid var(--line)}
+-.rtabs.one{grid-template-columns:1fr}
+-.rtab{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;height:60px;padding:0 20px;border:0;background:none;color:var(--muted);min-width:0}
+-.rtab .ti{width:24px;height:24px;flex:none}
+-.rtab .tl{display:inline-flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap}
+-.rtab .name{font-size:17px;font-weight:600;line-height:1}
+-.rtab .mins{font-size:22px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+-.rtab[aria-pressed=true] .ti,.rtab[aria-pressed=true] .mins{color:var(--lane)}
+-.rtab[aria-pressed=true] .name{color:var(--zebra)}
+-.rtab[aria-pressed=true]::after{content:"";position:absolute;left:20px;right:20px;bottom:-1px;height:3px;border-radius:2px;background:var(--lane)}
+ .rbadge{display:inline-flex;align-items:center;gap:8px;margin:16px 0 0;padding:7px 12px 7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--lane);font-size:14px;font-weight:600;line-height:1.2}
+ .rbadge .ico{width:18px;height:18px;flex:none}
+ .rhead{margin:12px 0 6px;font-size:24px;font-weight:700;line-height:1.3;letter-spacing:-.4px;color:var(--zebra)}
+@@ -99,11 +89,6 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+ #result-options{padding-top:6px}
+ .rfoot{margin:12px 0 4px;font-size:13px;color:var(--muted)}
+ @media (prefers-reduced-motion:reduce){.detail-toggle .ico{transition:none}}
+-/* 탭 글자: 이름과 시간을 같은 크기로 맞춰 기준선과 세로 가운데가 함께 맞게 */
+-.rtab .tl{align-items:baseline}
+-.rtab .name,.rtab .mins{font-size:20px;line-height:24px}
+-.rtab .name{font-weight:600}.rtab .mins{font-weight:800}
+-.rtab .ti{width:22px;height:22px}
+ /* 지도 위 회색 길 이름표 */
+ .m-label{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);font-size:12px;line-height:1.25;pointer-events:none}
+ .m-label b{font-weight:600}.m-label span{font-weight:700;color:var(--zebra)}
+@@ -138,41 +123,139 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+ .m-start{border-color:var(--zebra)}.m-dest i{background:var(--lane);border-color:var(--asphalt)}
+ #map-result .maplibregl-ctrl-bottom-right,#map-result .maplibregl-ctrl-bottom-left{margin-bottom:24px}
+ 
+-/* 2026-10-30 신호 중심 개편: 목업 구조(경로 카드 두 장, 신호 아이콘·범례, 다음 횡단보도 말풍선). 색은 쭉고 토큰 유지 */
+-.rtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 12px;border-bottom:0}
+-.rtab{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;height:auto;min-height:150px;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:var(--panel);color:var(--zebra);text-align:left}
+-.rtab[aria-pressed=true]{border-color:var(--lane);box-shadow:0 0 0 1px var(--lane) inset}
+-.rtab[aria-pressed=true]::after{display:none}
+-.rtab .rc-top{display:flex;align-items:center;gap:6px;min-height:20px}
+-.rtab .name{font-size:15px;font-weight:700;line-height:20px;color:var(--zebra)}
+-.rtab em{font-style:normal;font-size:11px;font-weight:700;color:var(--asphalt);background:var(--lane);border-radius:999px;padding:2px 7px}
+-.rtab .rc-check{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--lane);color:var(--asphalt);font-style:normal;font-weight:800;font-size:13px;display:grid;place-items:center}
+-.rtab .rc-time{display:flex;align-items:baseline;gap:8px}
+-.rtab .mins{font-size:28px;line-height:32px;font-weight:800;color:var(--zebra)}
+-.rtab[aria-pressed=true] .mins{color:var(--lane)}
++/* ===================================================================================
++   결과·걷기 화면 (2026-10-30 목업 형식, 한곳에 정리)
++   - 지도는 화면 전체. 위 머리(어두운 판, 아래 모서리 둥글게)와 아래 시트(위 모서리 둥글게)가 지도를 창처럼 감싼다.
++   - 지도 위에 뜨는 것(패턴 예상 표시·지도 버튼·범례·다음 횡단보도 말풍선·도착지 이름표)은 밝은 판 + 옅은 그림자:
++     밝은 바탕 지도 위에서 어두운 덩어리가 경로·신호 아이콘보다 먼저 눈에 띄지 않게.
++   - 글자 크기는 11 · 13 · 15 · 17 · 28 다섯 단계, 굵기는 400 · 600 · 700. 간격은 4 · 8 · 12 · 16 · 24.
++   - 신호 색(초록·빨강·회색)은 신호 아이콘·범례·말풍선 상태에만 쓴다.
++   =================================================================================== */
++:root{--float:#FFFFFF;--ink:#242A32;--ink-2:#5B6573;--float-line:#E3E6EA;--float-shadow:0 1px 2px rgba(20,26,32,.18),0 4px 14px rgba(20,26,32,.14);--panel-shadow:0 4px 18px rgba(10,14,18,.28);--sig-go:#2FA866;--sig-stop:#D9443F;--sig-unk:#7A8391;--r-s:12px;--r-m:16px;--r-l:20px}
++#map-home,#map-result,#map-walk,.map{top:0!important;bottom:0!important}
++
++/* 결과 머리: 로고 줄(로고 그대로) + 출발·도착 입력칸 + 바꾸기 */
++#s-result .rhead-bar{display:block;height:auto;padding:max(4px,env(safe-area-inset-top)) 12px 10px;background:var(--asphalt);border:0;border-radius:0 0 var(--r-l) var(--r-l);box-shadow:var(--panel-shadow)}
++.rh-brand{display:flex;align-items:center;gap:4px;height:36px}
++.rh-brand .brand{font-size:22px;margin-right:auto}
++.rh-brand .icon-btn,.rh-trip .icon-btn{width:40px;min-width:40px;height:40px;flex:none;color:var(--zebra)}
++.rh-brand .icon-btn .ico,.rh-trip .icon-btn .ico{width:22px;height:22px}
++.rh-trip{display:flex;align-items:center;gap:4px;margin-top:4px}
++.rh-trip .trip{flex:1;min-width:0;display:grid;gap:6px}
++.trip-field{display:flex;align-items:center;height:40px;padding-left:14px;border:0;border-radius:var(--r-s);background:var(--panel)}
++.trip-field .trip-pt{flex:1;min-width:0;height:40px;min-height:0;padding:0;gap:12px;border:0;background:none;color:var(--zebra);font-size:15px;display:flex;align-items:center;text-align:left}
++.trip-field .trip-pt:first-child{border-bottom:0}
++.trip-field .trip-pt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
++.trip-x{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;background:none;color:var(--muted)}
++.trip-x .ico{width:16px;height:16px}
++#adjust-conditions{flex:none}
++#adjust-conditions[aria-expanded=true]{color:var(--lane)}
++
++/* 지도 위 떠 있는 것 */
++.mapctl{gap:8px}
++.mapctl .grp{border-radius:var(--r-s);box-shadow:var(--float-shadow)}
++.mapctl button{width:40px;height:40px;background:var(--float);color:var(--ink);font-size:22px;font-weight:400}
++.mapctl .grp button+button{border-top:1px solid var(--float-line)}
++.mapctl .solo{width:40px;height:40px;border-radius:50%;box-shadow:var(--float-shadow)}
++.mapctl svg{width:22px;height:22px;stroke:#2F6BEA}.mapctl svg circle:last-of-type{fill:#2F6BEA}
++.sig-chip{position:absolute;z-index:11;top:calc(var(--head-h,140px) + 12px);right:12px;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 12px;border:0;border-radius:999px;background:var(--float);color:var(--ink);font-size:13px;font-weight:600;box-shadow:var(--float-shadow)}
++.sig-chip[hidden]{display:none}
++.lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--sig-unk)}.lg-dot.live{background:var(--sig-go)}
++.sig-chip .lg-dot{width:8px;height:8px;background:var(--sig-unk)}.sig-chip .lg-dot.live{background:var(--sig-go)}
++.sig-chip .ico{width:16px;height:16px;color:var(--ink-2)}
++.sig-info{position:absolute;z-index:30;left:12px;right:12px;top:calc(var(--head-h,140px) + 52px);display:grid;gap:8px;padding:16px;border:0;border-radius:var(--r-m);background:var(--float);color:var(--ink);font-size:13px;line-height:1.55;box-shadow:var(--float-shadow)}
++.sig-info[hidden]{display:none}.sig-info b{font-size:15px}.sig-info p{margin:0;color:var(--ink-2)}
++.sig-info .btn-ghost{color:var(--ink);border-color:var(--float-line);min-height:44px}
++.sig-legend{position:absolute;z-index:9;left:12px;right:auto;bottom:calc(var(--sheet-h) + 22px);max-width:calc(100% - 24px);display:flex;flex-wrap:nowrap;align-items:center;gap:12px;height:28px;padding:0 12px;border-radius:999px;background:var(--float);color:var(--ink);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;box-shadow:var(--float-shadow);pointer-events:none}
++.sig-legend[hidden]{display:none}
++.sig-legend span{display:inline-flex;align-items:center;gap:6px}
++.sig-legend .lg{width:10px;height:10px;border:0;border-radius:50%;display:inline-block}
++.sig-legend .lg-walk{background:var(--sig-go)}.sig-legend .lg-stop{background:var(--sig-stop)}.sig-legend .lg-unk{background:var(--sig-unk);border:0}.sig-legend .lg-unk:after{content:none}
++.sig-legend .lg-src{display:none}
++.map-attrib{bottom:calc(var(--sheet-h) + 4px);left:12px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.78);color:var(--ink-2);font-size:9px}
++#map-home .maplibregl-ctrl-bottom-right,#map-result .maplibregl-ctrl-bottom-right,#map-walk .maplibregl-ctrl-bottom-right{bottom:calc(var(--sheet-h) + 20px);margin:0}
++#map-result .maplibregl-ctrl-bottom-left{margin:0}
++.maplibregl-ctrl-scale{border-color:var(--ink-2);background:rgba(255,255,255,.78);color:var(--ink);font-size:10px;margin:0 12px 0 0}
++/* 지도 이름표: 도착지·다른 길 */
++.m-dest span{padding:4px 8px;border-radius:8px;background:var(--float);color:var(--ink);font-size:12px;font-weight:600;box-shadow:var(--float-shadow)}
++.m-label{border:0;border-radius:8px;background:var(--float);color:var(--ink-2);box-shadow:var(--float-shadow)}.m-label span{color:var(--ink)}
++/* 결과 화면에서는 다른 길 이름표를 감춘다: 같은 정보가 아래 카드에 있고, 이름표가 신호 아이콘·말풍선을 덮었다(회색 선 = 고르지 않은 길) */
++#map-result .m-label{display:none}
++/* 조건 패널을 열면 시트가 지도를 덮으므로 지도 위 범례·말풍선·출처를 잠시 감춘다 */
++.phone:has(#cond-panel:not([hidden])) :is(.sig-legend,.sv-call,.map-attrib,.sig-chip){visibility:hidden}
++
++/* 다음 횡단보도 말풍선(목업 형식: 작은 제목 / 큰 거리 / 상태 한 줄). 꼬리가 아이콘을 가리킨다 */
++.sv-call{position:relative;display:grid;gap:2px;min-width:132px;max-width:200px;padding:10px 12px;border:0;border-radius:var(--r-s);background:var(--float);color:var(--ink);font-size:13px;line-height:1.35;box-shadow:var(--float-shadow);pointer-events:none}
++.sv-call small{font-size:11px;color:var(--ink-2)}
++.sv-call b{font-size:17px;font-weight:700;line-height:1.25;color:var(--ink)}
++.sv-call .st{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
++.sv-call .st i{width:8px;height:8px;border-radius:50%;flex:none;background:var(--sig-unk)}
++.sv-call.go .st,.sv-call.green .st{color:#1D7F49}.sv-call.go .st i,.sv-call.green .st i{background:var(--sig-go)}
++.sv-call.wait .st,.sv-call.short .st{color:#B8322C}.sv-call.wait .st i,.sv-call.short .st i{background:var(--sig-stop)}
++.sv-call::after{content:"";position:absolute;left:50%;width:12px;height:12px;background:var(--float);transform:translateX(-50%) rotate(45deg);border-radius:2px}
++.sv-call.above::after{bottom:-5px;box-shadow:3px 3px 4px rgba(20,26,32,.10)}.sv-call.below::after{top:-5px}
++.sv-call.at-left::after{left:22px}.sv-call.at-right::after{left:auto;right:16px;transform:translateX(50%) rotate(45deg)}
++
++/* 결과 시트: 경로 카드 두 장 + 걷기 시작 */
++#sheet-result{border:0;border-radius:var(--r-l) var(--r-l) 0 0;box-shadow:0 -4px 18px rgba(10,14,18,.22)}
++#sheet-result .grip-area{display:flex;flex:none;justify-content:center;align-items:center;height:16px;padding:0;cursor:grab}
++#sheet-result .grip{width:36px;height:4px;margin:0;border-radius:2px;background:var(--line)}
++#sheet-result .sheet-body{padding:0 16px}
++#result-content{padding-bottom:0}
++.rtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;border:0}
++.rtabs.one{grid-template-columns:1fr}
++.rtab{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;height:auto;min-height:0;padding:12px;border:0;border-radius:var(--r-m);background:var(--panel);color:var(--zebra);text-align:left;min-width:0}
++.rtab::before,.rtab::after{content:none}
++.rtab[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--lane)}
++.rtab .rc-top{display:flex;align-items:center;gap:6px;height:20px;min-height:20px}
++.rtab .name{font-size:15px;font-weight:600;line-height:20px;color:var(--zebra)}
++.rtab em{font-style:normal;font-size:13px;font-weight:600;color:var(--lane);background:none;padding:0}
++.rtab .rc-check{margin-left:auto;width:20px;height:20px;border-radius:50%;background:var(--lane);color:var(--asphalt);display:grid;place-items:center;font-style:normal}
++.rtab .rc-check svg{width:12px;height:12px}
++.rtab .rc-time{display:flex;align-items:baseline;gap:8px;margin-top:4px}
++.rtab .mins{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.5px;color:var(--zebra);font-variant-numeric:tabular-nums}
++.rtab[aria-pressed=true] .mins{color:var(--zebra)}
+ .rtab .rc-time small{font-size:13px;color:var(--muted)}
+-.rtab .rc-row{display:flex;align-items:center;gap:6px;font-size:13px;line-height:18px;color:#D3D7DC}
+-.rtab .rc-row .mi{width:16px;height:16px;flex:none}
++.rc-bar{display:flex;height:4px;margin:8px 0 10px;border-radius:2px;background:#3B4552;overflow:hidden}
++.rc-bar i{display:block;height:100%}.rc-bar .w{background:var(--muted)}.rc-bar .s{background:var(--muted);opacity:.45}
++.rtab[aria-pressed=true] .rc-bar .w,.rtab[aria-pressed=true] .rc-bar .s{background:var(--lane)}
++.rc-rows{display:grid;gap:4px}
++.rtab .rc-row{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:18px;color:#D3D7DC}
++.rtab .rc-row::before{content:none}
++.rtab .rc-row .mi{width:16px;height:16px;margin-top:1px;flex:none;color:var(--muted)}
++.rtab .rc-row b{font-weight:600;color:var(--zebra)}
+ .rtab .rc-row.muted{color:var(--muted)}
+-.rtab .rc-row.pro::before{content:"✓";color:var(--lane);font-weight:800;width:16px;text-align:center}
+-.rtab .rc-row.con::before{content:"−";color:#FF8A6B;font-weight:800;width:16px;text-align:center}
+-.rtabs.one .rtab{min-height:0}
+-/* 지도 신호 범례·근거(신뢰도) */
+-.sig-legend{position:absolute;left:10px;right:10px;bottom:calc(var(--sheet-h) + 34px);z-index:9;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:6px 10px;border-radius:10px;background:#242A32e6;color:var(--zebra);font-size:12px;pointer-events:none}
+-.sig-legend[hidden]{display:none}.sig-legend span{display:inline-flex;align-items:center;gap:5px}
+-.sig-legend .lg{width:12px;height:12px;border-radius:50%;display:inline-block;border:1.5px dashed #F4F2E9}.lg-walk{background:#2FA866}.lg-stop{background:#D9443F}.lg-unk{background:#6B7480;border-style:solid!important}
+-.sig-legend .lg-src{margin-left:auto;color:var(--muted)}.lg-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}.lg-dot.live{background:#2FA866}
+-/* 다음 횡단보도 말풍선(결과 지도) */
+-.sv-call{display:grid;gap:1px;max-width:190px;padding:7px 10px;border-radius:10px;background:var(--asphalt);border:1.5px solid var(--line);color:var(--zebra);font-size:12px;line-height:1.35;box-shadow:0 2px 10px #0006}
+-.sv-call small{color:var(--muted);font-size:11px}.sv-call b{font-size:15px}.sv-call span{color:#D3D7DC}
+-.sv-call.go{border-color:#2FA866}.sv-call.go b{color:#5ED193}.sv-call.wait b,.sv-call.short b{color:#FF8A6B}.sv-call.wait,.sv-call.short{border-color:#8A4A42}
+-/* 걷기: 다음 횡단보도 안내 색 */
+-#sheet-walk[data-next=go]~.next #next-label,.next #next-label{color:#A7B0C0}
++.rtab .rc-row.pro .mi{color:var(--lane)}
++.rtab .rc-row.con{color:var(--muted)}
++#result-footer{padding:8px 16px max(16px,env(safe-area-inset-bottom))}
++.btn-walk{gap:8px;height:52px;min-height:52px;border-radius:var(--r-s);font-size:17px;font-weight:700}.btn-walk .ico{width:22px;height:22px}
++#result-footer .actions .btn{flex:1}
++.cond-panel{margin:12px 0 0;padding:16px;border:0;border-radius:var(--r-m);background:var(--panel)}
++#result-status{padding:16px 0}
++
++/* 걷기: 위 안내 판을 결과 머리와 같은 형식으로 */
++#s-walk .next{min-height:0;padding:max(12px,env(safe-area-inset-top)) 20px 16px;border:0;border-radius:0 0 var(--r-l) var(--r-l);box-shadow:var(--panel-shadow)}
++#s-walk .next #next-label{font-size:13px!important;color:var(--muted)!important;margin:0 0 4px}
++#s-walk .next .dist{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.5px;margin-right:8px}
++#s-walk .next #next-state{font-size:15px;line-height:1.4;color:var(--zebra)}
++#s-walk .next .say{font-size:11px;color:var(--muted);margin:8px 0 0}
++#sheet-walk{border:0;border-radius:var(--r-l) var(--r-l) 0 0;box-shadow:0 -4px 18px rgba(10,14,18,.22)}
++#sheet-walk .progress{padding:16px 0 8px}
++#sheet-walk .progress span{font-size:11px;color:var(--muted)}
++#sheet-walk .progress strong,#w-time{font-size:17px;font-weight:700}
++#sheet-walk .chips .chip{min-height:40px;border-radius:var(--r-s);font-size:13px}
++#sheet-walk .sheet-footer .btn{border-radius:var(--r-s)}
+ 
+-.sig-legend{flex-wrap:nowrap;gap:9px;padding:5px 9px;font-size:11px;white-space:nowrap;overflow:hidden;bottom:calc(var(--sheet-h) + 30px);right:auto;max-width:calc(100% - 20px)}
+-.sig-legend .lg{width:10px;height:10px}.sig-legend .lg-src{margin-left:2px}
+-.rtab .rc-top{height:22px;min-height:22px}
+-@media(max-height:700px){.rtabs{margin:6px 0 8px}.rtab{min-height:0;padding:9px 10px;gap:4px}.rtab .mins{font-size:24px;line-height:28px}.rtab .rc-row.pro~.rc-row.pro{display:none}.rhead{font-size:18px;margin:4px 0}}
++/* 작은 화면(높이 700px 이하): 머리·카드를 줄여 지도를 남긴다 */
++@media(max-height:700px){
++  #s-result .rhead-bar{padding-bottom:8px}
++  .rh-brand{height:34px}
++  .rh-trip .trip{gap:6px}.trip-field,.trip-field .trip-pt,.trip-x{height:38px}
++  .rtab{padding:10px 12px}.rtab .mins{font-size:24px;line-height:30px}
++  .rc-bar{margin:6px 0 8px}.rc-rows{gap:4px}
++  #result-footer{padding-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom))}.btn-walk{height:48px;min-height:48px}
++  #s-walk .next{padding-bottom:12px}#s-walk .next .dist{font-size:24px;line-height:30px}
++}
+ </style>
+ 
+ <div class="phone" id="phone">
+@@ -245,14 +328,19 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+   <!-- ② 경로 결과 -->
+   <section class="screen" id="s-result" hidden>
+     <div class="map" id="map-result"></div>
+-    <div class="topbar trip-bar">
+-      <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
+-      <div class="trip">
+-        <button class="trip-pt" data-search="from"><i class="pt-from"></i><span id="from-name"></span></button>
+-        <button class="trip-pt" data-search="to"><i class="pt-to"></i><span id="to-name"></span></button>
++    <!-- 2026-10-30 목업 구조: 로고 줄(로고는 그대로) + 출발·도착 입력칸 두 개 + 바꾸기 -->
++    <div class="topbar trip-bar rhead-bar">
++      <div class="rh-brand"><button class="icon-btn" data-go="home" aria-label="뒤로"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" id="adjust-conditions" aria-expanded="false" aria-controls="cond-panel" aria-label="길찾기 조건"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
++      <div class="rh-trip">
++        <div class="trip">
++          <div class="trip-field"><button class="trip-pt" data-search="from"><i class="pt-from"></i><span id="from-name"></span></button><button class="trip-x" data-pick-again="from" aria-label="출발지 다시 고르기"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
++          <div class="trip-field"><button class="trip-pt" data-search="to"><i class="pt-to"></i><span id="to-name"></span></button><button class="trip-x" data-pick-again="to" aria-label="도착지 다시 고르기"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
++        </div>
++        <button class="icon-btn" id="swap" aria-label="출발과 도착 바꾸기"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 8.5 8 4.5l4 4M16 4v15M12 15.5l4 4 4-4"/></svg></button>
+       </div>
+-      <button class="icon-btn" id="swap" aria-label="출발과 도착 바꾸기">⇅</button>
+     </div>
++    <button class="sig-chip" id="sig-chip" hidden aria-label="신호 아이콘 근거 보기"><i class="lg-dot"></i><span id="sig-chip-text">패턴 예상</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></svg></button>
++    <div class="sig-info" id="sig-info" hidden role="dialog" aria-label="신호 정보 근거"><b>신호 아이콘은 무엇인가요?</b><p id="sig-info-text"></p><button class="btn btn-ghost" id="sig-info-close">닫기</button></div>
+     <div class="sheet" id="sheet-result">
+       <div class="grip-area"><div class="grip"></div></div>
+       <div class="sheet-body">
+@@ -263,6 +351,7 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+             <button class="rtab" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+             <button class="rtab" data-route="short" aria-pressed="false" id="card-short"></button>
+           </div>
++          <div class="result-extra" id="result-extra" hidden>
+           <p class="rbadge" id="route-badge" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path id="route-badge-ico" d="M4 19h4v-4h4v-4h4V7h4"/></svg><span id="route-badge-text"></span></p>
+           <h2 class="rhead" id="route-headline"></h2>
+           <p class="rsub" id="route-sub"></p>
+@@ -284,6 +373,9 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+             <p class="safety" id="result-safety"></p>
+             </details>
+           </div>
++          <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
++          <p class="rfoot" id="result-note"></p>
++          </div>
+           <div class="cond-panel" id="cond-panel" hidden role="group" aria-labelledby="cond-title">
+             <h3 id="cond-title">이 길찾기 조건</h3>
+             <label class="setting-row" for="cond-steps">확인된 계단 피하기<input class="switch" id="cond-steps" type="checkbox"></label>
+@@ -292,15 +384,12 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+             <p class="cond-pace"><span id="cond-pace">걷는 속도</span><button class="text-action" data-go="settings">걸음 설정 ›</button></p>
+             <div class="actions"><button class="btn btn-ghost" id="cond-cancel">취소</button><button class="btn btn-primary" id="cond-apply">이 조건으로 다시 찾기</button></div>
+           </div>
+-          <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
+-          <p class="rfoot" id="result-note"></p>
+           <p class="safety" id="result-location" role="status" hidden></p>
+         </div>
+       </div>
+       <div class="sheet-footer" id="result-footer">
+         <div class="actions" id="result-actions">
+-          <button class="btn btn-ghost" id="adjust-conditions" aria-expanded="false" aria-controls="cond-panel">조건 조정</button>
+-          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
++          <button class="btn btn-primary btn-walk" data-go="walk" id="start-walk"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="4" r="2"/><path d="M10 21l2.4-6.2L15 17v4M8 12l2-4.2 4 1.2 2.4 3.4 2.6.6M12.4 14.8 11 9.4"/></svg>걷기 시작</button>
+         </div>
+       </div>
+     </div>
+@@ -923,7 +1012,29 @@ const XW = {
+   sync() { if (!map) return; const vis = current === "home" && this.userOn === true; this.on = vis; $("xw-panel").hidden = !vis; ready(() => { for (const id of ["xw-dot", "xw-line"]) map.setLayoutProperty(id, "visibility", vis ? "visible" : "none"); }); },
+   show(on) { this.userOn = on; this.sync(); },
+ };
++// 바탕 지도: OpenFreeMap(키 없이 쓰는 공개 지도, OpenStreetMap 자료). boot()에서 받아 두고, 못 받으면 기존 자체 지도를 쓴다.
++let BASE_STYLE = null;
++const BASEMAP_URL = "https://tiles.openfreemap.org/styles/positron";
++async function loadBaseStyle() {
++  try {
++    const r = await fetch(BASEMAP_URL, { signal: AbortSignal.timeout(5000) }); if (!r.ok) return null;
++    const st = await r.json();
++    // 이름은 한국어 이름 우선(없으면 원래 이름). 라틴 표기를 함께 쓰던 글자는 한국어만.
++    for (const l of st.layers) if (l.type === "symbol" && l.layout?.["text-field"] && JSON.stringify(l.layout["text-field"]).includes("name"))
++      l.layout["text-field"] = ["coalesce", ["get", "name:ko"], ["get", "name"]];
++    return st;
++  } catch { return null; }
++}
+ function mapStyle() {
++  const own = ownMapStyle();
++  if (!BASE_STYLE) return own;
++  // 우리 층: 바탕(자체 타일 'osm')을 쓰지 않는 것만 가져와 바탕 지도의 글자 층 아래에 넣는다
++  const mine = own.layers.filter(l => l.source && l.source !== "osm");
++  const base = BASE_STYLE.layers.filter(l => l.type !== "symbol"), labels = BASE_STYLE.layers.filter(l => l.type === "symbol");
++  const sources = { ...BASE_STYLE.sources }; for (const [k, v] of Object.entries(own.sources)) if (k !== "osm") sources[k] = v;
++  return { version: 8, glyphs: BASE_STYLE.glyphs, sprite: BASE_STYLE.sprite, sources, layers: [...base, ...mine, ...labels] };
++}
++function ownMapStyle() {
+   const W = pairs => ["interpolate", ["exponential", 1.5], ["zoom"], ...pairs.flat()];
+   const kinds = arr => ["in", ["get", "kind"], ["literal", arr]];
+   const surface = ["!=", ["get", "tunnel"], true];
+@@ -968,7 +1079,7 @@ function mapStyle() {
+       // 경로
+       { id: "route-short-case", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#2A3140", "line-opacity": .55, "line-width": W([[12, 6], [18, 12]]) } },
+       { id: "route-short", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#959EAC", "line-width": W([[12, 3.5], [18, 7]]) } },
+-      { id: "route-jjuk-case", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#2A3140", "line-opacity": .55, "line-width": W([[12, 7], [18, 14]]) } },
++      { id: "route-jjuk-case", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#2A3140", "line-opacity": .9, "line-width": W([[12, 7], [18, 14]]) } },
+       { id: "route-jjuk", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#F6C343", "line-width": W([[12, 4.5], [18, 9]]) } },
+       { id: "route-jjuk-under", type: "line", source: "rj", filter: ["has", "u"], paint: { "line-color": "#2A3140", "line-width": W([[12, 1.5], [18, 3]]), "line-dasharray": [1, 1.5] } },
+       // 신호 교차로: 가까이서만 표시. 노란 테두리 = 패턴 수집 중
+@@ -1003,6 +1114,8 @@ function ensureMap() {
+     localIdeographFontFamily: "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif",
+     pitchWithRotate: false, maxBounds: [[126.62, 37.38], [127.27, 37.70]], minZoom: 10, maxZoom: 19 });
+   map.once("load", () => { mapReady = true; XW.apply(); });
++  // 화면마다 지도 칸 크기가 다르다(결과는 입력칸 아래, 걷기는 위 안내 카드 아래). 칸 크기가 바뀌면 지도도 다시 맞춘다
++  if (window.ResizeObserver) new ResizeObserver(() => map && map.resize()).observe(mapEl);
+   map.touchZoomRotate.disableRotation();
+   map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
+   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
+@@ -1025,8 +1138,9 @@ function fit(coordsList, extra = {}) {
+   const phoneRect=$("phone").getBoundingClientRect(),panel=document.getElementById("sheet-"+current)?.getBoundingClientRect();
+   const sidePanel=panel&&panel.width<phoneRect.width*.8&&panel.left>phoneRect.left+phoneRect.width*.3;
+   // 홈·결과의 지도 컨테이너는 시트 위까지만 차지하므로 시트 높이를 빼지 않는다. 걷기 화면은 지도가 시트 밑까지 이어진다.
+-  const bounded = current === "result" || current === "home";
+-  const pad = { top: bounded ? 36 : 90, bottom: sidePanel ? 40 : bounded ? 30 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 120, ...extra };   // 오른쪽 지도 버튼(약 56px)+도착지 이름표
++  // 2026-10-30: 지도는 모든 화면에서 화면 전체 크기다(지도 칸 크기가 바뀌면 일부만 그려지는 문제). 위 머리(입력칸·안내)와 아래 시트만큼 여백을 준다.
++  const head = headH();
++  const pad = { top: head + (current === "walk" ? 60 : current === "result" ? 64 : 36), bottom: sidePanel ? 40 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 120, ...extra };   // 오른쪽 지도 버튼(약 56px)+도착지 이름표
+   ready(() => { map.resize(); map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }); });
+ }
+ function markTrip(sims, focus, forecasts = false) {
+@@ -1113,10 +1227,18 @@ function setSheet(name, pos, px) {
+   }
+ }
+ // 지도 조작 버튼은 지도가 보이는 영역 안에만 둔다. 남는 높이가 모자라면(작은 화면) 확대·축소 묶음은 감추고(핀치로 확대) 내 위치만 남긴다.
++// 지도 위를 덮는 머리(홈 검색·결과 입력칸·걷기 안내)의 아래 끝. 지도는 화면 전체라 여백·버튼 위치를 이 값으로 맞춘다
++function headH() {
++  const sel = { home: ".home-header", result: "#s-result .rhead-bar", walk: "#s-walk .next" }[current], e = sel && document.querySelector(sel);
++  const fallback = current === "result" ? 140 : current === "home" ? 148 : 112;
++  if (!e || !e.offsetHeight) return fallback;
++  return Math.round(e.getBoundingClientRect().bottom - $("phone").getBoundingClientRect().top);
++}
+ function layoutMapCtl() {
+   const ctl = $("mapctl"), name = current, sh = sheets[name];
+   if (!sh || !["home", "result", "walk"].includes(name)) return;
+-  const small = phoneH() < 690, mapTop = name === "home" ? (small ? 138 : 148) : name === "result" ? 96 : 112, top = mapTop + 12;
++  const head = headH(); $("phone").style.setProperty("--head-h", head + "px");
++  const top = head + (name === "result" ? 56 : 12);   // 결과: 오른쪽 위 '패턴 예상' 표시(32px) 아래
+   ctl.style.top = top + "px";
+   $("ctl-in").parentElement.hidden = phoneH() - sh.h - top - 12 < 152;
+ }
+@@ -1956,6 +2078,7 @@ function show(name) {
+   if (booted && !readProfile().onboarded && !["splash","onboarding"].includes(name)) { onboardingTarget=name; name="onboarding"; }
+   const prevScreen = current; current = name;
+   SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
++  if ($("sig-info")) $("sig-info").hidden = true; if ($("sig-chip") && name !== "result") $("sig-chip").hidden = true;
+   if (map) XW.sync();
+   if (typeof LIVE !== "undefined" && map) LIVE.sync();
+   $("badge").hidden = true;  // 예시 표시는 숫자 옆(카드·신호 상세·공유 카드)에만 둔다
+@@ -2046,7 +2169,9 @@ async function boot() {
+   const splashStarted=Date.now();
+   show("splash");
+   try {
+-    [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans((h => [h, (h + 1) % 24, 8, 9, 10])(Math.floor(kstSec() / 3600))).catch(() => ({signals:{},date:null,source_dates:[]}))]);
++    // 지도: 네이버 지도 키가 있으면 네이버(naver-compat.js), 없거나 인증 실패면 공개 지도(OpenFreeMap), 그것도 안 되면 자체 지도
++    const naverOk = typeof NAVER !== "undefined" ? NAVER.load() : Promise.resolve(false);
++    [BASE_STYLE, IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([naverOk.then(ok => ok ? null : loadBaseStyle()), getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans((h => [h, (h + 1) % 24, 8, 9, 10])(Math.floor(kstSec() / 3600))).catch(() => ({signals:{},date:null,source_dates:[]}))]);
+   } catch (err) {
+     $("splash-foot").textContent = "지도 데이터를 못 불러왔어요. 새로고침해 주세요.";
+     console.error(err);
+@@ -2061,6 +2186,7 @@ async function boot() {
+   XW.v = Math.min(1.7, Math.max(0.35, SPEED)); XW.paint();
+   XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
+   booted = true;
++  if (typeof NAVER !== "undefined" && NAVER.ready) $("layer-toggle").hidden = true;   // 횡단 시간 지도는 자체 지도에서만(네이버 지도에는 그 층이 없다)
+   if (typeof LIVE !== "undefined") LIVE.init();
+   if (typeof SIG !== "undefined") SIG.start();   // 지도 신호 아이콘 1초마다 갱신(패턴 예상)
+   // 위치 권한이 이미 허용돼 있으면 묻지 않고 내 위치를 지도에 표시하고 출발지로 쓴다. 허용 전에는 앱을 열자마자 묻지 않는다.
+@@ -2136,7 +2262,7 @@ function snaps(name){
+  const H=phoneH(),sh=$('sheet-'+name),body=sh.querySelector('.sheet-body'),footer=sh.querySelector('.sheet-footer');
+  const last=body?[...body.children].filter(c=>!c.hidden&&c.offsetHeight>0).pop():null;
+  const content=last?last.offsetTop+last.offsetHeight-body.offsetTop+12:0;
+- const wanted=content+(footer?.offsetHeight||76)+2;
++ const grip=sh.querySelector('.grip-area'),wanted=content+(footer?.offsetHeight||76)+2+(name==='result'&&grip?grip.offsetHeight:0);   // 결과 시트는 손잡이 높이까지 더해야 카드 아래가 잘리지 않는다
+  const mid=Math.min(H-(name==='home'?150:112),Math.max(name==='home'?210:230,wanted));
+  return {peek:mid,mid,full:mid};
+ }
+@@ -2186,16 +2312,19 @@ async function renderResult(){
+   const WALK=`<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="4" r="2"/><path d="M10 21l2.4-6.2L15 17v4M8 12l2-4.2 4 1.2 2.4 3.4 2.6.6M12.4 14.8 11 9.4"/></svg>`;
+   // 지표 아이콘(선 아이콘, 글자색을 따름)
+   const ic=d=>`<svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+-  const MICO={wait:ic('<path d="M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>'),walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>')};
++  const MICO={wait:ic('<path d="M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>'),walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>'),pro:ic('<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.7 2.7L16 9.6"/>'),con:ic('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>')};
+   $('route-cards').classList.toggle('one',state.same);
+   for(const k of ['jjuk','short']){const c=$('card-'+k),m=R[k].m;c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.same||state.focus===k));c.setAttribute('role','tab');c.setAttribute('aria-selected',String(state.same||state.focus===k));
+     // 경로 카드(목업 구조): 이름·선택 표시, 걷는 시간·거리, 예상 신호대기, 신호 횡단, 이 길의 장단점(상대 길과 비교)
+     const other=state.same?null:R[k==='jjuk'?'short':'jjuk'],t=other?tradeoffs(R[k],other):{pros:[],cons:[]},on=state.same||state.focus===k;
+-    const wait=m.waitKnown?`신호대기 ${waitText(m.wait)}${m.waitUnknown?` (${m.waitKnown}/${m.waitTotal}곳 확인)`:''}`:(m.waitTotal?'신호대기 정보 없음':'신호 대기 없음');   // 일부만 확인되면 몇 곳인지 함께(0초로 부풀려 보이지 않게)
+-    c.innerHTML=`<span class="rc-top"><span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span>${k==='jjuk'&&!state.same?'<em>추천</em>':''}${on?'<i class="rc-check" aria-hidden="true">✓</i>':''}</span>`+
++    const wait=m.waitKnown?`신호대기 <b>${waitText(m.wait)}</b>${m.waitUnknown?` (${m.waitKnown}/${m.waitTotal}곳 확인)`:''}`:(m.waitTotal?'신호대기 정보 없음':'신호 대기 없음');   // 일부만 확인되면 몇 곳인지 함께(0초로 부풀려 보이지 않게)
++    // 가는 막대: 두 길 중 긴 쪽(걷는 시간 + 확인된 예상 신호대기)을 꽉 찬 길이로 두고, 걷는 시간(진하게)과 예상 신호대기(옅게)를 잇는다. 점수가 아니라 시간 길이 비교
++    const tot=q=>q.walk+(q.waitKnown?q.wait:0),full=Math.max(...(state.same?[m]:[R.jjuk.m,R.short.m]).map(tot))||1,pc=v=>(100*v/full).toFixed(1)+'%';
++    c.innerHTML=`<span class="rc-top"><span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span>${k==='jjuk'&&!state.same?'<em>추천</em>':''}${on?`<i class="rc-check" aria-hidden="true">${CHECK_MARK}</i>`:''}</span>`+
+       `<span class="rc-time"><span class="mins">${mins(m.walk)}</span><small>${km(m.meters)}</small></span>`+
+-      `<span class="rc-row${m.waitKnown?'':' muted'}">${MICO.wait}${wait}</span><span class="rc-row">${MICO.sig}신호 횡단 ${m.sig}곳</span>`+
+-      [...t.pros.slice(0,2).map(x=>`<span class="rc-row pro">${esc(x)}</span>`),...t.cons.slice(0,1).map(x=>`<span class="rc-row con">${esc(x)}</span>`)].join('');}
++      `<span class="rc-bar" aria-hidden="true"><i class="w" style="width:${pc(m.walk)}"></i><i class="s" style="width:${pc(m.waitKnown?m.wait:0)}"></i></span>`+
++      `<span class="rc-rows"><span class="rc-row${m.waitKnown?'':' muted'}">${MICO.wait}<span>${wait}</span></span><span class="rc-row">${MICO.sig}<span>신호 횡단 <b>${m.sig}곳</b></span></span>`+
++      [...t.pros.slice(0,1).map(x=>`<span class="rc-row pro">${MICO.pro}<span>${esc(x)}</span></span>`),...t.cons.slice(0,1).map(x=>`<span class="rc-row con">${MICO.con}<span>${esc(x)}</span></span>`)].join('')+'</span>';}   // 목업처럼 4줄: 신호대기·횡단·장점 1·단점 1
+   setText('compare-line',state.same?'비슷한 시간 안에 계단·신호 횡단·경사를 줄이는 다른 길이 없어요':compareLine(R.short,R.jjuk));
+   {const sm=routeSummary(R.short,state.same?R.short:R.jjuk,state.same?'jjuk':state.focus);$('route-src').hidden=!sm.wait;setText('route-src',planNoteText());$('route-badge').hidden=true;   /* 카드에 장단점이 있어 배지·칩은 중복(2026-10-30 개편) */setText('route-badge-text',sm.badge);$('route-badge-ico').setAttribute('d',{stairs:'M4 19h4v-4h4v-4h4V7h4',sig:'M9 3h6a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3',steep:'M3 20 10 8l4 6 2-3 5 9z',gain:'M3 20 10 8l4 6 2-3 5 9z',wait:'M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9'}[sm.kind]||'M4 19h4v-4h4v-4h4V7h4');setText('route-headline',sm.headline);
+     // 장점과 늘어나는 것을 같은 크기로(작은 회색 한 줄에 단점이 몰리지 않게)
+@@ -2260,6 +2389,8 @@ document.addEventListener('click',e=>{
+   if(t.closest('#reset-learning')){$('reset-confirm').hidden=false;setText('settings-message','');$('reset-confirm').scrollIntoView({block:'nearest'});$('reset-confirm-no').focus();}
+   if(t.closest('#reset-confirm-no')){$('reset-confirm').hidden=true;$('reset-learning').focus();}
+   if(t.closest('#reset-confirm-yes')){resetLearning();applyPace();state.routes=null;state.tripKey=null;renderSettings();setText('settings-message','맞춰 온 걸음 속도 요약을 지웠어요.');}
++  if(t.closest('#sig-chip')){$('sig-info').hidden=!$('sig-info').hidden;}
++  if(t.closest('#sig-info-close')){$('sig-info').hidden=true;}
+   if(t.closest('#calc-basis')){setBasisOpen($('result-options').hidden);fitResultSheet();}
+   if(t.closest('#adjust-conditions')){state.condOpen=$('cond-panel').hidden;$('cond-panel').hidden=!state.condOpen;$('adjust-conditions').setAttribute('aria-expanded',String(state.condOpen));if(state.condOpen){syncCond();fitResultSheet();$('cond-panel').scrollIntoView({block:'nearest'});}else fitResultSheet();}
+   const cb=t.closest('[data-cond-budget]');if(cb){state.condBudget=+cb.dataset.condBudget;syncCond();}
+@@ -2272,6 +2403,8 @@ document.addEventListener('click',e=>{
+ $('auto-mode').addEventListener('change',()=>{if($('auto-mode').checked)$('manual-mode').checked=false;});
+ $('manual-mode').addEventListener('change',()=>{if($('manual-mode').checked)$('auto-mode').checked=false;});
+ $('manual-speed').addEventListener('input',updateManualOutput);
++// 글꼴이 늦게 올라오거나 카드 줄이 바뀌면 카드 높이가 달라진다. 결과 시트를 다시 맞춰 카드 아래가 잘리지 않게
++if(window.ResizeObserver)new ResizeObserver(()=>{if(current==='result'&&!document.getElementById('result-content').hidden)fitResultSheet();}).observe(document.getElementById('route-cards'));
+ 
+ boot();
+ 
+@@ -2412,8 +2545,9 @@ var LIVE = {   // var: app.js의 boot()가 이 파일보다 먼저 실행돼 typ
+ };
+ 
+ // ---------- 신호 지도·횡단 안내 (2026-10-30 사용자 결정: 신호등이 핵심) ----------
+-// 지도에 신호 상태 아이콘을 1초마다 갱신해 보여 준다. 지금은 과거 신호 기록의 '패턴 예상'(점선 테두리)이고,
+-// 새 실시간 API가 승인·검증되면 같은 아이콘을 실시간(실선 테두리)으로 바꾼다(live-signals.js).
++// 지도에 신호 상태 아이콘을 1초마다 갱신해 보여 준다. 지금은 과거 신호 기록의 '패턴 예상'(흰 테두리 한 겹)이고,
++// 새 실시간 API가 승인·검증되면 같은 아이콘을 실시간(바깥 고리 한 겹 더)으로 바꾼다(live-signals.js).
++// 2026-10-30 디자인 검토: 점선 테두리는 밝은 지도에서 아이콘을 흐리게 보이게 해, 근거 구분은 지도 오른쪽 위 '패턴 예상' 표시와 바깥 고리로 옮겼다.
+ // 패턴은 신뢰 조건(TRUST, planConfidence)을 통과한 신호만 쓴다. 통과 못 하면 '정보 없음'.
+ // '건널 수 있어요'는 근거가 모두 있을 때만: 신뢰된 패턴 + 횡단보도 길이 + 도착 시각의 남은 고정 초록 ≥ 내 속도로 건너는 시간 + 여유.
+ // 점멸(permissive)은 초록으로 세지 않는다(의미 미확정).
+@@ -2444,30 +2578,44 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+   // 횡단보도 x(경로의 신호 횡단)에 t초에 도착할 때의 안내. speed: m/s
+   verdict(x, t, speed = SPEED) {
+     const p = this.predictX(x, t);
+-    if (!p) return { kind: "unknown", label: "신호 정보 없음", text: "이 횡단보도는 신호 패턴이 아직 확인되지 않았어요" };
+-    if (!p.walk) return { kind: "wait", label: "대기 예상", text: `도착하면 약 ${Math.round(p.wait)}초 기다릴 것으로 예상돼요` };
++    // short: 지도 말풍선의 한 줄 요약(자세한 설명은 text)
++    if (!p) return { kind: "unknown", label: "신호 정보 없음", short: "신호 정보 없음", text: "이 횡단보도는 신호 패턴이 아직 확인되지 않았어요" };
++    if (!p.walk) return { kind: "wait", label: "대기 예상", short: `약 ${Math.round(p.wait)}초 대기`, text: `도착하면 약 ${Math.round(p.wait)}초 기다릴 것으로 예상돼요` };
+     const rem = Math.floor(p.rem);
+-    if (!x.len) return { kind: "green", label: "초록 예상", text: `도착 때 초록 예상 · ${rem}초 남음` };
++    if (!x.len) return { kind: "green", label: "초록 예상", short: `초록 · ${rem}초 남음`, text: `도착 때 초록 예상 · ${rem}초 남음` };
+     const need = x.len / speed;
+-    if (p.rem >= need + this.MARGIN_S) return { kind: "go", label: "횡단 가능", text: `지금 속도면 건널 수 있어요(예상) · 도착 때 초록 ${rem}초 남음` };
++    if (p.rem >= need + this.MARGIN_S) return { kind: "go", label: "횡단 가능", short: `횡단 가능 · ${rem}초 남음`, text: `지금 속도면 건널 수 있어요(예상) · 도착 때 초록 ${rem}초 남음` };
+     const next = this.predictX(x, t + p.rem + 0.5);
+-    return { kind: "short", label: "초록이 짧아요", text: `도착 때 초록 ${rem}초 남음(예상) · 건너는 데 약 ${Math.ceil(need)}초${next && !next.walk ? ` · 다음 초록까지 약 ${Math.round(p.rem + next.wait)}초` : ""}` };
++    return { kind: "short", label: "초록이 짧아요", short: `초록이 짧아요 · ${rem}초 남음`, text: `도착 때 초록 ${rem}초 남음(예상) · 건너는 데 약 ${Math.ceil(need)}초${next && !next.walk ? ` · 다음 초록까지 약 ${Math.round(p.rem + next.wait)}초` : ""}` };
+   },
+ 
+-  // 아이콘: 보행(사람)·정지(손)·모름(?) × 예상(점선)·실시간(실선)
++  // 아이콘: 둥근 배지(초록 사람 = 횡단 가능, 빨강 손 = 대기 중, 회색 ? = 정보 없음). 흰 테두리 + 그림자로 밝은·어두운 지도 모두에서 또렷하게.
++  // 96px로 그려 pixelRatio 2(=48px)로 올린다(확대해도 흐리지 않게). 실시간(-l)은 바깥에 가는 고리를 하나 더 둘러 패턴 예상(-p)과 구별한다.
+   icons() {
+-    const draw = (fill, glyph, dashed) => {
+-      const n = 48, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d");
+-      g.beginPath(); g.arc(24, 24, 18, 0, 7); g.fillStyle = fill; g.fill();
+-      g.lineWidth = 3; g.strokeStyle = "#F4F2E9"; g.setLineDash(dashed ? [5, 4] : []); g.beginPath(); g.arc(24, 24, 20, 0, 7); g.stroke(); g.setLineDash([]);
++    const draw = (fill, glyph, live) => {
++      const n = 96, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d");
++      g.save(); g.shadowColor = "rgba(20,26,32,.38)"; g.shadowBlur = 8; g.shadowOffsetY = 2;
++      g.beginPath(); g.arc(48, 47, live ? 36 : 39, 0, 7); g.fillStyle = "#fff"; g.fill(); g.restore();
++      if (live) { g.lineWidth = 3; g.strokeStyle = "#fff"; g.beginPath(); g.arc(48, 47, 43, 0, 7); g.stroke(); }
++      g.beginPath(); g.arc(48, 47, live ? 31 : 34, 0, 7); g.fillStyle = fill; g.fill();
++      // 글리프는 48칸 좌표로 그리고 키운다
++      g.save(); g.translate(48, 47); g.scale(live ? 1.7 : 1.85, live ? 1.7 : 1.85); g.translate(-24, -24);
+       g.fillStyle = "#fff"; g.strokeStyle = "#fff"; g.lineCap = "round"; g.lineJoin = "round";
+-      if (glyph === "walk") { g.beginPath(); g.arc(25, 13, 3.2, 0, 7); g.fill(); g.lineWidth = 3.2; g.beginPath(); g.moveTo(24, 18); g.lineTo(22, 27); g.lineTo(18, 35); g.moveTo(22, 27); g.lineTo(27, 30); g.lineTo(29, 36); g.moveTo(23, 21); g.lineTo(18, 25); g.moveTo(24, 20); g.lineTo(30, 24); g.stroke(); }
+-      else if (glyph === "stop") { g.beginPath(); g.roundRect ? g.roundRect(17, 19, 14, 15, 4) : g.rect(17, 19, 14, 15); g.fill(); for (const fx of [17.5, 21, 24.5, 28]) { g.beginPath(); g.roundRect ? g.roundRect(fx, 11, 3, 10, 1.5) : g.rect(fx, 11, 3, 10); g.fill(); } }
+-      else { g.font = "bold 22px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 24, 25); }
++      if (glyph === "walk") {
++        g.beginPath(); g.arc(25.5, 12.5, 3.3, 0, 7); g.fill(); g.lineWidth = 3.4;
++        g.beginPath(); g.moveTo(24.5, 18); g.lineTo(23, 27); g.lineTo(27, 31); g.lineTo(28, 36.5);   // 몸통·앞다리
++        g.moveTo(23, 27); g.lineTo(20.5, 31.5); g.lineTo(17, 35.5);                                // 뒷다리
++        g.moveTo(24.2, 19.5); g.lineTo(28.5, 23.5); g.lineTo(31, 23.5);                            // 앞팔
++        g.moveTo(24.2, 19.5); g.lineTo(20, 22.5); g.lineTo(18.5, 26.5); g.stroke();                // 뒷팔
++      } else if (glyph === "stop") {
++        const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); g.fill(); };
++        rr(17, 21, 14, 14, 5); for (const fx of [17.2, 20.8, 24.4, 28]) rr(fx, 12.5, 2.8, 11, 1.4); rr(13.2, 22, 2.8, 8, 1.4);
++      } else { g.font = "700 21px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 24, 25.5); }
++      g.restore();
+       return g.getImageData(0, 0, n, n);
+     };
+-    return { "sv-walk-p": draw("#2FA866", "walk", true), "sv-stop-p": draw("#D9443F", "stop", true), "sv-unk": draw("#6B7480", "?", false),
+-             "sv-walk-l": draw("#2FA866", "walk", false), "sv-stop-l": draw("#D9443F", "stop", false) };
++    return { "sv-walk-p": draw("#2FA866", "walk", false), "sv-stop-p": draw("#D9443F", "stop", false), "sv-unk": draw("#7A8391", "?", false),
++             "sv-walk-l": draw("#2FA866", "walk", true), "sv-stop-l": draw("#D9443F", "stop", true) };
+   },
+   ensure() {
+     if (!map || !mapReady || map.getSource("sv-near")) return !!(map && map.getSource && map.getSource("sv-near"));
+@@ -2475,8 +2623,9 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+     const empty = { type: "FeatureCollection", features: [] };
+     map.addSource("sv-near", { type: "geojson", data: empty }); map.addSource("sv-route", { type: "geojson", data: empty });
+     // 주변 신호는 작고 흐리게, 경로 위 신호는 크게. 확대가 낮으면 주변은 숨긴다(지도를 깜빡임으로 채우지 않게)
+-    map.addLayer({ id: "sv-near", type: "symbol", source: "sv-near", minzoom: this.NEAR_ZOOM, layout: { "icon-image": ["get", "icon"], "icon-size": 0.55, "icon-allow-overlap": true }, paint: { "icon-opacity": 0.6 } });
+-    map.addLayer({ id: "sv-route", type: "symbol", source: "sv-route", minzoom: 12.5, layout: { "icon-image": ["get", "icon"], "icon-size": ["case", ["get", "next"], 1.05, 0.8], "icon-allow-overlap": true, "symbol-sort-key": ["case", ["get", "next"], 1, 0] } });
++    // 크기(48px 기준): 주변 약 20px, 경로 위 약 30px, 다음 횡단보도 약 40px
++    map.addLayer({ id: "sv-near", type: "symbol", source: "sv-near", minzoom: this.NEAR_ZOOM, layout: { "icon-image": ["get", "icon"], "icon-size": 0.42, "icon-allow-overlap": true }, paint: { "icon-opacity": 0.75 } });
++    map.addLayer({ id: "sv-route", type: "symbol", source: "sv-route", minzoom: 12.5, layout: { "icon-image": ["get", "icon"], "icon-size": ["case", ["get", "next"], 0.84, 0.62], "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["case", ["get", "next"], 1, 0] } });
+     return true;
+   },
+   // 지금 이 화면에서 보여 줄 경로(결과: 선택한 길, 걷기: 걷는 길)
+@@ -2531,10 +2680,17 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+   legend(on) {
+     const el = $("sig-legend"); if (!el) return;
+     el.hidden = !on;
+-    if (!on) return;
+-    const live = typeof LIVE !== "undefined" && LIVE.cfg?.enabled && LIVE.markers?.size;
+-    setText("sig-src", live ? "실시간" : `패턴 예상 ${planPeriodText().replace(" 신호 기록 기준 추정", "")}`);
++    if (!on) { if ($("sig-chip")) $("sig-chip").hidden = true; return; }
++    const live = typeof LIVE !== "undefined" && LIVE.cfg?.enabled && LIVE.markers?.size, period = planPeriodText().replace(" 신호 기록 기준 추정", "");
++    setText("sig-src", live ? "실시간" : `패턴 예상 ${period}`);
+     el.querySelector(".lg-dot").classList.toggle("live", !!live);
++    // 결과 화면 오른쪽 위 근거 표시(누르면 설명)
++    const chip = $("sig-chip");
++    if (chip) {
++      chip.hidden = current !== "result"; setText("sig-chip-text", live ? "실시간" : "패턴 예상");
++      chip.querySelector(".lg-dot").classList.toggle("live", !!live);
++      setText("sig-info-text", `지도 신호 아이콘은 과거 신호 기록(${period})으로 예상한 지금 상태예요. 실시간 신호가 아니에요. '건널 수 있어요(예상)'는 패턴이 확인된 신호에서 도착할 때 남은 초록 시간이 건너는 시간보다 길 때만 보여요. 시간은 걷는 시간만이고, 계단은 지도에 표시된 곳만 세요. 건널지는 실제 신호를 보고 정해 주세요.`);
++    }
+   },
+   // 결과 화면: 선택한 길의 첫 신호 횡단에 '다음 횡단보도' 말풍선
+   showCallout() {
+@@ -2543,15 +2699,158 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+     const x = r.x.find(this.isCrossing); if (!x) return;
+     const t0 = state.mode === "actual" ? kstSec() : BASE, v = this.verdict(x, t0 + x.d / SPEED);
+     if (v.kind === "unknown") return;   // 모르는 곳은 아이콘(?)만. 말풍선으로 지도를 가리지 않는다
+-    const e = el(`sv-call ${v.kind}`, `<small>다음 횡단보도 · 출발 후 ${km(x.d)}</small><b>${esc(v.label)}</b><span>${esc(v.text)}</span>`);
+-    // 화면 가장자리면 말풍선을 안쪽으로 펼친다(잘리지 않게)
+-    const px = map.project(x.mid || x.at).x, w = map.getContainer().clientWidth, anchor = px < 110 ? "bottom-left" : px > w - 110 ? "bottom-right" : "bottom";
+-    this.callout = new maplibregl.Marker({ element: e, anchor, offset: [0, -16] }).setLngLat(x.mid || x.at).addTo(map);
++    // 목업 형식: 작은 제목, 큰 거리, 상태 한 줄(색 점 + 요약). 자세한 설명은 읽기 도구용 이름으로
++    const e = el(`sv-call ${v.kind}`, `<small>다음 횡단보도 · 도착 때 예상</small><b>${km(x.d)}</b><span class="st"><i></i>${esc(v.short || v.label)}</span>`);
++    e.setAttribute("role", "note"); e.setAttribute("aria-label", `다음 횡단보도, 출발 후 ${km(x.d)}. ${v.label}. ${v.text}`);
++    // 위 머리에 가까우면 아이콘 아래로, 화면 가장자리면 안쪽으로 펼친다(잘리지 않게). 꼬리는 늘 아이콘을 가리킨다
++    const pt = map.project(x.mid || x.at), w = map.getContainer().clientWidth, below = pt.y - headH() < 120;
++    const side = pt.x < 110 ? "left" : pt.x > w - 110 ? "right" : "";
++    e.classList.add(below ? "below" : "above"); if (side) e.classList.add("at-" + side);
++    const anchor = (below ? "top" : "bottom") + (side ? "-" + side : ""), dy = below ? 26 : -26, dx = side === "left" ? -22 : side === "right" ? 22 : 0;
++    this.callout = new maplibregl.Marker({ element: e, anchor, offset: [dx, dy] }).setLngLat(x.mid || x.at).addTo(map);
+     dynMarkers.push(this.callout);
+   },
+   start() { if (!this.timer) this.timer = setInterval(() => { try { this.tick(); } catch (e) { console.warn(e); } }, 1000); },
+ };
+ 
++// ---------- 네이버 지도 엔진 (2026-10-30 사용자 결정: 네이버 지도 API 사용) ----------
++// 앱은 MapLibre 함수 이름(map.getSource().setData, new maplibregl.Marker 등)으로 지도를 다룬다.
++// 네이버 지도를 쓸 수 있으면 같은 이름의 함수를 네이버 지도로 흉내 내는 '번역 층'을 maplibregl 자리에 넣는다.
++// 키(Client ID)는 Vercel 환경변수 NAVER_MAP_KEY_ID → /api/map-config로 받는다(네이버 지도 키는 페이지에 드러나는 공개 키이고, 등록한 도메인에서만 동작).
++// 키가 없거나 인증이 실패하면 기존 MapLibre 지도를 그대로 쓴다.
++// 줌: MapLibre(512px 타일) z ≈ 네이버 z-1. 이 층은 MapLibre 기준 줌으로 주고받는다.
++var NAVER = {   // var: app.js의 boot()가 먼저 실행된다
++  ready: false,
++  async load() {
++    let key = null;
++    try { const r = await fetch("/api/map-config", { signal: AbortSignal.timeout(4000) }); if (r.ok) key = (await r.json()).naver_key_id; } catch {}
++    if (!key) return false;
++    const ok = await new Promise(resolve => {
++      const t = setTimeout(() => resolve(false), 8000);
++      window.navermap_authFailure = () => { clearTimeout(t); NAVER.authFailed = true; resolve(false); };
++      window.__naverReady = () => { clearTimeout(t); resolve(true); };
++      const s = document.createElement("script");
++      s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&callback=__naverReady`;
++      s.onerror = () => { clearTimeout(t); resolve(false); };
++      document.head.appendChild(s);
++    });
++    if (!ok || !window.naver?.maps) return false;
++    this.ready = true; window.maplibregl = NaverGL; return true;
++  },
++};
++
++const NaverGL = (() => {
++  const LL = ([lng, lat]) => new naver.maps.LatLng(lat, lng);
++  const toLL = c => [c.lng(), c.lat()];
++  // 앵커(center/bottom/left…)와 offset은 감싼 상자를 CSS로 옮겨 흉내 낸다(네이버 아이콘 기준점은 왼쪽 위)
++  const SHIFT = { center: "-50%,-50%", bottom: "-50%,-100%", top: "-50%,0", left: "0,-50%", right: "-100%,-50%", "bottom-left": "0,-100%", "bottom-right": "-100%,-100%", "top-left": "0,0", "top-right": "-100%,0" };
++  function wrap(element, anchor = "center", offset = [0, 0]) {
++    const box = document.createElement("div"); box.style.position = "relative";
++    const inner = document.createElement("div"); inner.style.cssText = `position:absolute;left:0;top:0;transform:translate(${SHIFT[anchor] || SHIFT.center}) translate(${offset[0]}px,${offset[1]}px)`;
++    inner.appendChild(element); box.appendChild(inner); return box;
++  }
++  class Marker {
++    constructor(o = {}) { this.el = o.element || document.createElement("div"); this.anchor = o.anchor || "center"; this.offset = o.offset || [0, 0]; this.ll = null; this.m = null; }
++    setLngLat(ll) { this.ll = Array.isArray(ll) ? ll : [ll.lng, ll.lat]; if (this.m) this.m.setPosition(LL(this.ll)); return this; }
++    getLngLat() { return { lng: this.ll[0], lat: this.ll[1], toArray: () => this.ll }; }
++    getElement() { return this.el; }
++    addTo(map) { this.map = map; this.m = new naver.maps.Marker({ position: LL(this.ll), map: map.nm, icon: { content: wrap(this.el, this.anchor, this.offset), anchor: new naver.maps.Point(0, 0) }, clickable: true, zIndex: 100 }); return this; }
++    remove() { if (this.m) { this.m.setMap(null); this.m = null; } return this; }
++  }
++  class Popup {
++    constructor(o = {}) { this.o = o; this.el = document.createElement("div"); this.el.className = "maplibregl-popup " + (o.className || ""); this.el.innerHTML = `<div class="maplibregl-popup-content"></div>`; this.handlers = {}; }
++    setLngLat(ll) { this.ll = Array.isArray(ll) ? ll : [ll.lng, ll.lat]; if (this.mk) this.mk.setLngLat(this.ll); return this; }
++    setHTML(h) { const c = this.el.firstChild; c.innerHTML = h + (this.o.closeButton === false ? "" : `<button class="maplibregl-popup-close-button" aria-label="닫기">×</button>`); c.querySelector(".maplibregl-popup-close-button")?.addEventListener("click", e => { e.stopPropagation(); this.remove(); }); return this; }
++    addTo(map) { this.mk = new Marker({ element: this.el, anchor: "bottom", offset: [0, -(this.o.offset || 10)] }).setLngLat(this.ll).addTo(map); return this; }
++    on(ev, fn) { (this.handlers[ev] ||= []).push(fn); return this; }
++    remove() { if (this.mk) { this.mk.remove(); this.mk = null; (this.handlers.close || []).forEach(f => f()); } return this; }
++  }
++  class LngLatBounds {
++    constructor(a, b) { this.w = a[0]; this.s = a[1]; this.e = (b || a)[0]; this.n = (b || a)[1]; }
++    extend(c) { this.w = Math.min(this.w, c[0]); this.e = Math.max(this.e, c[0]); this.s = Math.min(this.s, c[1]); this.n = Math.max(this.n, c[1]); return this; }
++  }
++  // 앱이 쓰는 지도 층(source id)마다 네이버 도형으로 그린다
++  const ROUTE_STYLE = { rj: { color: "#F6C343", w: 7, z: 30 }, rs: { color: "#959EAC", w: 5, z: 20 } };
++  const ICON_PX = { next: 38, route: 30, near: 18 };
++  class NMap {
++    constructor(o) {
++      this.container = o.container; this.handlers = {}; this.images = {}; this.shapes = {}; this.pts = {}; this.data = {}; this.hidden = {};
++      this.nm = new naver.maps.Map(o.container, { center: LL(o.center), zoom: Math.round(o.zoom + 1), minZoom: (o.minZoom || 10) + 1, maxZoom: Math.min(21, (o.maxZoom || 19) + 1),
++        scaleControl: true, scaleControlOptions: { position: naver.maps.Position.BOTTOM_RIGHT }, logoControlOptions: { position: naver.maps.Position.BOTTOM_LEFT },
++        mapDataControl: false, zoomControl: false, mapTypeControl: false, disableKineticPan: false });
++      this.touchZoomRotate = { disableRotation() {} };
++      naver.maps.Event.once(this.nm, "init", () => this.emit("load"));
++      naver.maps.Event.addListener(this.nm, "idle", () => this.emit("moveend"));
++      naver.maps.Event.addListener(this.nm, "click", e => { const p = this.nm.getProjection().fromCoordToOffset(e.coord); this.emit("click", { lngLat: { lng: e.coord.lng(), lat: e.coord.lat() }, point: { x: p.x, y: p.y } }); });
++      naver.maps.Event.addListener(this.nm, "zoom_changed", () => this.redrawPoints());
++    }
++    emit(ev, arg) { for (const f of this.handlers[ev] || []) f(arg); }
++    on(ev, a, b) { if (typeof a === "function") (this.handlers[ev] ||= []).push(a); return this; }   // 층 이름을 받는 mouseenter 등은 쓰지 않는다
++    once(ev, fn) { const g = x => { this.handlers[ev] = this.handlers[ev].filter(h => h !== g); fn(x); }; return this.on(ev, g); }
++    loaded() { return true; } isMoving() { return false; }
++    getZoom() { return this.nm.getZoom() - 1; } getBearing() { return 0; } resetNorth() {}
++    zoomIn() { this.nm.setZoom(this.nm.getZoom() + 1, true); } zoomOut() { this.nm.setZoom(this.nm.getZoom() - 1, true); }
++    getContainer() { return this.container; } getCanvas() { return this.container; }
++    resize() { const r = this.container.getBoundingClientRect(); if (r.width && r.height) this.nm.setSize(new naver.maps.Size(r.width, r.height)); }
++    getCenter() { const c = this.nm.getCenter(); return { lng: c.lng(), lat: c.lat(), toArray: () => [c.lng(), c.lat()] }; }
++    jumpTo(o) { if (o.center) this.nm.setCenter(LL(o.center)); if (o.zoom != null) this.nm.setZoom(Math.round(o.zoom + 1), false); }
++    easeTo(o) { if (o.center && o.zoom != null) this.nm.morph(LL(o.center), Math.round(o.zoom + 1)); else if (o.center) this.nm.panTo(LL(o.center)); else if (o.zoom != null) this.nm.setZoom(Math.round(o.zoom + 1), true); }
++    fitBounds(b, o = {}) {
++      const p = typeof o.padding === "number" ? { top: o.padding, right: o.padding, bottom: o.padding, left: o.padding } : (o.padding || {});
++      this.nm.fitBounds(new naver.maps.LatLngBounds(new naver.maps.LatLng(b.s, b.w), new naver.maps.LatLng(b.n, b.e)), { top: p.top || 0, right: p.right || 0, bottom: p.bottom || 0, left: p.left || 0 });
++      if (o.maxZoom != null && this.nm.getZoom() > o.maxZoom + 1) this.nm.setZoom(o.maxZoom + 1, false);
++    }
++    getBounds() {
++      const b = this.nm.getBounds(), sw = b.getSW(), ne = b.getNE();
++      return { contains: c => c[0] >= sw.lng() && c[0] <= ne.lng() && c[1] >= sw.lat() && c[1] <= ne.lat(), getWest: () => sw.lng(), getSouth: () => sw.lat(), getEast: () => ne.lng(), getNorth: () => ne.lat() };
++    }
++    project(ll) { const p = this.nm.getProjection().fromCoordToOffset(LL(Array.isArray(ll) ? ll : [ll.lng, ll.lat])); return { x: p.x, y: p.y }; }
++    queryRenderedFeatures() { return []; }
++    addControl() {} setPaintProperty() {}
++    addImage(name, img) { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").putImageData(img, 0, 0); this.images[name] = c.toDataURL(); }
++    hasImage(name) { return !!this.images[name]; }
++    addSource(id) { this.data[id] ||= { type: "FeatureCollection", features: [] }; }
++    addLayer() {}
++    getSource(id) { const self = this; this.data[id] ||= { type: "FeatureCollection", features: [] }; return { get _data() { return self.data[id]; }, setData(d) { self.data[id] = d; self.draw(id); } }; }
++    setLayoutProperty(id, prop, v) { if (prop === "visibility") { this.hidden[id] = v === "none"; this.draw(id); } }
++    draw(id) {
++      if (ROUTE_STYLE[id]) return this.drawLines(id);
++      if (id === "sv-route" || id === "sv-near") return this.drawPoints(id);
++      // 횡단 시간 지도(xw)·서비스 범위(cov)·신호 점(sigall)은 네이버 지도에서는 그리지 않는다
++    }
++    drawLines(id) {
++      for (const s of this.shapes[id] || []) s.setMap(null);
++      const st = ROUTE_STYLE[id], out = [];
++      for (const f of this.data[id].features || []) {
++        const path = (f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.coordinates).map(line => line.map(LL));
++        for (const p of path) {
++          const under = f.properties && "u" in f.properties;
++          if (!under) out.push(new naver.maps.Polyline({ map: this.nm, path: p, strokeColor: "#2A3140", strokeOpacity: .85, strokeWeight: st.w + 4, strokeLineCap: "round", strokeLineJoin: "round", zIndex: st.z }));
++          out.push(new naver.maps.Polyline({ map: this.nm, path: p, strokeColor: under ? "#2A3140" : st.color, strokeWeight: under ? 3 : st.w, strokeStyle: under ? "shortdash" : "solid", strokeLineCap: "round", strokeLineJoin: "round", zIndex: st.z + 1 }));
++        }
++      }
++      this.shapes[id] = out;
++    }
++    // 신호 아이콘: 좌표마다 표시 하나를 두고 아이콘이 바뀔 때만 고친다(1초마다 다시 만들지 않게)
++    drawPoints(id) {
++      const pts = (this.pts[id] ||= new Map()), seen = new Set(), z = this.getZoom();
++      const show = !this.hidden[id] && !(id === "sv-near" && z < 15.2) && !(id === "sv-route" && z < 12.5);
++      for (const f of show ? this.data[id].features || [] : []) {
++        const c = f.geometry.coordinates, key = c.join(","), icon = f.properties.icon, px = f.properties.next ? ICON_PX.next : id === "sv-near" ? ICON_PX.near : ICON_PX.route;
++        seen.add(key);
++        const sig = icon + px, cur = pts.get(key);
++        if (cur && cur.sig === sig) continue;
++        const html = `<img src="${this.images[icon] || ""}" width="${px}" height="${px}" style="display:block;transform:translate(-50%,-50%);${id === "sv-near" ? "opacity:.6" : ""}" alt="">`;
++        if (cur) { cur.m.setIcon({ content: html, anchor: new naver.maps.Point(0, 0) }); cur.sig = sig; }
++        else pts.set(key, { sig, m: new naver.maps.Marker({ map: this.nm, position: LL(c), icon: { content: html, anchor: new naver.maps.Point(0, 0) }, clickable: false, zIndex: id === "sv-near" ? 40 : 60 }) });
++      }
++      for (const [k, v] of pts) if (!seen.has(k)) { v.m.setMap(null); pts.delete(k); }
++    }
++    redrawPoints() { for (const id of ["sv-route", "sv-near"]) if (this.data[id]) this.drawPoints(id); }
++  }
++  return { Map: NMap, Marker, Popup, LngLatBounds, ScaleControl: class {}, addProtocol() {} };
++})();
++
+ </script>
+ 
+ </html>
+diff --git a/docs/prototype/src/app.js b/docs/prototype/src/app.js
+index 16b8edd..80fb19d 100644
+--- a/docs/prototype/src/app.js
++++ b/docs/prototype/src/app.js
+@@ -442,7 +442,29 @@ const XW = {
+   sync() { if (!map) return; const vis = current === "home" && this.userOn === true; this.on = vis; $("xw-panel").hidden = !vis; ready(() => { for (const id of ["xw-dot", "xw-line"]) map.setLayoutProperty(id, "visibility", vis ? "visible" : "none"); }); },
+   show(on) { this.userOn = on; this.sync(); },
+ };
++// 바탕 지도: OpenFreeMap(키 없이 쓰는 공개 지도, OpenStreetMap 자료). boot()에서 받아 두고, 못 받으면 기존 자체 지도를 쓴다.
++let BASE_STYLE = null;
++const BASEMAP_URL = "https://tiles.openfreemap.org/styles/positron";
++async function loadBaseStyle() {
++  try {
++    const r = await fetch(BASEMAP_URL, { signal: AbortSignal.timeout(5000) }); if (!r.ok) return null;
++    const st = await r.json();
++    // 이름은 한국어 이름 우선(없으면 원래 이름). 라틴 표기를 함께 쓰던 글자는 한국어만.
++    for (const l of st.layers) if (l.type === "symbol" && l.layout?.["text-field"] && JSON.stringify(l.layout["text-field"]).includes("name"))
++      l.layout["text-field"] = ["coalesce", ["get", "name:ko"], ["get", "name"]];
++    return st;
++  } catch { return null; }
++}
+ function mapStyle() {
++  const own = ownMapStyle();
++  if (!BASE_STYLE) return own;
++  // 우리 층: 바탕(자체 타일 'osm')을 쓰지 않는 것만 가져와 바탕 지도의 글자 층 아래에 넣는다
++  const mine = own.layers.filter(l => l.source && l.source !== "osm");
++  const base = BASE_STYLE.layers.filter(l => l.type !== "symbol"), labels = BASE_STYLE.layers.filter(l => l.type === "symbol");
++  const sources = { ...BASE_STYLE.sources }; for (const [k, v] of Object.entries(own.sources)) if (k !== "osm") sources[k] = v;
++  return { version: 8, glyphs: BASE_STYLE.glyphs, sprite: BASE_STYLE.sprite, sources, layers: [...base, ...mine, ...labels] };
++}
++function ownMapStyle() {
+   const W = pairs => ["interpolate", ["exponential", 1.5], ["zoom"], ...pairs.flat()];
+   const kinds = arr => ["in", ["get", "kind"], ["literal", arr]];
+   const surface = ["!=", ["get", "tunnel"], true];
+@@ -487,7 +509,7 @@ function mapStyle() {
+       // 경로
+       { id: "route-short-case", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#2A3140", "line-opacity": .55, "line-width": W([[12, 6], [18, 12]]) } },
+       { id: "route-short", type: "line", source: "rs", layout: { "line-cap": "round", "line-join": "round" }, filter: ["!", ["has", "u"]], paint: { "line-color": "#959EAC", "line-width": W([[12, 3.5], [18, 7]]) } },
+-      { id: "route-jjuk-case", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#2A3140", "line-opacity": .55, "line-width": W([[12, 7], [18, 14]]) } },
++      { id: "route-jjuk-case", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#2A3140", "line-opacity": .9, "line-width": W([[12, 7], [18, 14]]) } },
+       { id: "route-jjuk", type: "line", source: "rj", filter: ["!", ["has", "u"]], layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#F6C343", "line-width": W([[12, 4.5], [18, 9]]) } },
+       { id: "route-jjuk-under", type: "line", source: "rj", filter: ["has", "u"], paint: { "line-color": "#2A3140", "line-width": W([[12, 1.5], [18, 3]]), "line-dasharray": [1, 1.5] } },
+       // 신호 교차로: 가까이서만 표시. 노란 테두리 = 패턴 수집 중
+@@ -522,6 +544,8 @@ function ensureMap() {
+     localIdeographFontFamily: "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif",
+     pitchWithRotate: false, maxBounds: [[126.62, 37.38], [127.27, 37.70]], minZoom: 10, maxZoom: 19 });
+   map.once("load", () => { mapReady = true; XW.apply(); });
++  // 화면마다 지도 칸 크기가 다르다(결과는 입력칸 아래, 걷기는 위 안내 카드 아래). 칸 크기가 바뀌면 지도도 다시 맞춘다
++  if (window.ResizeObserver) new ResizeObserver(() => map && map.resize()).observe(mapEl);
+   map.touchZoomRotate.disableRotation();
+   map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
+   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
+@@ -544,8 +568,9 @@ function fit(coordsList, extra = {}) {
+   const phoneRect=$("phone").getBoundingClientRect(),panel=document.getElementById("sheet-"+current)?.getBoundingClientRect();
+   const sidePanel=panel&&panel.width<phoneRect.width*.8&&panel.left>phoneRect.left+phoneRect.width*.3;
+   // 홈·결과의 지도 컨테이너는 시트 위까지만 차지하므로 시트 높이를 빼지 않는다. 걷기 화면은 지도가 시트 밑까지 이어진다.
+-  const bounded = current === "result" || current === "home";
+-  const pad = { top: bounded ? 36 : 90, bottom: sidePanel ? 40 : bounded ? 30 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 120, ...extra };   // 오른쪽 지도 버튼(약 56px)+도착지 이름표
++  // 2026-10-30: 지도는 모든 화면에서 화면 전체 크기다(지도 칸 크기가 바뀌면 일부만 그려지는 문제). 위 머리(입력칸·안내)와 아래 시트만큼 여백을 준다.
++  const head = headH();
++  const pad = { top: head + (current === "walk" ? 60 : current === "result" ? 64 : 36), bottom: sidePanel ? 40 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 120, ...extra };   // 오른쪽 지도 버튼(약 56px)+도착지 이름표
+   ready(() => { map.resize(); map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }); });
+ }
+ function markTrip(sims, focus, forecasts = false) {
+@@ -632,10 +657,18 @@ function setSheet(name, pos, px) {
+   }
+ }
+ // 지도 조작 버튼은 지도가 보이는 영역 안에만 둔다. 남는 높이가 모자라면(작은 화면) 확대·축소 묶음은 감추고(핀치로 확대) 내 위치만 남긴다.
++// 지도 위를 덮는 머리(홈 검색·결과 입력칸·걷기 안내)의 아래 끝. 지도는 화면 전체라 여백·버튼 위치를 이 값으로 맞춘다
++function headH() {
++  const sel = { home: ".home-header", result: "#s-result .rhead-bar", walk: "#s-walk .next" }[current], e = sel && document.querySelector(sel);
++  const fallback = current === "result" ? 140 : current === "home" ? 148 : 112;
++  if (!e || !e.offsetHeight) return fallback;
++  return Math.round(e.getBoundingClientRect().bottom - $("phone").getBoundingClientRect().top);
++}
+ function layoutMapCtl() {
+   const ctl = $("mapctl"), name = current, sh = sheets[name];
+   if (!sh || !["home", "result", "walk"].includes(name)) return;
+-  const small = phoneH() < 690, mapTop = name === "home" ? (small ? 138 : 148) : name === "result" ? 96 : 112, top = mapTop + 12;
++  const head = headH(); $("phone").style.setProperty("--head-h", head + "px");
++  const top = head + (name === "result" ? 56 : 12);   // 결과: 오른쪽 위 '패턴 예상' 표시(32px) 아래
+   ctl.style.top = top + "px";
+   $("ctl-in").parentElement.hidden = phoneH() - sh.h - top - 12 < 152;
+ }
+@@ -1475,6 +1508,7 @@ function show(name) {
+   if (booted && !readProfile().onboarded && !["splash","onboarding"].includes(name)) { onboardingTarget=name; name="onboarding"; }
+   const prevScreen = current; current = name;
+   SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
++  if ($("sig-info")) $("sig-info").hidden = true; if ($("sig-chip") && name !== "result") $("sig-chip").hidden = true;
+   if (map) XW.sync();
+   if (typeof LIVE !== "undefined" && map) LIVE.sync();
+   $("badge").hidden = true;  // 예시 표시는 숫자 옆(카드·신호 상세·공유 카드)에만 둔다
+@@ -1565,7 +1599,9 @@ async function boot() {
+   const splashStarted=Date.now();
+   show("splash");
+   try {
+-    [IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans((h => [h, (h + 1) % 24, 8, 9, 10])(Math.floor(kstSec() / 3600))).catch(() => ({signals:{},date:null,source_dates:[]}))]);
++    // 지도: 네이버 지도 키가 있으면 네이버(naver-compat.js), 없거나 인증 실패면 공개 지도(OpenFreeMap), 그것도 안 되면 자체 지도
++    const naverOk = typeof NAVER !== "undefined" ? NAVER.load() : Promise.resolve(false);
++    [BASE_STYLE, IDX, SIGS, GMETA, TERRAIN, REAL] = await Promise.all([naverOk.then(ok => ok ? null : loadBaseStyle()), getJSON("tiles/index.json"), getJSON("signals.json"), getJSON("graph/index.json"), getJSON("terrain.json").catch(() => null), loadSignalPlans((h => [h, (h + 1) % 24, 8, 9, 10])(Math.floor(kstSec() / 3600))).catch(() => ({signals:{},date:null,source_dates:[]}))]);
+   } catch (err) {
+     $("splash-foot").textContent = "지도 데이터를 못 불러왔어요. 새로고침해 주세요.";
+     console.error(err);
+@@ -1580,6 +1616,7 @@ async function boot() {
+   XW.v = Math.min(1.7, Math.max(0.35, SPEED)); XW.paint();
+   XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
+   booted = true;
++  if (typeof NAVER !== "undefined" && NAVER.ready) $("layer-toggle").hidden = true;   // 횡단 시간 지도는 자체 지도에서만(네이버 지도에는 그 층이 없다)
+   if (typeof LIVE !== "undefined") LIVE.init();
+   if (typeof SIG !== "undefined") SIG.start();   // 지도 신호 아이콘 1초마다 갱신(패턴 예상)
+   // 위치 권한이 이미 허용돼 있으면 묻지 않고 내 위치를 지도에 표시하고 출발지로 쓴다. 허용 전에는 앱을 열자마자 묻지 않는다.
+diff --git a/docs/prototype/src/asphalt.css b/docs/prototype/src/asphalt.css
+index 2d6b6d7..dee38d1 100644
+--- a/docs/prototype/src/asphalt.css
++++ b/docs/prototype/src/asphalt.css
+@@ -68,16 +68,6 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+ #sheet-result .grip-area{display:flex;justify-content:center;align-items:center;height:20px;padding:0;cursor:grab}
+ #sheet-result .grip{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0}
+ #sheet-result .sheet-body{padding:0 20px}
+-.rtabs{display:grid;grid-template-columns:1fr 1fr;margin:0 -20px;border-bottom:1px solid var(--line)}
+-.rtabs.one{grid-template-columns:1fr}
+-.rtab{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;height:60px;padding:0 20px;border:0;background:none;color:var(--muted);min-width:0}
+-.rtab .ti{width:24px;height:24px;flex:none}
+-.rtab .tl{display:inline-flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap}
+-.rtab .name{font-size:17px;font-weight:600;line-height:1}
+-.rtab .mins{font-size:22px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+-.rtab[aria-pressed=true] .ti,.rtab[aria-pressed=true] .mins{color:var(--lane)}
+-.rtab[aria-pressed=true] .name{color:var(--zebra)}
+-.rtab[aria-pressed=true]::after{content:"";position:absolute;left:20px;right:20px;bottom:-1px;height:3px;border-radius:2px;background:var(--lane)}
+ .rbadge{display:inline-flex;align-items:center;gap:8px;margin:16px 0 0;padding:7px 12px 7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--lane);font-size:14px;font-weight:600;line-height:1.2}
+ .rbadge .ico{width:18px;height:18px;flex:none}
+ .rhead{margin:12px 0 6px;font-size:24px;font-weight:700;line-height:1.3;letter-spacing:-.4px;color:var(--zebra)}
+@@ -88,11 +78,6 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+ #result-options{padding-top:6px}
+ .rfoot{margin:12px 0 4px;font-size:13px;color:var(--muted)}
+ @media (prefers-reduced-motion:reduce){.detail-toggle .ico{transition:none}}
+-/* 탭 글자: 이름과 시간을 같은 크기로 맞춰 기준선과 세로 가운데가 함께 맞게 */
+-.rtab .tl{align-items:baseline}
+-.rtab .name,.rtab .mins{font-size:20px;line-height:24px}
+-.rtab .name{font-weight:600}.rtab .mins{font-weight:800}
+-.rtab .ti{width:22px;height:22px}
+ /* 지도 위 회색 길 이름표 */
+ .m-label{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);font-size:12px;line-height:1.25;pointer-events:none}
+ .m-label b{font-weight:600}.m-label span{font-weight:700;color:var(--zebra)}
+@@ -127,38 +112,136 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
+ .m-start{border-color:var(--zebra)}.m-dest i{background:var(--lane);border-color:var(--asphalt)}
+ #map-result .maplibregl-ctrl-bottom-right,#map-result .maplibregl-ctrl-bottom-left{margin-bottom:24px}
+ 
+-/* 2026-10-30 신호 중심 개편: 목업 구조(경로 카드 두 장, 신호 아이콘·범례, 다음 횡단보도 말풍선). 색은 쭉고 토큰 유지 */
+-.rtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 12px;border-bottom:0}
+-.rtab{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;height:auto;min-height:150px;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:var(--panel);color:var(--zebra);text-align:left}
+-.rtab[aria-pressed=true]{border-color:var(--lane);box-shadow:0 0 0 1px var(--lane) inset}
+-.rtab[aria-pressed=true]::after{display:none}
+-.rtab .rc-top{display:flex;align-items:center;gap:6px;min-height:20px}
+-.rtab .name{font-size:15px;font-weight:700;line-height:20px;color:var(--zebra)}
+-.rtab em{font-style:normal;font-size:11px;font-weight:700;color:var(--asphalt);background:var(--lane);border-radius:999px;padding:2px 7px}
+-.rtab .rc-check{margin-left:auto;width:22px;height:22px;border-radius:50%;background:var(--lane);color:var(--asphalt);font-style:normal;font-weight:800;font-size:13px;display:grid;place-items:center}
+-.rtab .rc-time{display:flex;align-items:baseline;gap:8px}
+-.rtab .mins{font-size:28px;line-height:32px;font-weight:800;color:var(--zebra)}
+-.rtab[aria-pressed=true] .mins{color:var(--lane)}
++/* ===================================================================================
++   결과·걷기 화면 (2026-10-30 목업 형식, 한곳에 정리)
++   - 지도는 화면 전체. 위 머리(어두운 판, 아래 모서리 둥글게)와 아래 시트(위 모서리 둥글게)가 지도를 창처럼 감싼다.
++   - 지도 위에 뜨는 것(패턴 예상 표시·지도 버튼·범례·다음 횡단보도 말풍선·도착지 이름표)은 밝은 판 + 옅은 그림자:
++     밝은 바탕 지도 위에서 어두운 덩어리가 경로·신호 아이콘보다 먼저 눈에 띄지 않게.
++   - 글자 크기는 11 · 13 · 15 · 17 · 28 다섯 단계, 굵기는 400 · 600 · 700. 간격은 4 · 8 · 12 · 16 · 24.
++   - 신호 색(초록·빨강·회색)은 신호 아이콘·범례·말풍선 상태에만 쓴다.
++   =================================================================================== */
++:root{--float:#FFFFFF;--ink:#242A32;--ink-2:#5B6573;--float-line:#E3E6EA;--float-shadow:0 1px 2px rgba(20,26,32,.18),0 4px 14px rgba(20,26,32,.14);--panel-shadow:0 4px 18px rgba(10,14,18,.28);--sig-go:#2FA866;--sig-stop:#D9443F;--sig-unk:#7A8391;--r-s:12px;--r-m:16px;--r-l:20px}
++#map-home,#map-result,#map-walk,.map{top:0!important;bottom:0!important}
++
++/* 결과 머리: 로고 줄(로고 그대로) + 출발·도착 입력칸 + 바꾸기 */
++#s-result .rhead-bar{display:block;height:auto;padding:max(4px,env(safe-area-inset-top)) 12px 10px;background:var(--asphalt);border:0;border-radius:0 0 var(--r-l) var(--r-l);box-shadow:var(--panel-shadow)}
++.rh-brand{display:flex;align-items:center;gap:4px;height:36px}
++.rh-brand .brand{font-size:22px;margin-right:auto}
++.rh-brand .icon-btn,.rh-trip .icon-btn{width:40px;min-width:40px;height:40px;flex:none;color:var(--zebra)}
++.rh-brand .icon-btn .ico,.rh-trip .icon-btn .ico{width:22px;height:22px}
++.rh-trip{display:flex;align-items:center;gap:4px;margin-top:4px}
++.rh-trip .trip{flex:1;min-width:0;display:grid;gap:6px}
++.trip-field{display:flex;align-items:center;height:40px;padding-left:14px;border:0;border-radius:var(--r-s);background:var(--panel)}
++.trip-field .trip-pt{flex:1;min-width:0;height:40px;min-height:0;padding:0;gap:12px;border:0;background:none;color:var(--zebra);font-size:15px;display:flex;align-items:center;text-align:left}
++.trip-field .trip-pt:first-child{border-bottom:0}
++.trip-field .trip-pt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
++.trip-x{display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;background:none;color:var(--muted)}
++.trip-x .ico{width:16px;height:16px}
++#adjust-conditions{flex:none}
++#adjust-conditions[aria-expanded=true]{color:var(--lane)}
++
++/* 지도 위 떠 있는 것 */
++.mapctl{gap:8px}
++.mapctl .grp{border-radius:var(--r-s);box-shadow:var(--float-shadow)}
++.mapctl button{width:40px;height:40px;background:var(--float);color:var(--ink);font-size:22px;font-weight:400}
++.mapctl .grp button+button{border-top:1px solid var(--float-line)}
++.mapctl .solo{width:40px;height:40px;border-radius:50%;box-shadow:var(--float-shadow)}
++.mapctl svg{width:22px;height:22px;stroke:#2F6BEA}.mapctl svg circle:last-of-type{fill:#2F6BEA}
++.sig-chip{position:absolute;z-index:11;top:calc(var(--head-h,140px) + 12px);right:12px;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 12px;border:0;border-radius:999px;background:var(--float);color:var(--ink);font-size:13px;font-weight:600;box-shadow:var(--float-shadow)}
++.sig-chip[hidden]{display:none}
++.lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--sig-unk)}.lg-dot.live{background:var(--sig-go)}
++.sig-chip .lg-dot{width:8px;height:8px;background:var(--sig-unk)}.sig-chip .lg-dot.live{background:var(--sig-go)}
++.sig-chip .ico{width:16px;height:16px;color:var(--ink-2)}
++.sig-info{position:absolute;z-index:30;left:12px;right:12px;top:calc(var(--head-h,140px) + 52px);display:grid;gap:8px;padding:16px;border:0;border-radius:var(--r-m);background:var(--float);color:var(--ink);font-size:13px;line-height:1.55;box-shadow:var(--float-shadow)}
++.sig-info[hidden]{display:none}.sig-info b{font-size:15px}.sig-info p{margin:0;color:var(--ink-2)}
++.sig-info .btn-ghost{color:var(--ink);border-color:var(--float-line);min-height:44px}
++.sig-legend{position:absolute;z-index:9;left:12px;right:auto;bottom:calc(var(--sheet-h) + 22px);max-width:calc(100% - 24px);display:flex;flex-wrap:nowrap;align-items:center;gap:12px;height:28px;padding:0 12px;border-radius:999px;background:var(--float);color:var(--ink);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;box-shadow:var(--float-shadow);pointer-events:none}
++.sig-legend[hidden]{display:none}
++.sig-legend span{display:inline-flex;align-items:center;gap:6px}
++.sig-legend .lg{width:10px;height:10px;border:0;border-radius:50%;display:inline-block}
++.sig-legend .lg-walk{background:var(--sig-go)}.sig-legend .lg-stop{background:var(--sig-stop)}.sig-legend .lg-unk{background:var(--sig-unk);border:0}.sig-legend .lg-unk:after{content:none}
++.sig-legend .lg-src{display:none}
++.map-attrib{bottom:calc(var(--sheet-h) + 4px);left:12px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.78);color:var(--ink-2);font-size:9px}
++#map-home .maplibregl-ctrl-bottom-right,#map-result .maplibregl-ctrl-bottom-right,#map-walk .maplibregl-ctrl-bottom-right{bottom:calc(var(--sheet-h) + 20px);margin:0}
++#map-result .maplibregl-ctrl-bottom-left{margin:0}
++.maplibregl-ctrl-scale{border-color:var(--ink-2);background:rgba(255,255,255,.78);color:var(--ink);font-size:10px;margin:0 12px 0 0}
++/* 지도 이름표: 도착지·다른 길 */
++.m-dest span{padding:4px 8px;border-radius:8px;background:var(--float);color:var(--ink);font-size:12px;font-weight:600;box-shadow:var(--float-shadow)}
++.m-label{border:0;border-radius:8px;background:var(--float);color:var(--ink-2);box-shadow:var(--float-shadow)}.m-label span{color:var(--ink)}
++/* 결과 화면에서는 다른 길 이름표를 감춘다: 같은 정보가 아래 카드에 있고, 이름표가 신호 아이콘·말풍선을 덮었다(회색 선 = 고르지 않은 길) */
++#map-result .m-label{display:none}
++/* 조건 패널을 열면 시트가 지도를 덮으므로 지도 위 범례·말풍선·출처를 잠시 감춘다 */
++.phone:has(#cond-panel:not([hidden])) :is(.sig-legend,.sv-call,.map-attrib,.sig-chip){visibility:hidden}
++
++/* 다음 횡단보도 말풍선(목업 형식: 작은 제목 / 큰 거리 / 상태 한 줄). 꼬리가 아이콘을 가리킨다 */
++.sv-call{position:relative;display:grid;gap:2px;min-width:132px;max-width:200px;padding:10px 12px;border:0;border-radius:var(--r-s);background:var(--float);color:var(--ink);font-size:13px;line-height:1.35;box-shadow:var(--float-shadow);pointer-events:none}
++.sv-call small{font-size:11px;color:var(--ink-2)}
++.sv-call b{font-size:17px;font-weight:700;line-height:1.25;color:var(--ink)}
++.sv-call .st{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
++.sv-call .st i{width:8px;height:8px;border-radius:50%;flex:none;background:var(--sig-unk)}
++.sv-call.go .st,.sv-call.green .st{color:#1D7F49}.sv-call.go .st i,.sv-call.green .st i{background:var(--sig-go)}
++.sv-call.wait .st,.sv-call.short .st{color:#B8322C}.sv-call.wait .st i,.sv-call.short .st i{background:var(--sig-stop)}
++.sv-call::after{content:"";position:absolute;left:50%;width:12px;height:12px;background:var(--float);transform:translateX(-50%) rotate(45deg);border-radius:2px}
++.sv-call.above::after{bottom:-5px;box-shadow:3px 3px 4px rgba(20,26,32,.10)}.sv-call.below::after{top:-5px}
++.sv-call.at-left::after{left:22px}.sv-call.at-right::after{left:auto;right:16px;transform:translateX(50%) rotate(45deg)}
++
++/* 결과 시트: 경로 카드 두 장 + 걷기 시작 */
++#sheet-result{border:0;border-radius:var(--r-l) var(--r-l) 0 0;box-shadow:0 -4px 18px rgba(10,14,18,.22)}
++#sheet-result .grip-area{display:flex;flex:none;justify-content:center;align-items:center;height:16px;padding:0;cursor:grab}
++#sheet-result .grip{width:36px;height:4px;margin:0;border-radius:2px;background:var(--line)}
++#sheet-result .sheet-body{padding:0 16px}
++#result-content{padding-bottom:0}
++.rtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;border:0}
++.rtabs.one{grid-template-columns:1fr}
++.rtab{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;height:auto;min-height:0;padding:12px;border:0;border-radius:var(--r-m);background:var(--panel);color:var(--zebra);text-align:left;min-width:0}
++.rtab::before,.rtab::after{content:none}
++.rtab[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--lane)}
++.rtab .rc-top{display:flex;align-items:center;gap:6px;height:20px;min-height:20px}
++.rtab .name{font-size:15px;font-weight:600;line-height:20px;color:var(--zebra)}
++.rtab em{font-style:normal;font-size:13px;font-weight:600;color:var(--lane);background:none;padding:0}
++.rtab .rc-check{margin-left:auto;width:20px;height:20px;border-radius:50%;background:var(--lane);color:var(--asphalt);display:grid;place-items:center;font-style:normal}
++.rtab .rc-check svg{width:12px;height:12px}
++.rtab .rc-time{display:flex;align-items:baseline;gap:8px;margin-top:4px}
++.rtab .mins{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.5px;color:var(--zebra);font-variant-numeric:tabular-nums}
++.rtab[aria-pressed=true] .mins{color:var(--zebra)}
+ .rtab .rc-time small{font-size:13px;color:var(--muted)}
+-.rtab .rc-row{display:flex;align-items:center;gap:6px;font-size:13px;line-height:18px;color:#D3D7DC}
+-.rtab .rc-row .mi{width:16px;height:16px;flex:none}
++.rc-bar{display:flex;height:4px;margin:8px 0 10px;border-radius:2px;background:#3B4552;overflow:hidden}
++.rc-bar i{display:block;height:100%}.rc-bar .w{background:var(--muted)}.rc-bar .s{background:var(--muted);opacity:.45}
++.rtab[aria-pressed=true] .rc-bar .w,.rtab[aria-pressed=true] .rc-bar .s{background:var(--lane)}
++.rc-rows{display:grid;gap:4px}
++.rtab .rc-row{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:18px;color:#D3D7DC}
++.rtab .rc-row::before{content:none}
++.rtab .rc-row .mi{width:16px;height:16px;margin-top:1px;flex:none;color:var(--muted)}
++.rtab .rc-row b{font-weight:600;color:var(--zebra)}
+ .rtab .rc-row.muted{color:var(--muted)}
+-.rtab .rc-row.pro::before{content:"✓";color:var(--lane);font-weight:800;width:16px;text-align:center}
+-.rtab .rc-row.con::before{content:"−";color:#FF8A6B;font-weight:800;width:16px;text-align:center}
+-.rtabs.one .rtab{min-height:0}
+-/* 지도 신호 범례·근거(신뢰도) */
+-.sig-legend{position:absolute;left:10px;right:10px;bottom:calc(var(--sheet-h) + 34px);z-index:9;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:6px 10px;border-radius:10px;background:#242A32e6;color:var(--zebra);font-size:12px;pointer-events:none}
+-.sig-legend[hidden]{display:none}.sig-legend span{display:inline-flex;align-items:center;gap:5px}
+-.sig-legend .lg{width:12px;height:12px;border-radius:50%;display:inline-block;border:1.5px dashed #F4F2E9}.lg-walk{background:#2FA866}.lg-stop{background:#D9443F}.lg-unk{background:#6B7480;border-style:solid!important}
+-.sig-legend .lg-src{margin-left:auto;color:var(--muted)}.lg-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}.lg-dot.live{background:#2FA866}
+-/* 다음 횡단보도 말풍선(결과 지도) */
+-.sv-call{display:grid;gap:1px;max-width:190px;padding:7px 10px;border-radius:10px;background:var(--asphalt);border:1.5px solid var(--line);color:var(--zebra);font-size:12px;line-height:1.35;box-shadow:0 2px 10px #0006}
+-.sv-call small{color:var(--muted);font-size:11px}.sv-call b{font-size:15px}.sv-call span{color:#D3D7DC}
+-.sv-call.go{border-color:#2FA866}.sv-call.go b{color:#5ED193}.sv-call.wait b,.sv-call.short b{color:#FF8A6B}.sv-call.wait,.sv-call.short{border-color:#8A4A42}
+-/* 걷기: 다음 횡단보도 안내 색 */
+-#sheet-walk[data-next=go]~.next #next-label,.next #next-label{color:#A7B0C0}
+-
+-.sig-legend{flex-wrap:nowrap;gap:9px;padding:5px 9px;font-size:11px;white-space:nowrap;overflow:hidden;bottom:calc(var(--sheet-h) + 30px);right:auto;max-width:calc(100% - 20px)}
+-.sig-legend .lg{width:10px;height:10px}.sig-legend .lg-src{margin-left:2px}
+-.rtab .rc-top{height:22px;min-height:22px}
+-@media(max-height:700px){.rtabs{margin:6px 0 8px}.rtab{min-height:0;padding:9px 10px;gap:4px}.rtab .mins{font-size:24px;line-height:28px}.rtab .rc-row.pro~.rc-row.pro{display:none}.rhead{font-size:18px;margin:4px 0}}
++.rtab .rc-row.pro .mi{color:var(--lane)}
++.rtab .rc-row.con{color:var(--muted)}
++#result-footer{padding:8px 16px max(16px,env(safe-area-inset-bottom))}
++.btn-walk{gap:8px;height:52px;min-height:52px;border-radius:var(--r-s);font-size:17px;font-weight:700}.btn-walk .ico{width:22px;height:22px}
++#result-footer .actions .btn{flex:1}
++.cond-panel{margin:12px 0 0;padding:16px;border:0;border-radius:var(--r-m);background:var(--panel)}
++#result-status{padding:16px 0}
++
++/* 걷기: 위 안내 판을 결과 머리와 같은 형식으로 */
++#s-walk .next{min-height:0;padding:max(12px,env(safe-area-inset-top)) 20px 16px;border:0;border-radius:0 0 var(--r-l) var(--r-l);box-shadow:var(--panel-shadow)}
++#s-walk .next #next-label{font-size:13px!important;color:var(--muted)!important;margin:0 0 4px}
++#s-walk .next .dist{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.5px;margin-right:8px}
++#s-walk .next #next-state{font-size:15px;line-height:1.4;color:var(--zebra)}
++#s-walk .next .say{font-size:11px;color:var(--muted);margin:8px 0 0}
++#sheet-walk{border:0;border-radius:var(--r-l) var(--r-l) 0 0;box-shadow:0 -4px 18px rgba(10,14,18,.22)}
++#sheet-walk .progress{padding:16px 0 8px}
++#sheet-walk .progress span{font-size:11px;color:var(--muted)}
++#sheet-walk .progress strong,#w-time{font-size:17px;font-weight:700}
++#sheet-walk .chips .chip{min-height:40px;border-radius:var(--r-s);font-size:13px}
++#sheet-walk .sheet-footer .btn{border-radius:var(--r-s)}
++
++/* 작은 화면(높이 700px 이하): 머리·카드를 줄여 지도를 남긴다 */
++@media(max-height:700px){
++  #s-result .rhead-bar{padding-bottom:8px}
++  .rh-brand{height:34px}
++  .rh-trip .trip{gap:6px}.trip-field,.trip-field .trip-pt,.trip-x{height:38px}
++  .rtab{padding:10px 12px}.rtab .mins{font-size:24px;line-height:30px}
++  .rc-bar{margin:6px 0 8px}.rc-rows{gap:4px}
++  #result-footer{padding-top:8px;padding-bottom:max(12px,env(safe-area-inset-bottom))}.btn-walk{height:48px;min-height:48px}
++  #s-walk .next{padding-bottom:12px}#s-walk .next .dist{font-size:24px;line-height:30px}
++}
+diff --git a/docs/prototype/src/naver-compat.js b/docs/prototype/src/naver-compat.js
+new file mode 100644
+index 0000000..ec1fa7a
+--- /dev/null
++++ b/docs/prototype/src/naver-compat.js
+@@ -0,0 +1,137 @@
++// ---------- 네이버 지도 엔진 (2026-10-30 사용자 결정: 네이버 지도 API 사용) ----------
++// 앱은 MapLibre 함수 이름(map.getSource().setData, new maplibregl.Marker 등)으로 지도를 다룬다.
++// 네이버 지도를 쓸 수 있으면 같은 이름의 함수를 네이버 지도로 흉내 내는 '번역 층'을 maplibregl 자리에 넣는다.
++// 키(Client ID)는 Vercel 환경변수 NAVER_MAP_KEY_ID → /api/map-config로 받는다(네이버 지도 키는 페이지에 드러나는 공개 키이고, 등록한 도메인에서만 동작).
++// 키가 없거나 인증이 실패하면 기존 MapLibre 지도를 그대로 쓴다.
++// 줌: MapLibre(512px 타일) z ≈ 네이버 z-1. 이 층은 MapLibre 기준 줌으로 주고받는다.
++var NAVER = {   // var: app.js의 boot()가 먼저 실행된다
++  ready: false,
++  async load() {
++    let key = null;
++    try { const r = await fetch("/api/map-config", { signal: AbortSignal.timeout(4000) }); if (r.ok) key = (await r.json()).naver_key_id; } catch {}
++    if (!key) return false;
++    const ok = await new Promise(resolve => {
++      const t = setTimeout(() => resolve(false), 8000);
++      window.navermap_authFailure = () => { clearTimeout(t); NAVER.authFailed = true; resolve(false); };
++      window.__naverReady = () => { clearTimeout(t); resolve(true); };
++      const s = document.createElement("script");
++      s.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(key)}&callback=__naverReady`;
++      s.onerror = () => { clearTimeout(t); resolve(false); };
++      document.head.appendChild(s);
++    });
++    if (!ok || !window.naver?.maps) return false;
++    this.ready = true; window.maplibregl = NaverGL; return true;
++  },
++};
++
++const NaverGL = (() => {
++  const LL = ([lng, lat]) => new naver.maps.LatLng(lat, lng);
++  const toLL = c => [c.lng(), c.lat()];
++  // 앵커(center/bottom/left…)와 offset은 감싼 상자를 CSS로 옮겨 흉내 낸다(네이버 아이콘 기준점은 왼쪽 위)
++  const SHIFT = { center: "-50%,-50%", bottom: "-50%,-100%", top: "-50%,0", left: "0,-50%", right: "-100%,-50%", "bottom-left": "0,-100%", "bottom-right": "-100%,-100%", "top-left": "0,0", "top-right": "-100%,0" };
++  function wrap(element, anchor = "center", offset = [0, 0]) {
++    const box = document.createElement("div"); box.style.position = "relative";
++    const inner = document.createElement("div"); inner.style.cssText = `position:absolute;left:0;top:0;transform:translate(${SHIFT[anchor] || SHIFT.center}) translate(${offset[0]}px,${offset[1]}px)`;
++    inner.appendChild(element); box.appendChild(inner); return box;
++  }
++  class Marker {
++    constructor(o = {}) { this.el = o.element || document.createElement("div"); this.anchor = o.anchor || "center"; this.offset = o.offset || [0, 0]; this.ll = null; this.m = null; }
++    setLngLat(ll) { this.ll = Array.isArray(ll) ? ll : [ll.lng, ll.lat]; if (this.m) this.m.setPosition(LL(this.ll)); return this; }
++    getLngLat() { return { lng: this.ll[0], lat: this.ll[1], toArray: () => this.ll }; }
++    getElement() { return this.el; }
++    addTo(map) { this.map = map; this.m = new naver.maps.Marker({ position: LL(this.ll), map: map.nm, icon: { content: wrap(this.el, this.anchor, this.offset), anchor: new naver.maps.Point(0, 0) }, clickable: true, zIndex: 100 }); return this; }
++    remove() { if (this.m) { this.m.setMap(null); this.m = null; } return this; }
++  }
++  class Popup {
++    constructor(o = {}) { this.o = o; this.el = document.createElement("div"); this.el.className = "maplibregl-popup " + (o.className || ""); this.el.innerHTML = `<div class="maplibregl-popup-content"></div>`; this.handlers = {}; }
++    setLngLat(ll) { this.ll = Array.isArray(ll) ? ll : [ll.lng, ll.lat]; if (this.mk) this.mk.setLngLat(this.ll); return this; }
++    setHTML(h) { const c = this.el.firstChild; c.innerHTML = h + (this.o.closeButton === false ? "" : `<button class="maplibregl-popup-close-button" aria-label="닫기">×</button>`); c.querySelector(".maplibregl-popup-close-button")?.addEventListener("click", e => { e.stopPropagation(); this.remove(); }); return this; }
++    addTo(map) { this.mk = new Marker({ element: this.el, anchor: "bottom", offset: [0, -(this.o.offset || 10)] }).setLngLat(this.ll).addTo(map); return this; }
++    on(ev, fn) { (this.handlers[ev] ||= []).push(fn); return this; }
++    remove() { if (this.mk) { this.mk.remove(); this.mk = null; (this.handlers.close || []).forEach(f => f()); } return this; }
++  }
++  class LngLatBounds {
++    constructor(a, b) { this.w = a[0]; this.s = a[1]; this.e = (b || a)[0]; this.n = (b || a)[1]; }
++    extend(c) { this.w = Math.min(this.w, c[0]); this.e = Math.max(this.e, c[0]); this.s = Math.min(this.s, c[1]); this.n = Math.max(this.n, c[1]); return this; }
++  }
++  // 앱이 쓰는 지도 층(source id)마다 네이버 도형으로 그린다
++  const ROUTE_STYLE = { rj: { color: "#F6C343", w: 7, z: 30 }, rs: { color: "#959EAC", w: 5, z: 20 } };
++  const ICON_PX = { next: 38, route: 30, near: 18 };
++  class NMap {
++    constructor(o) {
++      this.container = o.container; this.handlers = {}; this.images = {}; this.shapes = {}; this.pts = {}; this.data = {}; this.hidden = {};
++      this.nm = new naver.maps.Map(o.container, { center: LL(o.center), zoom: Math.round(o.zoom + 1), minZoom: (o.minZoom || 10) + 1, maxZoom: Math.min(21, (o.maxZoom || 19) + 1),
++        scaleControl: true, scaleControlOptions: { position: naver.maps.Position.BOTTOM_RIGHT }, logoControlOptions: { position: naver.maps.Position.BOTTOM_LEFT },
++        mapDataControl: false, zoomControl: false, mapTypeControl: false, disableKineticPan: false });
++      this.touchZoomRotate = { disableRotation() {} };
++      naver.maps.Event.once(this.nm, "init", () => this.emit("load"));
++      naver.maps.Event.addListener(this.nm, "idle", () => this.emit("moveend"));
++      naver.maps.Event.addListener(this.nm, "click", e => { const p = this.nm.getProjection().fromCoordToOffset(e.coord); this.emit("click", { lngLat: { lng: e.coord.lng(), lat: e.coord.lat() }, point: { x: p.x, y: p.y } }); });
++      naver.maps.Event.addListener(this.nm, "zoom_changed", () => this.redrawPoints());
++    }
++    emit(ev, arg) { for (const f of this.handlers[ev] || []) f(arg); }
++    on(ev, a, b) { if (typeof a === "function") (this.handlers[ev] ||= []).push(a); return this; }   // 층 이름을 받는 mouseenter 등은 쓰지 않는다
++    once(ev, fn) { const g = x => { this.handlers[ev] = this.handlers[ev].filter(h => h !== g); fn(x); }; return this.on(ev, g); }
++    loaded() { return true; } isMoving() { return false; }
++    getZoom() { return this.nm.getZoom() - 1; } getBearing() { return 0; } resetNorth() {}
++    zoomIn() { this.nm.setZoom(this.nm.getZoom() + 1, true); } zoomOut() { this.nm.setZoom(this.nm.getZoom() - 1, true); }
++    getContainer() { return this.container; } getCanvas() { return this.container; }
++    resize() { const r = this.container.getBoundingClientRect(); if (r.width && r.height) this.nm.setSize(new naver.maps.Size(r.width, r.height)); }
++    getCenter() { const c = this.nm.getCenter(); return { lng: c.lng(), lat: c.lat(), toArray: () => [c.lng(), c.lat()] }; }
++    jumpTo(o) { if (o.center) this.nm.setCenter(LL(o.center)); if (o.zoom != null) this.nm.setZoom(Math.round(o.zoom + 1), false); }
++    easeTo(o) { if (o.center && o.zoom != null) this.nm.morph(LL(o.center), Math.round(o.zoom + 1)); else if (o.center) this.nm.panTo(LL(o.center)); else if (o.zoom != null) this.nm.setZoom(Math.round(o.zoom + 1), true); }
++    fitBounds(b, o = {}) {
++      const p = typeof o.padding === "number" ? { top: o.padding, right: o.padding, bottom: o.padding, left: o.padding } : (o.padding || {});
++      this.nm.fitBounds(new naver.maps.LatLngBounds(new naver.maps.LatLng(b.s, b.w), new naver.maps.LatLng(b.n, b.e)), { top: p.top || 0, right: p.right || 0, bottom: p.bottom || 0, left: p.left || 0 });
++      if (o.maxZoom != null && this.nm.getZoom() > o.maxZoom + 1) this.nm.setZoom(o.maxZoom + 1, false);
++    }
++    getBounds() {
++      const b = this.nm.getBounds(), sw = b.getSW(), ne = b.getNE();
++      return { contains: c => c[0] >= sw.lng() && c[0] <= ne.lng() && c[1] >= sw.lat() && c[1] <= ne.lat(), getWest: () => sw.lng(), getSouth: () => sw.lat(), getEast: () => ne.lng(), getNorth: () => ne.lat() };
++    }
++    project(ll) { const p = this.nm.getProjection().fromCoordToOffset(LL(Array.isArray(ll) ? ll : [ll.lng, ll.lat])); return { x: p.x, y: p.y }; }
++    queryRenderedFeatures() { return []; }
++    addControl() {} setPaintProperty() {}
++    addImage(name, img) { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").putImageData(img, 0, 0); this.images[name] = c.toDataURL(); }
++    hasImage(name) { return !!this.images[name]; }
++    addSource(id) { this.data[id] ||= { type: "FeatureCollection", features: [] }; }
++    addLayer() {}
++    getSource(id) { const self = this; this.data[id] ||= { type: "FeatureCollection", features: [] }; return { get _data() { return self.data[id]; }, setData(d) { self.data[id] = d; self.draw(id); } }; }
++    setLayoutProperty(id, prop, v) { if (prop === "visibility") { this.hidden[id] = v === "none"; this.draw(id); } }
++    draw(id) {
++      if (ROUTE_STYLE[id]) return this.drawLines(id);
++      if (id === "sv-route" || id === "sv-near") return this.drawPoints(id);
++      // 횡단 시간 지도(xw)·서비스 범위(cov)·신호 점(sigall)은 네이버 지도에서는 그리지 않는다
++    }
++    drawLines(id) {
++      for (const s of this.shapes[id] || []) s.setMap(null);
++      const st = ROUTE_STYLE[id], out = [];
++      for (const f of this.data[id].features || []) {
++        const path = (f.geometry.type === "LineString" ? [f.geometry.coordinates] : f.geometry.coordinates).map(line => line.map(LL));
++        for (const p of path) {
++          const under = f.properties && "u" in f.properties;
++          if (!under) out.push(new naver.maps.Polyline({ map: this.nm, path: p, strokeColor: "#2A3140", strokeOpacity: .85, strokeWeight: st.w + 4, strokeLineCap: "round", strokeLineJoin: "round", zIndex: st.z }));
++          out.push(new naver.maps.Polyline({ map: this.nm, path: p, strokeColor: under ? "#2A3140" : st.color, strokeWeight: under ? 3 : st.w, strokeStyle: under ? "shortdash" : "solid", strokeLineCap: "round", strokeLineJoin: "round", zIndex: st.z + 1 }));
++        }
++      }
++      this.shapes[id] = out;
++    }
++    // 신호 아이콘: 좌표마다 표시 하나를 두고 아이콘이 바뀔 때만 고친다(1초마다 다시 만들지 않게)
++    drawPoints(id) {
++      const pts = (this.pts[id] ||= new Map()), seen = new Set(), z = this.getZoom();
++      const show = !this.hidden[id] && !(id === "sv-near" && z < 15.2) && !(id === "sv-route" && z < 12.5);
++      for (const f of show ? this.data[id].features || [] : []) {
++        const c = f.geometry.coordinates, key = c.join(","), icon = f.properties.icon, px = f.properties.next ? ICON_PX.next : id === "sv-near" ? ICON_PX.near : ICON_PX.route;
++        seen.add(key);
++        const sig = icon + px, cur = pts.get(key);
++        if (cur && cur.sig === sig) continue;
++        const html = `<img src="${this.images[icon] || ""}" width="${px}" height="${px}" style="display:block;transform:translate(-50%,-50%);${id === "sv-near" ? "opacity:.6" : ""}" alt="">`;
++        if (cur) { cur.m.setIcon({ content: html, anchor: new naver.maps.Point(0, 0) }); cur.sig = sig; }
++        else pts.set(key, { sig, m: new naver.maps.Marker({ map: this.nm, position: LL(c), icon: { content: html, anchor: new naver.maps.Point(0, 0) }, clickable: false, zIndex: id === "sv-near" ? 40 : 60 }) });
++      }
++      for (const [k, v] of pts) if (!seen.has(k)) { v.m.setMap(null); pts.delete(k); }
++    }
++    redrawPoints() { for (const id of ["sv-route", "sv-near"]) if (this.data[id]) this.drawPoints(id); }
++  }
++  return { Map: NMap, Marker, Popup, LngLatBounds, ScaleControl: class {}, addProtocol() {} };
++})();
+diff --git a/docs/prototype/src/screens.js b/docs/prototype/src/screens.js
+index 0464520..2592765 100644
+--- a/docs/prototype/src/screens.js
++++ b/docs/prototype/src/screens.js
+@@ -50,7 +50,7 @@ function snaps(name){
+  const H=phoneH(),sh=$('sheet-'+name),body=sh.querySelector('.sheet-body'),footer=sh.querySelector('.sheet-footer');
+  const last=body?[...body.children].filter(c=>!c.hidden&&c.offsetHeight>0).pop():null;
+  const content=last?last.offsetTop+last.offsetHeight-body.offsetTop+12:0;
+- const wanted=content+(footer?.offsetHeight||76)+2;
++ const grip=sh.querySelector('.grip-area'),wanted=content+(footer?.offsetHeight||76)+2+(name==='result'&&grip?grip.offsetHeight:0);   // 결과 시트는 손잡이 높이까지 더해야 카드 아래가 잘리지 않는다
+  const mid=Math.min(H-(name==='home'?150:112),Math.max(name==='home'?210:230,wanted));
+  return {peek:mid,mid,full:mid};
+ }
+@@ -100,16 +100,19 @@ async function renderResult(){
+   const WALK=`<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="4" r="2"/><path d="M10 21l2.4-6.2L15 17v4M8 12l2-4.2 4 1.2 2.4 3.4 2.6.6M12.4 14.8 11 9.4"/></svg>`;
+   // 지표 아이콘(선 아이콘, 글자색을 따름)
+   const ic=d=>`<svg class="mi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+-  const MICO={wait:ic('<path d="M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>'),walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>')};
++  const MICO={wait:ic('<path d="M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>'),walk:ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),sig:ic('<rect x="8" y="3" width="8" height="15" rx="1.5"/><path d="M12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3"/>'),stairs:ic('<path d="M4 19h4v-4h4v-4h4V7h4"/>'),gain:ic('<path d="M3 19 9 9l4 6 3-4 5 8z"/>'),steep:ic('<path d="M4 19h16L20 7z"/>'),pro:ic('<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.7 2.7L16 9.6"/>'),con:ic('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>')};
+   $('route-cards').classList.toggle('one',state.same);
+   for(const k of ['jjuk','short']){const c=$('card-'+k),m=R[k].m;c.hidden=k==='short'&&state.same;c.setAttribute('aria-pressed',String(state.same||state.focus===k));c.setAttribute('role','tab');c.setAttribute('aria-selected',String(state.same||state.focus===k));
+     // 경로 카드(목업 구조): 이름·선택 표시, 걷는 시간·거리, 예상 신호대기, 신호 횡단, 이 길의 장단점(상대 길과 비교)
+     const other=state.same?null:R[k==='jjuk'?'short':'jjuk'],t=other?tradeoffs(R[k],other):{pros:[],cons:[]},on=state.same||state.focus===k;
+-    const wait=m.waitKnown?`신호대기 ${waitText(m.wait)}${m.waitUnknown?` (${m.waitKnown}/${m.waitTotal}곳 확인)`:''}`:(m.waitTotal?'신호대기 정보 없음':'신호 대기 없음');   // 일부만 확인되면 몇 곳인지 함께(0초로 부풀려 보이지 않게)
+-    c.innerHTML=`<span class="rc-top"><span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span>${k==='jjuk'&&!state.same?'<em>추천</em>':''}${on?'<i class="rc-check" aria-hidden="true">✓</i>':''}</span>`+
++    const wait=m.waitKnown?`신호대기 <b>${waitText(m.wait)}</b>${m.waitUnknown?` (${m.waitKnown}/${m.waitTotal}곳 확인)`:''}`:(m.waitTotal?'신호대기 정보 없음':'신호 대기 없음');   // 일부만 확인되면 몇 곳인지 함께(0초로 부풀려 보이지 않게)
++    // 가는 막대: 두 길 중 긴 쪽(걷는 시간 + 확인된 예상 신호대기)을 꽉 찬 길이로 두고, 걷는 시간(진하게)과 예상 신호대기(옅게)를 잇는다. 점수가 아니라 시간 길이 비교
++    const tot=q=>q.walk+(q.waitKnown?q.wait:0),full=Math.max(...(state.same?[m]:[R.jjuk.m,R.short.m]).map(tot))||1,pc=v=>(100*v/full).toFixed(1)+'%';
++    c.innerHTML=`<span class="rc-top"><span class="name">${k==='jjuk'&&!state.same?'쭉고 길':'빠른 길'}</span>${k==='jjuk'&&!state.same?'<em>추천</em>':''}${on?`<i class="rc-check" aria-hidden="true">${CHECK_MARK}</i>`:''}</span>`+
+       `<span class="rc-time"><span class="mins">${mins(m.walk)}</span><small>${km(m.meters)}</small></span>`+
+-      `<span class="rc-row${m.waitKnown?'':' muted'}">${MICO.wait}${wait}</span><span class="rc-row">${MICO.sig}신호 횡단 ${m.sig}곳</span>`+
+-      [...t.pros.slice(0,2).map(x=>`<span class="rc-row pro">${esc(x)}</span>`),...t.cons.slice(0,1).map(x=>`<span class="rc-row con">${esc(x)}</span>`)].join('');}
++      `<span class="rc-bar" aria-hidden="true"><i class="w" style="width:${pc(m.walk)}"></i><i class="s" style="width:${pc(m.waitKnown?m.wait:0)}"></i></span>`+
++      `<span class="rc-rows"><span class="rc-row${m.waitKnown?'':' muted'}">${MICO.wait}<span>${wait}</span></span><span class="rc-row">${MICO.sig}<span>신호 횡단 <b>${m.sig}곳</b></span></span>`+
++      [...t.pros.slice(0,1).map(x=>`<span class="rc-row pro">${MICO.pro}<span>${esc(x)}</span></span>`),...t.cons.slice(0,1).map(x=>`<span class="rc-row con">${MICO.con}<span>${esc(x)}</span></span>`)].join('')+'</span>';}   // 목업처럼 4줄: 신호대기·횡단·장점 1·단점 1
+   setText('compare-line',state.same?'비슷한 시간 안에 계단·신호 횡단·경사를 줄이는 다른 길이 없어요':compareLine(R.short,R.jjuk));
+   {const sm=routeSummary(R.short,state.same?R.short:R.jjuk,state.same?'jjuk':state.focus);$('route-src').hidden=!sm.wait;setText('route-src',planNoteText());$('route-badge').hidden=true;   /* 카드에 장단점이 있어 배지·칩은 중복(2026-10-30 개편) */setText('route-badge-text',sm.badge);$('route-badge-ico').setAttribute('d',{stairs:'M4 19h4v-4h4v-4h4V7h4',sig:'M9 3h6a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 6.5v.1M12 10.5v.1M12 14.5v.1M12 18v3',steep:'M3 20 10 8l4 6 2-3 5 9z',gain:'M3 20 10 8l4 6 2-3 5 9z',wait:'M6 3h12M6 21h12M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9'}[sm.kind]||'M4 19h4v-4h4v-4h4V7h4');setText('route-headline',sm.headline);
+     // 장점과 늘어나는 것을 같은 크기로(작은 회색 한 줄에 단점이 몰리지 않게)
+@@ -174,6 +177,8 @@ document.addEventListener('click',e=>{
+   if(t.closest('#reset-learning')){$('reset-confirm').hidden=false;setText('settings-message','');$('reset-confirm').scrollIntoView({block:'nearest'});$('reset-confirm-no').focus();}
+   if(t.closest('#reset-confirm-no')){$('reset-confirm').hidden=true;$('reset-learning').focus();}
+   if(t.closest('#reset-confirm-yes')){resetLearning();applyPace();state.routes=null;state.tripKey=null;renderSettings();setText('settings-message','맞춰 온 걸음 속도 요약을 지웠어요.');}
++  if(t.closest('#sig-chip')){$('sig-info').hidden=!$('sig-info').hidden;}
++  if(t.closest('#sig-info-close')){$('sig-info').hidden=true;}
+   if(t.closest('#calc-basis')){setBasisOpen($('result-options').hidden);fitResultSheet();}
+   if(t.closest('#adjust-conditions')){state.condOpen=$('cond-panel').hidden;$('cond-panel').hidden=!state.condOpen;$('adjust-conditions').setAttribute('aria-expanded',String(state.condOpen));if(state.condOpen){syncCond();fitResultSheet();$('cond-panel').scrollIntoView({block:'nearest'});}else fitResultSheet();}
+   const cb=t.closest('[data-cond-budget]');if(cb){state.condBudget=+cb.dataset.condBudget;syncCond();}
+@@ -186,3 +191,5 @@ document.addEventListener('click',e=>{
+ $('auto-mode').addEventListener('change',()=>{if($('auto-mode').checked)$('manual-mode').checked=false;});
+ $('manual-mode').addEventListener('change',()=>{if($('manual-mode').checked)$('auto-mode').checked=false;});
+ $('manual-speed').addEventListener('input',updateManualOutput);
++// 글꼴이 늦게 올라오거나 카드 줄이 바뀌면 카드 높이가 달라진다. 결과 시트를 다시 맞춰 카드 아래가 잘리지 않게
++if(window.ResizeObserver)new ResizeObserver(()=>{if(current==='result'&&!document.getElementById('result-content').hidden)fitResultSheet();}).observe(document.getElementById('route-cards'));
+diff --git a/docs/prototype/src/signal-view.js b/docs/prototype/src/signal-view.js
+index 5ba3a9f..85971c9 100644
+--- a/docs/prototype/src/signal-view.js
++++ b/docs/prototype/src/signal-view.js
+@@ -1,6 +1,7 @@
+ // ---------- 신호 지도·횡단 안내 (2026-10-30 사용자 결정: 신호등이 핵심) ----------
+-// 지도에 신호 상태 아이콘을 1초마다 갱신해 보여 준다. 지금은 과거 신호 기록의 '패턴 예상'(점선 테두리)이고,
+-// 새 실시간 API가 승인·검증되면 같은 아이콘을 실시간(실선 테두리)으로 바꾼다(live-signals.js).
++// 지도에 신호 상태 아이콘을 1초마다 갱신해 보여 준다. 지금은 과거 신호 기록의 '패턴 예상'(흰 테두리 한 겹)이고,
++// 새 실시간 API가 승인·검증되면 같은 아이콘을 실시간(바깥 고리 한 겹 더)으로 바꾼다(live-signals.js).
++// 2026-10-30 디자인 검토: 점선 테두리는 밝은 지도에서 아이콘을 흐리게 보이게 해, 근거 구분은 지도 오른쪽 위 '패턴 예상' 표시와 바깥 고리로 옮겼다.
+ // 패턴은 신뢰 조건(TRUST, planConfidence)을 통과한 신호만 쓴다. 통과 못 하면 '정보 없음'.
+ // '건널 수 있어요'는 근거가 모두 있을 때만: 신뢰된 패턴 + 횡단보도 길이 + 도착 시각의 남은 고정 초록 ≥ 내 속도로 건너는 시간 + 여유.
+ // 점멸(permissive)은 초록으로 세지 않는다(의미 미확정).
+@@ -31,30 +32,44 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+   // 횡단보도 x(경로의 신호 횡단)에 t초에 도착할 때의 안내. speed: m/s
+   verdict(x, t, speed = SPEED) {
+     const p = this.predictX(x, t);
+-    if (!p) return { kind: "unknown", label: "신호 정보 없음", text: "이 횡단보도는 신호 패턴이 아직 확인되지 않았어요" };
+-    if (!p.walk) return { kind: "wait", label: "대기 예상", text: `도착하면 약 ${Math.round(p.wait)}초 기다릴 것으로 예상돼요` };
++    // short: 지도 말풍선의 한 줄 요약(자세한 설명은 text)
++    if (!p) return { kind: "unknown", label: "신호 정보 없음", short: "신호 정보 없음", text: "이 횡단보도는 신호 패턴이 아직 확인되지 않았어요" };
++    if (!p.walk) return { kind: "wait", label: "대기 예상", short: `약 ${Math.round(p.wait)}초 대기`, text: `도착하면 약 ${Math.round(p.wait)}초 기다릴 것으로 예상돼요` };
+     const rem = Math.floor(p.rem);
+-    if (!x.len) return { kind: "green", label: "초록 예상", text: `도착 때 초록 예상 · ${rem}초 남음` };
++    if (!x.len) return { kind: "green", label: "초록 예상", short: `초록 · ${rem}초 남음`, text: `도착 때 초록 예상 · ${rem}초 남음` };
+     const need = x.len / speed;
+-    if (p.rem >= need + this.MARGIN_S) return { kind: "go", label: "횡단 가능", text: `지금 속도면 건널 수 있어요(예상) · 도착 때 초록 ${rem}초 남음` };
++    if (p.rem >= need + this.MARGIN_S) return { kind: "go", label: "횡단 가능", short: `횡단 가능 · ${rem}초 남음`, text: `지금 속도면 건널 수 있어요(예상) · 도착 때 초록 ${rem}초 남음` };
+     const next = this.predictX(x, t + p.rem + 0.5);
+-    return { kind: "short", label: "초록이 짧아요", text: `도착 때 초록 ${rem}초 남음(예상) · 건너는 데 약 ${Math.ceil(need)}초${next && !next.walk ? ` · 다음 초록까지 약 ${Math.round(p.rem + next.wait)}초` : ""}` };
++    return { kind: "short", label: "초록이 짧아요", short: `초록이 짧아요 · ${rem}초 남음`, text: `도착 때 초록 ${rem}초 남음(예상) · 건너는 데 약 ${Math.ceil(need)}초${next && !next.walk ? ` · 다음 초록까지 약 ${Math.round(p.rem + next.wait)}초` : ""}` };
+   },
+ 
+-  // 아이콘: 보행(사람)·정지(손)·모름(?) × 예상(점선)·실시간(실선)
++  // 아이콘: 둥근 배지(초록 사람 = 횡단 가능, 빨강 손 = 대기 중, 회색 ? = 정보 없음). 흰 테두리 + 그림자로 밝은·어두운 지도 모두에서 또렷하게.
++  // 96px로 그려 pixelRatio 2(=48px)로 올린다(확대해도 흐리지 않게). 실시간(-l)은 바깥에 가는 고리를 하나 더 둘러 패턴 예상(-p)과 구별한다.
+   icons() {
+-    const draw = (fill, glyph, dashed) => {
+-      const n = 48, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d");
+-      g.beginPath(); g.arc(24, 24, 18, 0, 7); g.fillStyle = fill; g.fill();
+-      g.lineWidth = 3; g.strokeStyle = "#F4F2E9"; g.setLineDash(dashed ? [5, 4] : []); g.beginPath(); g.arc(24, 24, 20, 0, 7); g.stroke(); g.setLineDash([]);
++    const draw = (fill, glyph, live) => {
++      const n = 96, c = document.createElement("canvas"); c.width = c.height = n; const g = c.getContext("2d");
++      g.save(); g.shadowColor = "rgba(20,26,32,.38)"; g.shadowBlur = 8; g.shadowOffsetY = 2;
++      g.beginPath(); g.arc(48, 47, live ? 36 : 39, 0, 7); g.fillStyle = "#fff"; g.fill(); g.restore();
++      if (live) { g.lineWidth = 3; g.strokeStyle = "#fff"; g.beginPath(); g.arc(48, 47, 43, 0, 7); g.stroke(); }
++      g.beginPath(); g.arc(48, 47, live ? 31 : 34, 0, 7); g.fillStyle = fill; g.fill();
++      // 글리프는 48칸 좌표로 그리고 키운다
++      g.save(); g.translate(48, 47); g.scale(live ? 1.7 : 1.85, live ? 1.7 : 1.85); g.translate(-24, -24);
+       g.fillStyle = "#fff"; g.strokeStyle = "#fff"; g.lineCap = "round"; g.lineJoin = "round";
+-      if (glyph === "walk") { g.beginPath(); g.arc(25, 13, 3.2, 0, 7); g.fill(); g.lineWidth = 3.2; g.beginPath(); g.moveTo(24, 18); g.lineTo(22, 27); g.lineTo(18, 35); g.moveTo(22, 27); g.lineTo(27, 30); g.lineTo(29, 36); g.moveTo(23, 21); g.lineTo(18, 25); g.moveTo(24, 20); g.lineTo(30, 24); g.stroke(); }
+-      else if (glyph === "stop") { g.beginPath(); g.roundRect ? g.roundRect(17, 19, 14, 15, 4) : g.rect(17, 19, 14, 15); g.fill(); for (const fx of [17.5, 21, 24.5, 28]) { g.beginPath(); g.roundRect ? g.roundRect(fx, 11, 3, 10, 1.5) : g.rect(fx, 11, 3, 10); g.fill(); } }
+-      else { g.font = "bold 22px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 24, 25); }
++      if (glyph === "walk") {
++        g.beginPath(); g.arc(25.5, 12.5, 3.3, 0, 7); g.fill(); g.lineWidth = 3.4;
++        g.beginPath(); g.moveTo(24.5, 18); g.lineTo(23, 27); g.lineTo(27, 31); g.lineTo(28, 36.5);   // 몸통·앞다리
++        g.moveTo(23, 27); g.lineTo(20.5, 31.5); g.lineTo(17, 35.5);                                // 뒷다리
++        g.moveTo(24.2, 19.5); g.lineTo(28.5, 23.5); g.lineTo(31, 23.5);                            // 앞팔
++        g.moveTo(24.2, 19.5); g.lineTo(20, 22.5); g.lineTo(18.5, 26.5); g.stroke();                // 뒷팔
++      } else if (glyph === "stop") {
++        const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); g.fill(); };
++        rr(17, 21, 14, 14, 5); for (const fx of [17.2, 20.8, 24.4, 28]) rr(fx, 12.5, 2.8, 11, 1.4); rr(13.2, 22, 2.8, 8, 1.4);
++      } else { g.font = "700 21px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 24, 25.5); }
++      g.restore();
+       return g.getImageData(0, 0, n, n);
+     };
+-    return { "sv-walk-p": draw("#2FA866", "walk", true), "sv-stop-p": draw("#D9443F", "stop", true), "sv-unk": draw("#6B7480", "?", false),
+-             "sv-walk-l": draw("#2FA866", "walk", false), "sv-stop-l": draw("#D9443F", "stop", false) };
++    return { "sv-walk-p": draw("#2FA866", "walk", false), "sv-stop-p": draw("#D9443F", "stop", false), "sv-unk": draw("#7A8391", "?", false),
++             "sv-walk-l": draw("#2FA866", "walk", true), "sv-stop-l": draw("#D9443F", "stop", true) };
+   },
+   ensure() {
+     if (!map || !mapReady || map.getSource("sv-near")) return !!(map && map.getSource && map.getSource("sv-near"));
+@@ -62,8 +77,9 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+     const empty = { type: "FeatureCollection", features: [] };
+     map.addSource("sv-near", { type: "geojson", data: empty }); map.addSource("sv-route", { type: "geojson", data: empty });
+     // 주변 신호는 작고 흐리게, 경로 위 신호는 크게. 확대가 낮으면 주변은 숨긴다(지도를 깜빡임으로 채우지 않게)
+-    map.addLayer({ id: "sv-near", type: "symbol", source: "sv-near", minzoom: this.NEAR_ZOOM, layout: { "icon-image": ["get", "icon"], "icon-size": 0.55, "icon-allow-overlap": true }, paint: { "icon-opacity": 0.6 } });
+-    map.addLayer({ id: "sv-route", type: "symbol", source: "sv-route", minzoom: 12.5, layout: { "icon-image": ["get", "icon"], "icon-size": ["case", ["get", "next"], 1.05, 0.8], "icon-allow-overlap": true, "symbol-sort-key": ["case", ["get", "next"], 1, 0] } });
++    // 크기(48px 기준): 주변 약 20px, 경로 위 약 30px, 다음 횡단보도 약 40px
++    map.addLayer({ id: "sv-near", type: "symbol", source: "sv-near", minzoom: this.NEAR_ZOOM, layout: { "icon-image": ["get", "icon"], "icon-size": 0.42, "icon-allow-overlap": true }, paint: { "icon-opacity": 0.75 } });
++    map.addLayer({ id: "sv-route", type: "symbol", source: "sv-route", minzoom: 12.5, layout: { "icon-image": ["get", "icon"], "icon-size": ["case", ["get", "next"], 0.84, 0.62], "icon-allow-overlap": true, "icon-ignore-placement": true, "symbol-sort-key": ["case", ["get", "next"], 1, 0] } });
+     return true;
+   },
+   // 지금 이 화면에서 보여 줄 경로(결과: 선택한 길, 걷기: 걷는 길)
+@@ -118,10 +134,17 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+   legend(on) {
+     const el = $("sig-legend"); if (!el) return;
+     el.hidden = !on;
+-    if (!on) return;
+-    const live = typeof LIVE !== "undefined" && LIVE.cfg?.enabled && LIVE.markers?.size;
+-    setText("sig-src", live ? "실시간" : `패턴 예상 ${planPeriodText().replace(" 신호 기록 기준 추정", "")}`);
++    if (!on) { if ($("sig-chip")) $("sig-chip").hidden = true; return; }
++    const live = typeof LIVE !== "undefined" && LIVE.cfg?.enabled && LIVE.markers?.size, period = planPeriodText().replace(" 신호 기록 기준 추정", "");
++    setText("sig-src", live ? "실시간" : `패턴 예상 ${period}`);
+     el.querySelector(".lg-dot").classList.toggle("live", !!live);
++    // 결과 화면 오른쪽 위 근거 표시(누르면 설명)
++    const chip = $("sig-chip");
++    if (chip) {
++      chip.hidden = current !== "result"; setText("sig-chip-text", live ? "실시간" : "패턴 예상");
++      chip.querySelector(".lg-dot").classList.toggle("live", !!live);
++      setText("sig-info-text", `지도 신호 아이콘은 과거 신호 기록(${period})으로 예상한 지금 상태예요. 실시간 신호가 아니에요. '건널 수 있어요(예상)'는 패턴이 확인된 신호에서 도착할 때 남은 초록 시간이 건너는 시간보다 길 때만 보여요. 시간은 걷는 시간만이고, 계단은 지도에 표시된 곳만 세요. 건널지는 실제 신호를 보고 정해 주세요.`);
++    }
+   },
+   // 결과 화면: 선택한 길의 첫 신호 횡단에 '다음 횡단보도' 말풍선
+   showCallout() {
+@@ -130,10 +153,15 @@ var SIG = {   // var: app.js의 boot()가 이 파일보다 먼저 실행된다
+     const x = r.x.find(this.isCrossing); if (!x) return;
+     const t0 = state.mode === "actual" ? kstSec() : BASE, v = this.verdict(x, t0 + x.d / SPEED);
+     if (v.kind === "unknown") return;   // 모르는 곳은 아이콘(?)만. 말풍선으로 지도를 가리지 않는다
+-    const e = el(`sv-call ${v.kind}`, `<small>다음 횡단보도 · 출발 후 ${km(x.d)}</small><b>${esc(v.label)}</b><span>${esc(v.text)}</span>`);
+-    // 화면 가장자리면 말풍선을 안쪽으로 펼친다(잘리지 않게)
+-    const px = map.project(x.mid || x.at).x, w = map.getContainer().clientWidth, anchor = px < 110 ? "bottom-left" : px > w - 110 ? "bottom-right" : "bottom";
+-    this.callout = new maplibregl.Marker({ element: e, anchor, offset: [0, -16] }).setLngLat(x.mid || x.at).addTo(map);
++    // 목업 형식: 작은 제목, 큰 거리, 상태 한 줄(색 점 + 요약). 자세한 설명은 읽기 도구용 이름으로
++    const e = el(`sv-call ${v.kind}`, `<small>다음 횡단보도 · 도착 때 예상</small><b>${km(x.d)}</b><span class="st"><i></i>${esc(v.short || v.label)}</span>`);
++    e.setAttribute("role", "note"); e.setAttribute("aria-label", `다음 횡단보도, 출발 후 ${km(x.d)}. ${v.label}. ${v.text}`);
++    // 위 머리에 가까우면 아이콘 아래로, 화면 가장자리면 안쪽으로 펼친다(잘리지 않게). 꼬리는 늘 아이콘을 가리킨다
++    const pt = map.project(x.mid || x.at), w = map.getContainer().clientWidth, below = pt.y - headH() < 120;
++    const side = pt.x < 110 ? "left" : pt.x > w - 110 ? "right" : "";
++    e.classList.add(below ? "below" : "above"); if (side) e.classList.add("at-" + side);
++    const anchor = (below ? "top" : "bottom") + (side ? "-" + side : ""), dy = below ? 26 : -26, dx = side === "left" ? -22 : side === "right" ? 22 : 0;
++    this.callout = new maplibregl.Marker({ element: e, anchor, offset: [dx, dy] }).setLngLat(x.mid || x.at).addTo(map);
+     dynMarkers.push(this.callout);
+   },
+   start() { if (!this.timer) this.timer = setInterval(() => { try { this.tick(); } catch (e) { console.warn(e); } }, 1000); },
+diff --git a/docs/prototype/src/template.html b/docs/prototype/src/template.html
+index 80911ea..72599aa 100644
+--- a/docs/prototype/src/template.html
++++ b/docs/prototype/src/template.html
+@@ -81,14 +81,19 @@
+   <!-- ② 경로 결과 -->
+   <section class="screen" id="s-result" hidden>
+     <div class="map" id="map-result"></div>
+-    <div class="topbar trip-bar">
+-      <button class="icon-btn" data-go="home" aria-label="뒤로">‹</button>
+-      <div class="trip">
+-        <button class="trip-pt" data-search="from"><i class="pt-from"></i><span id="from-name"></span></button>
+-        <button class="trip-pt" data-search="to"><i class="pt-to"></i><span id="to-name"></span></button>
++    <!-- 2026-10-30 목업 구조: 로고 줄(로고는 그대로) + 출발·도착 입력칸 두 개 + 바꾸기 -->
++    <div class="topbar trip-bar rhead-bar">
++      <div class="rh-brand"><button class="icon-btn" data-go="home" aria-label="뒤로"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="brand">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span><button class="icon-btn" id="adjust-conditions" aria-expanded="false" aria-controls="cond-panel" aria-label="길찾기 조건"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
++      <div class="rh-trip">
++        <div class="trip">
++          <div class="trip-field"><button class="trip-pt" data-search="from"><i class="pt-from"></i><span id="from-name"></span></button><button class="trip-x" data-pick-again="from" aria-label="출발지 다시 고르기"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
++          <div class="trip-field"><button class="trip-pt" data-search="to"><i class="pt-to"></i><span id="to-name"></span></button><button class="trip-x" data-pick-again="to" aria-label="도착지 다시 고르기"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
++        </div>
++        <button class="icon-btn" id="swap" aria-label="출발과 도착 바꾸기"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V5M4 8.5 8 4.5l4 4M16 4v15M12 15.5l4 4 4-4"/></svg></button>
+       </div>
+-      <button class="icon-btn" id="swap" aria-label="출발과 도착 바꾸기">⇅</button>
+     </div>
++    <button class="sig-chip" id="sig-chip" hidden aria-label="신호 아이콘 근거 보기"><i class="lg-dot"></i><span id="sig-chip-text">패턴 예상</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></svg></button>
++    <div class="sig-info" id="sig-info" hidden role="dialog" aria-label="신호 정보 근거"><b>신호 아이콘은 무엇인가요?</b><p id="sig-info-text"></p><button class="btn btn-ghost" id="sig-info-close">닫기</button></div>
+     <div class="sheet" id="sheet-result">
+       <div class="grip-area"><div class="grip"></div></div>
+       <div class="sheet-body">
+@@ -99,6 +104,7 @@
+             <button class="rtab" data-route="jjuk" aria-pressed="true" id="card-jjuk"></button>
+             <button class="rtab" data-route="short" aria-pressed="false" id="card-short"></button>
+           </div>
++          <div class="result-extra" id="result-extra" hidden>
+           <p class="rbadge" id="route-badge" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path id="route-badge-ico" d="M4 19h4v-4h4v-4h4V7h4"/></svg><span id="route-badge-text"></span></p>
+           <h2 class="rhead" id="route-headline"></h2>
+           <p class="rsub" id="route-sub"></p>
+@@ -120,6 +126,9 @@
+             <p class="safety" id="result-safety"></p>
+             </details>
+           </div>
++          <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
++          <p class="rfoot" id="result-note"></p>
++          </div>
+           <div class="cond-panel" id="cond-panel" hidden role="group" aria-labelledby="cond-title">
+             <h3 id="cond-title">이 길찾기 조건</h3>
+             <label class="setting-row" for="cond-steps">확인된 계단 피하기<input class="switch" id="cond-steps" type="checkbox"></label>
+@@ -128,15 +137,12 @@
+             <p class="cond-pace"><span id="cond-pace">걷는 속도</span><button class="text-action" data-go="settings">걸음 설정 ›</button></p>
+             <div class="actions"><button class="btn btn-ghost" id="cond-cancel">취소</button><button class="btn btn-primary" id="cond-apply">이 조건으로 다시 찾기</button></div>
+           </div>
+-          <button class="unknown-row" id="unknown-xings" data-go="detail" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-dasharray="2.6 2.6"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 16.8v.1"/></svg><span id="unknown-xings-text"></span> <span class="go" aria-hidden="true">›</span></button>
+-          <p class="rfoot" id="result-note"></p>
+           <p class="safety" id="result-location" role="status" hidden></p>
+         </div>
+       </div>
+       <div class="sheet-footer" id="result-footer">
+         <div class="actions" id="result-actions">
+-          <button class="btn btn-ghost" id="adjust-conditions" aria-expanded="false" aria-controls="cond-panel">조건 조정</button>
+-          <button class="btn btn-primary" data-go="walk" id="start-walk">걷기 시작</button>
++          <button class="btn btn-primary btn-walk" data-go="walk" id="start-walk"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="4" r="2"/><path d="M10 21l2.4-6.2L15 17v4M8 12l2-4.2 4 1.2 2.4 3.4 2.6.6M12.4 14.8 11 9.4"/></svg>걷기 시작</button>
+         </div>
+       </div>
+     </div>
+diff --git a/scripts/build_prototype.py b/scripts/build_prototype.py
+index f0bd699..5502057 100644
+--- a/scripts/build_prototype.py
++++ b/scripts/build_prototype.py
+@@ -20,7 +20,7 @@ def main():
+     app = (SRC / "app.js").read_text(encoding="utf-8")
+     app = app.replace("/*WALKING_PROFILE*/", (SRC / "walking-profile.js").read_text(encoding="utf-8"), 1)
+     app = app.replace("/*ASPHALT_UI*/", (SRC / "screens.js").read_text(encoding="utf-8"), 1)
+-    app += "\n" + (SRC / "walk-card.js").read_text(encoding="utf-8") + "\n" + (SRC / "external-search.js").read_text(encoding="utf-8") + "\n" + (SRC / "live-signals.js").read_text(encoding="utf-8") + "\n" + (SRC / "signal-view.js").read_text(encoding="utf-8")
++    app += "\n" + (SRC / "walk-card.js").read_text(encoding="utf-8") + "\n" + (SRC / "external-search.js").read_text(encoding="utf-8") + "\n" + (SRC / "live-signals.js").read_text(encoding="utf-8") + "\n" + (SRC / "signal-view.js").read_text(encoding="utf-8") + "\n" + (SRC / "naver-compat.js").read_text(encoding="utf-8")
+     html = html.replace("/*MAPLIBRE_CSS*/", css, 1).replace("/*ASPHALT_CSS*/", (SRC / "asphalt.css").read_text(encoding="utf-8"), 1).replace("/*APP_JS*/", app, 1)
+     OUT.write_text(html, encoding="utf-8")
+     print(f"{OUT} ({len(html):,}자)")
+diff --git a/scripts/check_screens.cjs b/scripts/check_screens.cjs
+index 31b7a42..079ed68 100644
+--- a/scripts/check_screens.cjs
++++ b/scripts/check_screens.cjs
+@@ -193,25 +193,19 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.75) {
+       assert.match(await text(page, '#card-jjuk'), /\d+분/); assert.doesNotMatch(await text(page, '#card-jjuk'), /\+\d+분/, `${tag} 같은 후보에 거짓 추가 시간`);
+       assert.equal(await page.evaluate(() => map.getSource('rs')._data.features.length), 0, `${tag} 같은 후보에 점선 대안이 그려져요`);
+       assert.equal(await text(page, '#result-pace'), '내 걸음 · 아직 측정 전');
+-      assert(await visible(page, '#calc-basis')); assert.match(await text(page, '#calc-basis'), /^자세히 비교/);
+-      assert.equal(await page.getAttribute('#calc-basis', 'aria-expanded'), 'false'); assert(!(await visible(page, '#result-options')));
++      // 2026-10-30 목업 구조: 자세히 비교·제목·긴 설명은 화면에서 뺐다(카드 두 장 + 걷기 시작). 계산 값은 숨긴 칸에 그대로 남아 있다
++      assert(!(await visible(page, '#calc-basis')), `${tag} 자세히 비교 없음`); assert(!(await visible(page, '#route-headline')), `${tag} 제목 없음(카드가 대신)`);
+       assert.equal(await text(page, '#compare-line'), '비슷한 시간 안에 계단·신호 횡단·경사를 줄이는 다른 길이 없어요', `${tag} 대안 없음 문구`);
+       assert.equal(await text(page, '#card-jjuk .name'), '빠른 길', `${tag} 대안이 없으면 빠른 길 한 행`);
+       const metricText = await text(page, '#route-metrics');
+       for (const w of ['걷는 시간', '신호 횡단', '계단', '오르막', '급경사']) assert(metricText.includes(w), `${tag} 원시 지표 ${w}`);
+-      assert(await page.evaluate(() => document.getElementById('route-metrics').classList.contains('one')), `${tag} 대안 없으면 한 열`);
+-      assert(!(await visible(page, '#unknown-xings')), `${tag} 비교판에서는 미확인 횡단 행을 숨김`);
+-      assert.equal(await text(page, '#adjust-conditions'), '조건 조정'); assert.equal(await text(page, '#start-walk'), '걷기 시작');
+-      assert.equal(await text(page, '#route-headline'), '걷는 시간이 가장 짧은 길'); assert.equal(await text(page, '#route-sub'), '비슷한 시간 안에 계단·신호 횡단·경사를 줄이는 다른 길이 없어요'); assert(!(await visible(page, '#route-badge')), `${tag} 대안 없으면 배지 없음`);
+-      assert((await text(page, '#result-note')).startsWith('예상 도보 시간 · 신호 대기는 따로 표시')); assert.match(await text(page, '#route-time-note'), /걷는 시간만/); await assertInViewport(page, '#route-time-note', tag, '걷는 시간만이라는 안내(카드 바로 아래)');
+-      await assertInViewport(page, '#adjust-conditions', tag, '조건 조정'); await assertInViewport(page, '#start-walk', tag, '걷기 시작');
+-      const vis = await page.evaluate(() => document.querySelector('#s-result').innerText); assert.doesNotMatch(vis, /뛰세요|안전|건너도|한 번에|여유|~\s*12/, `${tag} 결과에 금지 문구(횡단 판단·안전·여유)`); assert.doesNotMatch(vis, /보장(?!하지)/);
++      assert.equal(await page.getAttribute('#adjust-conditions', 'aria-label'), '길찾기 조건'); assert.equal(await text(page, '#start-walk'), '걷기 시작');
++      assert.match(await text(page, '#route-time-note'), /걷는 시간만/);
++      await assertInViewport(page, '#adjust-conditions', tag, '길찾기 조건'); await assertInViewport(page, '#start-walk', tag, '걷기 시작');
++      await assertInViewport(page, '#from-name', tag, '출발 입력칸'); await assertInViewport(page, '#to-name', tag, '도착 입력칸');
++      const vis = await page.evaluate(() => document.querySelector('#s-result').innerText); assert.doesNotMatch(vis, /뛰세요|안전|건너도|한 번에|여유|~\s*12/, `${tag} 결과에 금지 문구`);
++      { const mapH = await page.evaluate(() => document.getElementById('map-result').getBoundingClientRect().height); assert(mapH > h * 0.35, `${tag} 지도가 화면의 35% 이상(${Math.round(mapH)}px)`); }
+       await mapDraw(helper, page, '#sheet-result', tag, '결과(같은 후보)');
+-      await page.click('#calc-basis'); await wait(300);   // 계산 기준 열기/닫기
+-      assert.equal(await page.getAttribute('#calc-basis', 'aria-expanded'), 'true'); assert(await visible(page, '#result-options'));
+-      assert.match(await text(page, '#result-options'), /걷는 시간만/); assert.match(await text(page, '#result-options'), /실시간/);
+-      await assertInViewport(page, '#start-walk', tag, '계산 기준을 연 뒤 걷기 시작');
+-      await page.click('#calc-basis'); await wait(200); assert(!(await visible(page, '#result-options')));
+       await assertNoOverflow(page, tag, '결과');
+       // 조건 조정: 결과 화면 안의 패널(계단 피하기·추가 허용 시간·걷는 속도). 취소하면 닫히고, 적용하면 같은 화면에서 다시 찾는다
+       await page.click('#adjust-conditions'); await wait(300); assert(await visible(page, '#cond-panel'), `${tag} 조건 패널`);
+@@ -237,39 +231,28 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.75) {
+       let f = await feat(); assert.equal(f.sel, f.want, `${tag} 선택 후보와 강조 경로가 달라요`); assert.equal(f.alt, f.other, `${tag} 점선 대안이 다른 후보가 아니에요`);
+       assert.equal(await page.evaluate(() => map.getStyle().layers.find(l => l.id === 'route-short').paint['line-color']), '#959EAC', `${tag} 빠른 길은 회색 실선`);
+       await assertInViewport(page, '#card-short', tag, '두 번째 경로 행'); await assertInViewport(page, '#start-walk', tag, '걷기 시작'); await assertInViewport(page, '#adjust-conditions', tag, '조건 조정');
+-      // 자세히 비교를 연 채 탭을 바꿔도 펼침 상태가 유지되고, 열 머리글은 스크롤해도 보인다
+-      await page.click('#calc-basis'); await wait(300);
++      // 탭(카드)을 바꾸면 선택·지도 강조만 바뀐다
+       await page.click('#card-short'); await wait(500);
+       assert.deepEqual(await page.evaluate(() => ['jjuk', 'short'].map(k => document.getElementById('card-' + k).getAttribute('aria-pressed'))), ['false', 'true']);
+-      assert(await visible(page, '#result-options'), `${tag} 탭을 바꿔도 자세히 비교가 열려 있어요`);
+       assert.match(await text(page, '#card-short'), /덜 걸어요/, `${tag} 빠른 길 카드에도 장단점`);
+-      const sticky = await page.evaluate(() => { const b = document.querySelector('#sheet-result .sheet-body'); b.scrollTop = b.scrollHeight; const h = document.querySelector('.mhead').getBoundingClientRect(), r = b.getBoundingClientRect(); return h.bottom > r.top && h.top < r.bottom; });
+-      assert(sticky, `${tag} 표를 내려도 열 머리글이 보여요`);
+-      await page.click('#xing-link'); await page.waitForSelector('#s-detail:not([hidden])');
+-      assert.match(await text(page, '#detail-list'), new RegExp('신호 횡단 ' + (await page.evaluate(() => state.routes.short.m.sig)) + '곳'), `${tag} 횡단 목록과 비교표 같은 기준`);
+-      await page.click('#s-detail [data-detail-back]'); await resultReady(page, '횡단 목록에서 돌아오기');
+-      assert(await visible(page, '#result-options'), `${tag} 돌아와도 자세히 비교가 열려 있어요`);
+-      await page.click('#calc-basis'); await wait(200);
++      assert.equal(await page.evaluate(() => document.querySelectorAll('#card-jjuk .rc-row').length), 4, `${tag} 카드는 4줄(신호대기·횡단·장점·단점)`);
+       f = await feat(); assert.equal(f.sel, f.want, `${tag} 선택을 바꾼 뒤 강조 경로`); assert.equal(f.alt, f.other);
+       await mapDraw(helper, page, '#sheet-result', tag, '결과(두 후보)');
+       const ov = await page.evaluate(() => { const sh = document.getElementById('sheet-result').getBoundingClientRect(); return [...document.querySelectorAll('#mapctl button')].filter(b => b.offsetParent).map(b => b.getBoundingClientRect()).filter(r => r.bottom > sh.top + 0.5).length; });
+       assert.equal(ov, 0, `${tag} 지도 조작 버튼이 결과 시트와 겹쳐요`);
+-      await page.click('#calc-basis'); await wait(300); assert(!(await visible(page, '#mapctl')) || (await page.evaluate(() => { const sh = document.getElementById('sheet-result').getBoundingClientRect(); return [...document.querySelectorAll('#mapctl button')].filter(b => b.offsetParent).every(b => b.getBoundingClientRect().bottom <= sh.top + 0.5); })), `${tag} 계산 기준을 열면 조작 버튼이 시트 위에 떠요`); await assertInViewport(page, '#start-walk', tag, '계산 기준 연 상태 걷기 시작'); await page.click('#calc-basis'); await wait(200);
+       await assertNoOverflow(page, tag, '결과(두 후보)');
+       // 예상 신호 대기 문구(신뢰된 패턴이 있을 때): 두 길의 대기 값을 고정해 화면 문구만 시험한다(계산은 check_walk_logic이 시험)
+       await page.click('#card-jjuk'); await wait(300);
+       await page.evaluate(() => { const R = state.routes; Object.assign(R.short.m, { wait: 130, waitKnown: 2, waitUnknown: 0, waitTotal: 2 }); Object.assign(R.jjuk.m, { wait: 80, waitKnown: 2, waitUnknown: 0, waitTotal: 2 }); DAYTYPE_NOW = 'wd'; renderResult(); });
+       await wait(800);
+       assert.equal(await text(page, '#route-headline'), '신호에서 약 50초 덜 기다릴 것으로 예상돼요', `${tag} 대기 감소 대표 문장`);
+-      assert(await visible(page, '#route-src')); assert.match(await text(page, '#route-src'), /신호 기록 기준 추정/, `${tag} 출처 표시`);
++      assert.match(await text(page, '#route-src'), /신호 기록 기준 추정/, `${tag} 출처 표시(근거 칸)`); assert.match(await text(page, '#card-jjuk'), /신호대기 1분 20초/, `${tag} 카드에 예상 신호대기`); assert.match(await text(page, '#card-short'), /신호대기 2분 10초/);
+       assert.match(await text(page, '#card-jjuk'), /더 걸어요/);
+-      await page.click('#calc-basis'); await wait(400);
+-      assert.match(await text(page, '#route-metrics'), /예상 신호 대기[\s\S]*1분 20초[\s\S]*2분 10초/, `${tag} 자세히 비교에 예상 신호 대기 행`);
++      assert.match(await text(page, '#route-metrics'), /예상 신호 대기[\s\S]*1분 20초[\s\S]*2분 10초/, `${tag} 비교 값(숨긴 칸)`);
+       assert.match(await text(page, '#wait-note'), /신호 패턴이 확인된 곳만/, `${tag} 확인된 곳만 더했다는 안내`);
+       { const all = await page.evaluate(() => document.querySelector('#phone').innerText); assert.doesNotMatch(all, /건너도|한 번에|여유|안전/, `${tag} 금지 문구`);
+         // 2026-10-30 사용자 결정: '건널 수 있어요'는 허용하되 근거가 패턴이면 반드시 '(예상)'과 함께
+         assert(!/건널 수 있어요(?!\(예상\))/.test(all), `${tag} '건널 수 있어요'에 (예상) 표시 없음`); }
+-      await page.click('#calc-basis'); await wait(200);
+       ok(`C ${tag} 쭉고 길: 두 행·추가 시간·한 줄 설명·두 열 지표·점선 대안·선택 일치·버튼 화면 안`);
+       await page.context().close();
+ 
+@@ -278,7 +261,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.75) {
+       await page.goto(BASE + '#home'); await homeReady(page);
+       assert.equal(await text(page, '#home-pace'), '내 걸음을 알아가는 중');
+       await page.click('[data-trip="demo"]'); await resultReady(page, '예시 길'); await wait(500);
+-      assert.equal(await text(page, '#result-pace'), '내 걸음을 알아가는 중'); assert(await visible(page, '#route-headline'));
++      assert.equal(await text(page, '#result-pace'), '내 걸음을 알아가는 중'); assert(await visible(page, '#card-jjuk'));
+       assert.doesNotMatch(await page.evaluate(() => document.querySelector('#s-result').innerText), /\d+\s*초/);
+       await assertInViewport(page, '#start-walk', tag, '학습 부족 결과의 걷기 시작');
+       ok(`E ${tag} 학습 부족 결과: 내 걸음을 알아가는 중 · 원시 지표`);
+diff --git a/scripts/preview.cjs b/scripts/preview.cjs
+index bca190c..53a6c7b 100644
+--- a/scripts/preview.cjs
++++ b/scripts/preview.cjs
+@@ -1,4 +1,4 @@
+ const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+ const root=path.resolve(__dirname,'../docs/prototype');
+ const types={'.html':'text/html; charset=utf-8','.json':'application/json','.js':'text/javascript','.css':'text/css','.txt':'text/plain','.bin':'application/octet-stream'};
+-http.createServer((req,res)=>{let p;try{p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400).end();return;}if(p==='/api/places'){req.query=Object.fromEntries(new URL(req.url,'http://localhost').searchParams);require('../api/places.js')(req,res);return;}if(p==='/api/signal-live'){req.query=Object.fromEntries(new URL(req.url,'http://localhost').searchParams);require('../api/signal-live.js')(req,res);return;}if(p==='/api/event'){let d='';req.on('data',c=>d+=c);req.on('end',()=>{req.body=d;require('../api/event.js')(req,res);});return;}const f=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(f,(e,b)=>{if(e){res.writeHead(404).end();return;}res.writeHead(200,{'content-type':types[path.extname(f)]||'application/octet-stream','cache-control':'no-store'});res.end(b);});}).listen(8771,'127.0.0.1',()=>console.log('Ready 8771'));
++http.createServer((req,res)=>{let p;try{p=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400).end();return;}if(p==='/api/places'){req.query=Object.fromEntries(new URL(req.url,'http://localhost').searchParams);require('../api/places.js')(req,res);return;}if(p==='/api/signal-live'){req.query=Object.fromEntries(new URL(req.url,'http://localhost').searchParams);require('../api/signal-live.js')(req,res);return;}if(p==='/api/map-config'){require('../api/map-config.js')(req,res);return;}if(p==='/api/event'){let d='';req.on('data',c=>d+=c);req.on('end',()=>{req.body=d;require('../api/event.js')(req,res);});return;}const f=path.resolve(root,'.'+(p==='/'?'/index.html':p));if(!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(f,(e,b)=>{if(e){res.writeHead(404).end();return;}res.writeHead(200,{'content-type':types[path.extname(f)]||'application/octet-stream','cache-control':'no-store'});res.end(b);});}).listen(8771,'127.0.0.1',()=>console.log('Ready 8771'));
