@@ -1,0 +1,39 @@
+{
+  "_설명": "실시간 보행 신호 지도에 쓸 '검증된' 교차로·횡단보도 목록. 여기 있고 verified=true인 횡단보도만 색을 보여 준다. 검증 기준은 docs/REALTIME_SIGNALS.md.",
+  "enabled": false,
+  "max_source_age_s": null,
+  "min_upstream_interval_s": 305,
+  "daily_upstream_budget": 200,
+  "poll_hint_s": 15,
+  "crosswalks": [],
+  "mock_crosswalks": [
+    {
+      "id": "2217",
+      "leg": "n",
+      "ll": [
+        127.03693,
+        37.50112
+      ],
+      "name": "역삼역 교차로",
+      "_note": "시험 화면용 위치(검증 안 됨). SIGNAL_LIVE_MOCK=1일 때만 쓴다"
+    },
+    {
+      "id": "2217",
+      "leg": "e",
+      "ll": [
+        127.03728,
+        37.50082
+      ],
+      "name": "역삼역 교차로",
+      "_note": "시험 화면용"
+    }
+  ],
+  "_crosswalk_형식": {
+    "id": "교차로 itstId",
+    "leg": "n|e|s|w (et=n, st=e, wt=s, nt=w)",
+    "ll": "[경도, 위도] 횡단보도 가운데",
+    "name": "표시 이름",
+    "verified": "현장·데이터 대조를 통과했을 때만 true",
+    "evidence": "검증 근거 메모"
+  }
+}

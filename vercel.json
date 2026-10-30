@@ -27,5 +27,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/signal-live.js": {
+      "includeFiles": "config/live_signals.json"
+    }
+  }
 }

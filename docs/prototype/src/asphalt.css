@@ -116,3 +116,9 @@ button,input,select{font:inherit}button{color:inherit;cursor:pointer}button:disa
 .cond-panel{margin:8px 0;padding:12px;border:1px solid var(--line);border-radius:12px}.cond-panel[hidden]{display:none}.cond-panel h3{margin:0 0 6px;font-size:15px}.cond-label{margin:10px 0 6px;font-size:13px;color:var(--muted)}.cond-pace{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:10px 0}.cond-panel .actions{margin-top:6px}
 .detail-sum{margin:12px 20px;font-size:15px}.xing .xs{color:var(--lane)}.xing .xo{color:var(--muted)}
 .trip-pt{min-height:44px}
+
+/* 실시간 보행 신호(검증된 횡단보도만). 횡단 시간 지도·예상 대기와 다른 모양: 둥근 사각 배지 + 글자 + 모양(보행=원, 정지=사각, 모름=점선) */
+.m-live{display:flex;align-items:center;gap:4px;padding:3px 7px 3px 5px;border-radius:7px;font-size:12px;font-weight:700;background:#1B2027;color:#F4F2E9;border:2px solid #7C8696;cursor:pointer;min-height:24px}
+.m-live .ml-shape{width:10px;height:10px;display:inline-block;border:2px dashed #9AA3B2;border-radius:50%}.m-live i{font-style:normal;font-weight:400;font-size:10px;color:#B7BEC8}
+.m-live.walk{border-color:#3DBE7A}.m-live.walk .ml-shape{background:#3DBE7A;border:0}.m-live.stop{border-color:#E5484D}.m-live.stop .ml-shape{background:#E5484D;border:0;border-radius:1px}
+.live-pop .maplibregl-popup-content{background:#242A32;color:#F4F2E9;border:1px solid #46505D;border-radius:10px;padding:10px 26px 10px 12px;display:grid;gap:3px;font-size:13px;max-width:240px}.live-pop small{color:#B7BEC8;font-size:11px}.live-pop .maplibregl-popup-close-button{color:#F4F2E9;font-size:18px;width:28px;height:28px}

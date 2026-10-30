@@ -521,6 +521,7 @@ function ensureMap() {
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 70, unit: "metric" }), "bottom-right");
   map.on("rotate", () => { $("ctl-north").hidden = Math.abs(map.getBearing()) < 1; });
   map.on("click", onMapClick);
+  map.on("moveend", () => { if (typeof LIVE !== "undefined") LIVE.sync(); });
   for (const l of ["sig-all"]) { map.on("mouseenter", l, () => map.getCanvas().style.cursor = "pointer"); map.on("mouseleave", l, () => map.getCanvas().style.cursor = ""); }
   return map;
 }
@@ -1233,7 +1234,7 @@ function renderWalk(demo = false, resume = false) {
   }
   walkClock = setInterval(() => { if (current === "walk" && session === gpsRequest) walkStats(free ? () => update(null) : null); }, 1000);
   let lastFix = null, previous = null, arrivalFixes = 0;
-  gpsWatch = navigator.geolocation.watchPosition(p => {
+  const onFix = p => {
     if (current !== "walk" || session !== gpsRequest) return;
     try {
       gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
@@ -1261,7 +1262,10 @@ function renderWalk(demo = false, resume = false) {
       if (arrivalFixes>=2) { showArrival(); return; }
       gpsStatus(gpsOk(gpsFix));
     } catch (err) { update(null); gpsError(err); }
-  }, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 });
+  };
+  gpsWatch = navigator.geolocation.watchPosition(onFix, err => { if (current === "walk" && session === gpsRequest) { update(null); gpsError(err); } }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 });
+  // 결과 화면까지 오며 방금(30초 안) 잡은 정확한 위치가 있으면 그것으로 바로 시작한다(위치를 다시 기다리지 않게). 이후는 watch가 이어 받는다.
+  if (gpsFix && Date.now() - gpsFix.timestamp < 30000 && gpsFix.accuracy <= 50) onFix({ coords: { longitude: gpsFix.ll[0], latitude: gpsFix.ll[1], accuracy: gpsFix.accuracy }, timestamp: gpsFix.timestamp });
   gpsStaleTimer = setInterval(() => {
     if (lastFix && Date.now() - lastFix > 30000) { $("walk-reroute").hidden = true; update(null); gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 30초 넘게 갱신이 없어요. 다시 연결해 주세요"); }
   }, 5000);
@@ -1424,6 +1428,7 @@ function show(name) {
   current = name;
   SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
   if (map) XW.sync();
+  if (typeof LIVE !== "undefined" && map) LIVE.sync();
   $("badge").hidden = true;  // 예시 표시는 숫자 옆(카드·신호 상세·공유 카드)에만 둔다
   $("mapctl").hidden = !MAP_SCREENS.includes(name); $("map-attrib").hidden = !MAP_SCREENS.includes(name);
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
@@ -1524,6 +1529,7 @@ async function boot() {
   XW.v = Math.min(1.7, Math.max(0.35, SPEED)); XW.paint();
   XW.load().catch(err => console.warn("횡단 시간 지도 자료를 못 불러왔어요", err));
   booted = true;
+  if (typeof LIVE !== "undefined") LIVE.init();
   // 위치 권한이 이미 허용돼 있으면 묻지 않고 내 위치를 지도에 표시하고 출발지로 쓴다. 허용 전에는 앱을 열자마자 묻지 않는다.
   try {
     navigator.permissions?.query({ name: "geolocation" }).then(st => {
