@@ -4,8 +4,8 @@
  "v2xSignalPhaseTimingFusionInformation": {
   "url": "https://t-data.seoul.go.kr/apig/apiman-gateway/tapi/v2xSignalPhaseTimingFusionInformation/1.0",
   "first_ok_utc": "2026-10-30T03:37:35Z",
-  "last_ok_utc": "2026-10-30T03:37:35Z",
-  "ok_calls": 1,
+  "last_ok_utc": "2026-10-30T04:13:07Z",
+  "ok_calls": 2,
   "fields": [
    "dataId",
    "eqmnId",
@@ -118,10 +118,9 @@
    "wtUtsgStatNm"
   ],
   "itst_ids": [
-   "2875"
+   "2875",
+   "2975"
   ]
  },
- "last_errors_before_success": [
-  "v2xSignalPhaseTimingFusionCurrentInfo: 404: 관리자에게 문의 바랍니다."
- ]
+ "last_errors_before_success": []
 }
