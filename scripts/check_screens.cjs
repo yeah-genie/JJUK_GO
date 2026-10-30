@@ -78,7 +78,8 @@ async function assertNoOverflow(page, tag, what) {
   assert(o.sw <= o.iw, `${tag} ${what} 가로 넘침 ${o.sw}>${o.iw}`);
   assert.deepEqual(o.bad, [], `${tag} ${what} 스크롤바가 보여요`);
 }
-async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
+// 빈 지도는 한 색이 거의 100%. 경복궁 같은 큰 녹지가 들어가면 60%를 넘을 수 있어 기본 0.75(2026-10-30, 도착지 이름표 여백을 넓힌 뒤)
+async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.75) {
   // 타일이 다 올라온 뒤에 찍는다. 올라오기 전 캡처는 지도가 비어 보여 거짓 실패가 난다.
   await page.waitForFunction(() => map && map.loaded() && !map.isMoving(), null, { timeout: 30000 }).catch(() => {});
   await wait(400);
@@ -246,7 +247,7 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       assert(sticky, `${tag} 표를 내려도 열 머리글이 보여요`);
       await page.click('#xing-link'); await page.waitForSelector('#s-detail:not([hidden])');
       assert.match(await text(page, '#detail-list'), new RegExp('신호 횡단 ' + (await page.evaluate(() => state.routes.short.m.sig)) + '곳'), `${tag} 횡단 목록과 비교표 같은 기준`);
-      await page.click('#s-detail [data-go="result"]'); await resultReady(page, '횡단 목록에서 돌아오기');
+      await page.click('#s-detail [data-detail-back]'); await resultReady(page, '횡단 목록에서 돌아오기');
       assert(await visible(page, '#result-options'), `${tag} 돌아와도 자세히 비교가 열려 있어요`);
       await page.click('#calc-basis'); await wait(200);
       f = await feat(); assert.equal(f.sel, f.want, `${tag} 선택을 바꾼 뒤 강조 경로`); assert.equal(f.alt, f.other);
@@ -314,11 +315,20 @@ async function mapDraw(helper, page, sheetSel, tag, what, limit = 0.6) {
       await assertInViewport(page, '[data-gps-retry]', tag, '위치 다시 연결'); await assertInViewport(page, '#walk-done', tag, '걷기 끝내고 기록 보기'); await assertInViewport(page, '#walk-end', tag, '경로로 돌아가기');
       await mapDraw(helper, page, '#sheet-walk', tag, '걷기', 0.9);   // 낮은 지도 띠는 넓은 녹지가 한 색일 수 있어 느슨하게(빈 지도는 100%)
       await assertNoOverflow(page, tag, '걷기');
-      ok(`E ${tag} 위치 권한 거부(걷기): 문구·다시 연결·종료 버튼`);
+      assert.doesNotMatch(await text(page, '#walk-location'), /출발지를 골라/, `${tag} 걷기 중 권한 문구에 출발지 고르기 안내 없음`);
+      assert.match(await text(page, '#walk-location'), /위치 다시 연결/, `${tag} 걷기 중 권한 문구는 다시 연결 방법`);
+      assert.match(await text(page, '#next-label'), /경로 거리/, `${tag} 위치 전에는 거리 자리에 경로 거리`); assert.doesNotMatch(await text(page, '#next-dist'), /위치 연결/);
+      // 걷는 중 횡단 목록을 봤다가 돌아오면 같은 걷기를 잇는다(기록을 끝내지 않음)
+      const trackBefore = await page.evaluate(() => { window.__tr = walkTrack; return !!walkTrack; });
+      await page.evaluate(() => go('detail')); await page.waitForSelector('#s-detail:not([hidden])');
+      await page.click('#s-detail [data-detail-back]'); await untilTrue(page, () => current === 'walk', null, '횡단 목록에서 걷기로');
+      assert(trackBefore && await page.evaluate(() => walkTrack === window.__tr), `${tag} 횡단 목록 다녀와도 같은 걷기 기록`);
+      ok(`E ${tag} 위치 권한 거부(걷기): 문구·다시 연결·종료 버튼·횡단 목록 왕복 뒤 같은 걷기`);
       await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });   // 측정 중지
-      await wait(200); assert.match(await text(page, '#walk-location'), /위치가 끊겨 측정을 잠시 멈췄어요/); assert(await visible(page, '[data-gps-retry]'));
-      await page.evaluate(() => { delete document.hidden; });
-      ok(`E ${tag} 측정 중지: 위치가 끊겨 측정을 잠시 멈췄어요 + 다시 연결`);
+      await wait(200); assert.match(await text(page, '#walk-location'), /위치 측정을 잠시 멈췄어요/); assert(await visible(page, '[data-gps-retry]'));
+      await page.evaluate(() => { delete document.hidden; document.dispatchEvent(new Event('visibilitychange')); });   // 돌아오면 누르지 않아도 다시 연결을 시도
+      await untilTrue(page, () => !/잠시 멈췄어요/.test(document.getElementById('walk-location').textContent), null, '돌아오면 자동으로 다시 연결');
+      ok(`E ${tag} 측정 중지 → 화면으로 돌아오면 자동 재연결`);
       await page.context().close();
     }
   } finally { await browser.close(); if (server) server.kill(); }

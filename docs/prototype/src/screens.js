@@ -156,7 +156,7 @@ document.addEventListener('click',e=>{
   if(t.closest('#onboarding-next')){if(onboardingStep===1){onboardingStep=2;renderOnboarding();}else finishOnboarding();}
   if(t.closest('#onboarding-skip'))finishOnboarding(true);
   if(t.closest('#onboarding-back')){onboardingStep=1;renderOnboarding();}
-  if(t.closest('[data-go="settings"]')){settingsReturn=current==='result'?'result':'home';if(current==='result')state.resultScroll=resultBody().scrollTop;}
+  if(t.closest('[data-go="settings"]')){settingsReturn=current==='result'||current==='walk'?current:'home';if(current==='result')state.resultScroll=resultBody().scrollTop;}
   if(t.closest('#settings-back'))go(settingsReturn);
   if(t.closest('#settings-apply'))applySettings();
   if(t.closest('#save-walk-card'))saveWalkCard();

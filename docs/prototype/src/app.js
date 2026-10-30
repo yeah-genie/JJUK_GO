@@ -540,7 +540,7 @@ function fit(coordsList, extra = {}) {
   const sidePanel=panel&&panel.width<phoneRect.width*.8&&panel.left>phoneRect.left+phoneRect.width*.3;
   // 홈·결과의 지도 컨테이너는 시트 위까지만 차지하므로 시트 높이를 빼지 않는다. 걷기 화면은 지도가 시트 밑까지 이어진다.
   const bounded = current === "result" || current === "home";
-  const pad = { top: bounded ? 36 : 90, bottom: sidePanel ? 40 : bounded ? 30 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 64, ...extra };
+  const pad = { top: bounded ? 36 : 90, bottom: sidePanel ? 40 : bounded ? 30 : sheetH() + 30, left: 34, right: sidePanel ? panel.width + 48 : 120, ...extra };   // 오른쪽 지도 버튼(약 56px)+도착지 이름표
   ready(() => { map.resize(); map.fitBounds(b, { padding: pad, duration: 0, maxZoom: 17 }); });
 }
 function markTrip(sims, focus, forecasts = false) {
@@ -860,8 +860,10 @@ function waitText(sec) { sec = Math.max(0, Math.round(sec)); const m = Math.floo
 // pros/cons는 비교표에 보이는 값끼리의 차이(shownDiff)로 만든다. 시간은 걷는 시간만(신호 대기 제외)이라 '빨리 도착'이라고 하지 않는다.
 function tradeoffs(me, other) {
   const a = me.m, b = other.m, pros = [], cons = [];
-  const dt = a.walk - b.walk;
-  if (dt <= -10) pros.push(`${aboutText(-dt)} 덜 걸어요`); else if (dt >= 10) cons.push(`${aboutText(dt)} 더 걸어요`);
+  // 1분이 넘는 차이는 탭에 보이는 분(mins)끼리의 차이로 말한다(탭 15분·13분인데 '2분 30초'로 나오던 불일치)
+  const dt = a.walk - b.walk, tabMin = s => Math.max(1, Math.round(s / 60)), dm = tabMin(a.walk) - tabMin(b.walk);
+  const diffText = d => Math.abs(dt) < 60 || !dm ? aboutText(Math.abs(dt)) : `약 ${Math.abs(dm)}분`;
+  if (dt <= -10) pros.push(`${diffText()} 덜 걸어요`); else if (dt >= 10) cons.push(`${diffText()} 더 걸어요`);
   const items = [["stairs", "확인된 계단", "구간", 1], ["sig", "신호 횡단", "곳", 1], ["steep", "급경사", "m", 10], ["gain", "오르막", "m", 5]];   // 비교표의 강조 기준과 같은 최소 차이
   for (const [k, name, unit, min] of items) {
     const d = shownDiff(k, other.m, me.m);   // 양수면 내가 적음
@@ -1020,6 +1022,13 @@ function requestLocation(ok,fail) {
 function gpsError(err) {
   gpsPending = false;
   const msg = err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 차단됐어요. 브라우저의 사이트 권한과 기기의 위치 설정을 확인해 주세요." : err.code === 3 ? "위치를 연결하지 못했어요. 기기에서 위치를 받지 못했어요. 내장 브라우저라면 Chrome·Safari에서 열거나 직접 선택해 주세요." : (err.code===2 ? "위치를 연결하지 못했어요. 위치 제공을 사용할 수 없어요. 기기의 위치 서비스를 켜거나 외부 브라우저에서 열어 주세요." : err.message || "위치를 연결하지 못했어요. 위치를 찾지 못했어요. 지도에서 골라 주세요");
+  if (current === "walk") {
+    // 걷기 중에는 '출발지를 골라라'가 아니라 위치를 다시 잇는 방법만 말한다
+    gpsStatus(err.code === 1 ? "위치를 연결하지 못했어요. 위치 권한이 꺼져 있어요. 브라우저의 이 사이트 위치 권한을 허용한 뒤 '위치 다시 연결'을 눌러 주세요."
+      : err.code === 2 ? "위치를 연결하지 못했어요. 기기의 위치 서비스가 꺼져 있어요. 켠 뒤 '위치 다시 연결'을 눌러 주세요."
+      : "위치를 연결하지 못했어요. 아직 위치를 받지 못했어요. 하늘이 트인 곳에서 '위치 다시 연결'을 눌러 주세요.");
+    return;
+  }
   gpsStatus(msg.includes("지도에서") ? msg : msg + " 지도에서 출발지를 골라도 돼요.");
 }
 function locate(useAsStart) {
@@ -1074,7 +1083,8 @@ function plausibleProgress(previous, fix, distance) {
 // 페이지가 사라질 때 지금까지의 걷기를 저장한다(좌표 없는 요약만). 진행 중 기록을 따로 임시 저장하지는 않는다.
 addEventListener("pagehide", () => { endWalk(); stopGPS(); });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("위치가 끊겨 측정을 잠시 멈췄어요. 화면으로 돌아와 다시 연결해 주세요"); }
+  if (document.hidden) { stopGPS(); if (current === "walk") gpsStatus("다른 화면에 있는 동안 위치 측정을 잠시 멈췄어요"); return; }
+  if (current === "walk") renderWalk(false, true);   // 돌아오면 같은 걷기를 자동으로 이어 간다('위치 다시 연결'을 누르지 않아도 됨)
 });
 
 // ---------- 출발 시각 (쭉고의 중심) ----------
@@ -1207,8 +1217,9 @@ function renderWalk(demo = false, resume = false) {
       setText("next-label", "다음 안내"); setText("next-dist", Math.round(next.d - dist) + "m"); setText("next-state", next.label);
       $("next-state").hidden = false; $("w-left-col").hidden = false;
     } else {   // 알 수 없는 방향 안내는 만들지 않는다. 남은 거리만 위에 크게 보여 준다
-      setText("next-label", "남은 거리"); setText("next-dist", left == null ? "위치 연결" : km(left)); setText("next-state", "");
-      $("next-state").hidden = true; $("w-left-col").hidden = true;
+      if (left == null) { setText("next-label", "경로 거리 · 위치 확인 중"); setText("next-dist", km(route.length)); setText("next-state", "위치를 확인하면 남은 거리를 보여 줘요"); $("next-state").hidden = false; }
+      else { setText("next-label", "남은 거리"); setText("next-dist", km(left)); setText("next-state", ""); $("next-state").hidden = true; }
+      $("w-left-col").hidden = true;
     }
     saySync();
   };
@@ -1425,7 +1436,7 @@ function show(name) {
   if (name === "signal" || name === "depart") name = state.sims ? "detail" : "home";
   if (booted && name === "me") name = "settings";
   if (booted && !readProfile().onboarded && !["splash","onboarding"].includes(name)) { onboardingTarget=name; name="onboarding"; }
-  current = name;
+  const prevScreen = current; current = name;
   SCREENS.forEach(n => { $("s-" + n).hidden = n !== name; });
   if (map) XW.sync();
   if (typeof LIVE !== "undefined" && map) LIVE.sync();
@@ -1434,7 +1445,9 @@ function show(name) {
   $("phone").style.setProperty("--sheet-h", (MAP_SCREENS.includes(name) && sheets[name] ? sheets[name].h : 0) + "px");
   clearTimeout(splashTimer);
   gpsRequest++;
-  if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); endWalk(); }
+  // 걷기 중 잠깐 보는 화면(횡단 목록·설정)으로 가면 위치만 멈추고 기록은 남겨 둔다. 돌아오면 같은 걷기를 잇는다.
+  const peek = ["detail", "settings"].includes(name) && !!walkTrack;
+  if (name !== "walk") { cancelAnimationFrame(walkTimer); stopGPS(); if (!peek) endWalk(); }
   gpsStatus("");
   if (name === "home") renderHome();
   if (name === "search") {
@@ -1443,8 +1456,8 @@ function show(name) {
     if (state.autoLocate) { state.autoLocate = false; locate(true); } else setTimeout(() => $("sq").focus(), 50);
   }
   if (name === "result") renderResult();
-  if (name === "detail") renderDetail();
-  if (name === "walk") renderWalk();
+  if (name === "detail") { state.detailReturn = prevScreen === "walk" ? "walk" : "result"; renderDetail(); }
+  if (name === "walk") renderWalk(false, !!walkTrack);
   if (name === "done") renderDone();
   if (name === "onboarding") renderOnboarding();
   if (name === "settings") renderSettings();
@@ -1490,6 +1503,7 @@ document.addEventListener("click", e => {
   if (t.closest("[data-trip='demo']")) { state.from = DEMO_FROM; state.to = DEMO_TO; state.mode = "example"; BASE = 31200; state.routes = null; state.tripKey = null; state.fixedRoute = null; state.dep = 0; go("result"); return; }
   if (t.closest("#swap")) { [state.from, state.to] = [state.to, state.from]; state.dep = 0; renderResult(); return; }
   if (t.closest("[data-search-retry]")) { renderSearchList(); return; }
+  if (t.closest("[data-detail-back]")) { go(state.detailReturn || "result"); return; }   // 걷는 중에 연 횡단 목록이면 걷기로 돌아간다
   const ps = t.closest("[data-pick-switch]");
   if (ps) { state.pick = ps.dataset.pickSwitch; $("sq").value = ""; renderSearchList(); $("sq").focus(); return; }
   if (t.closest("[data-map-pick]")) { state.mapPick = state.pick; go("home"); gpsStatus(`지도를 눌러 ${state.pick === "from" ? "출발지" : "도착지"}를 골라 주세요`); return; }
