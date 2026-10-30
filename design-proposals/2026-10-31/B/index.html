@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>쭉고 B안 경로 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<style>
+/* ---- tokens: live 쭉고 brand + signal semantics (signal colours used ONLY for signal state) ---- */
+:root{
+  --lane:#F6C343; --asphalt:#242A32; --panel:#303844; --zebra:#F4F2E9; --muted:#B7BEC8; --line:#46505D;
+  --sig-go:#2FC57A; --sig-stop:#FF5B4E; --sig-unk:#8E98A6;
+  --display:'Black Han Sans',sans-serif; --body:'IBM Plex Sans KR',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--asphalt)}
+body{font-family:var(--body);color:var(--zebra);word-break:keep-all;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--lane);outline-offset:2px}
+
+.app{position:relative;width:100vw;height:100vh;overflow:hidden}
+
+/* brand (same markup/CSS as live app) */
+.brand{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:-1px;display:inline-flex;align-items:center;gap:8px;color:var(--zebra)}
+.lane-mark{display:inline-flex;gap:4px}
+.lane-mark i{display:block;width:6px;height:15px;background:var(--lane);transform:skewX(-24deg);border-radius:1px}
+.lane-mark i+i{background:var(--muted)}
+
+/* chrome */
+.status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 32px;font-size:15px;font-weight:600;background:var(--asphalt)}
+.status .sys{display:flex;gap:6px;align-items:center}
+.status .sys i{display:block;background:var(--zebra);border-radius:2px}
+.top{position:absolute;inset:0 0 auto;z-index:20;background:var(--asphalt)}
+.headrow{height:58px;display:flex;align-items:center;gap:12px;padding:0 12px 8px 16px}
+.trip{flex:1;min-width:0;height:44px;display:flex;align-items:center;gap:8px;border:0;border-radius:22px;background:var(--panel);padding:0 16px;font-size:15px;text-align:left}
+.trip .pt{width:9px;height:9px;border-radius:50%;flex:none}
+.trip .from{border:2px solid var(--zebra)}
+.trip .to{background:var(--lane)}
+.trip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trip .arr{flex:none;width:18px;height:1px;background:var(--muted);position:relative;margin:0 2px}
+.trip .arr:after{content:"";position:absolute;right:0;top:-3px;border:3.5px solid transparent;border-left:5px solid var(--muted);border-right:0}
+
+/* map */
+#map{position:absolute;left:0;right:0;bottom:0;top:var(--top-h,102px);background:#e9e9e6}
+.maplibregl-ctrl-attrib{font-size:9px!important;opacity:.7}
+.maplibregl-ctrl-bottom-right{bottom:var(--sheet-h,320px)!important;transition:bottom .25s}
+
+/* map markers */
+.sig{width:20px;height:20px;border-radius:7px;display:grid;place-items:center;box-shadow:0 0 0 2px #fff,0 1px 4px #0005}
+.sig svg{width:14px;height:14px;fill:#fff}
+.sig.go{background:var(--sig-go)}.sig.stop{background:var(--sig-stop)}.sig.unk{background:var(--sig-unk)}
+.sig.big{width:34px;height:34px;border-radius:11px;box-shadow:0 0 0 3px #fff,0 2px 8px #0006}
+.sig.big svg{width:22px;height:22px}
+.pin-start{width:16px;height:16px;border-radius:50%;background:#fff;border:4px solid var(--asphalt);box-shadow:0 1px 3px #0004}
+.pin-end{display:flex;flex-direction:column;align-items:center}
+.pin-end b{display:block;background:var(--asphalt);color:var(--zebra);font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px;margin-bottom:4px;white-space:nowrap}
+.pin-end i{display:block;width:18px;height:18px;border-radius:50%;background:var(--lane);border:4px solid var(--asphalt)}
+.me{width:22px;height:22px;border-radius:50%;background:#3D86F7;border:3px solid #fff;box-shadow:0 0 0 10px #3d86f726,0 1px 4px #0005}
+
+.callout{position:relative;display:flex;align-items:center;gap:10px;background:var(--asphalt);color:var(--zebra);border-radius:12px;padding:8px 12px 8px 8px;box-shadow:0 4px 14px #0004;white-space:nowrap;margin-bottom:12px}
+.callout:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:var(--asphalt);border-bottom:0}
+.callout .t1{font-size:11px;color:var(--muted);display:block;line-height:1.3}
+.callout .t2{font-size:14px;font-weight:600;display:block;line-height:1.35}
+.callout .t2 em{font-style:normal;color:var(--sig-go)}
+.callout .t2 small{font-weight:400;color:var(--muted);font-size:12px}
+
+/* ---------- the decision sheet ---------- */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:15;background:var(--asphalt);border-radius:22px 22px 0 0;box-shadow:0 -6px 24px #0003;display:flex;flex-direction:column;max-height:calc(100% - var(--top-h,102px) - 120px)}
+.sheet .grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0;flex:none}
+.sheet-scroll{overflow:auto;min-height:0;flex:1;padding:0 20px;scrollbar-width:none}
+.sheet-scroll::-webkit-scrollbar{display:none}
+
+.basis{font-size:12.5px;color:var(--muted);margin:8px 0 4px;display:flex;align-items:center;gap:6px}
+.basis .pd{width:6px;height:6px;border-radius:50%;background:var(--muted);opacity:.7}
+.verdict{font-family:var(--display);font-weight:400;font-size:27px;line-height:1.22;letter-spacing:-.5px;margin:0 0 8px}
+.verdict span{display:block}
+
+/* comparison: two lanes on one shared distance axis */
+.lanes{list-style:none;margin:0;padding:0}
+.lane-row{display:grid;grid-template-columns:70px 1fr auto;align-items:center;column-gap:12px;width:100%;border:0;background:none;text-align:left;padding:7px 0;position:relative}
+.lane-row + .lane-row{border-top:1px solid #39424e}
+.lane-row .who b{display:block;font-size:15px;font-weight:600;color:var(--muted)}
+.lane-row .who small{display:block;font-size:12px;color:#8C96A3;margin-top:1px}
+.lane-row .who .rec{font-size:11px;color:var(--lane);font-weight:600;margin-left:4px}
+.lane-row[aria-pressed=true] .who b{color:var(--zebra)}
+.track{position:relative;height:22px}
+.track .rail{position:absolute;left:0;right:0;top:9px;height:4px;border-radius:2px;background:#4A5462}
+.lane-row[aria-pressed=true] .track .rail{background:var(--lane)}
+.track .end{position:absolute;top:6px;width:10px;height:10px;border-radius:50%;background:var(--asphalt);border:2.5px solid #6F7986}
+.lane-row[aria-pressed=true] .track .end{border-color:var(--lane)}
+.track .end.s{left:-3px}.track .end.e{right:-3px}
+.track .dot{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:5px;border:2px solid var(--asphalt)}
+.track .dot.go{background:var(--sig-go)}.track .dot.stop{background:var(--sig-stop)}
+.lane-row[aria-pressed=false] .track .dot{opacity:.85}
+.nums{text-align:right;min-width:86px}
+.nums .min{font-family:var(--display);font-size:24px;line-height:1;letter-spacing:-.5px;color:var(--muted)}
+.nums .min small{font-family:var(--body);font-size:13px;margin-left:1px}
+.lane-row[aria-pressed=true] .nums .min{color:var(--zebra)}
+.nums .wait{display:block;font-size:12.5px;margin-top:5px;color:var(--muted);white-space:nowrap}
+.nums .wait.has{color:#FF8A80}
+.lane-key{display:flex;gap:14px;font-size:11.5px;color:#8C96A3;margin:2px 0 0 82px}
+.lane-key i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+.foot{flex:none;display:flex;gap:10px;padding:10px 20px 24px}
+.btn{border:0;min-height:54px;border-radius:14px;font-size:16.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-more{flex:0 0 108px;background:var(--panel);color:var(--zebra);font-weight:600;font-size:15px}
+.btn-go{flex:1;background:var(--lane);color:var(--asphalt)}
+.btn-go svg{width:20px;height:20px;fill:var(--asphalt)}
+
+/* detail (progressive disclosure) */
+.detail{display:none;padding-bottom:6px}
+.app.is-detail .detail{display:block}
+.app.is-detail .lane-key{display:none}
+.app.is-detail .sheet.result{height:calc(100% - var(--top-h,102px) - 236px);max-height:none}
+.app.is-detail .verdict{font-size:22px}
+.dsec{margin-top:22px}
+.dsec h3{font-size:13px;font-weight:500;color:var(--muted);margin:0 0 8px}
+table.cmp{width:100%;border-collapse:collapse;font-size:14px}
+table.cmp th{font-weight:500;color:#8C96A3;font-size:12px;text-align:right;padding:0 0 6px}
+table.cmp th:first-child{text-align:left}
+table.cmp td{padding:9px 0;border-top:1px solid #39424e;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+table.cmp td:first-child{text-align:left;color:var(--muted)}
+table.cmp td.win{color:var(--zebra);font-weight:600}
+table.cmp col.v{width:84px}
+.xing{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 0;border-top:1px solid #39424e}
+.xing:first-of-type{border-top:0}
+.xing .sig{width:24px;height:24px;border-radius:8px;box-shadow:none}
+.xing b{font-size:14px;font-weight:600;display:block}
+.xing p{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.note{font-size:12.5px;color:#9AA3AF;line-height:1.6;margin:0}
+.link{border:0;background:none;color:var(--lane);font-size:13.5px;padding:10px 0;min-height:44px}
+
+/* ---------- walking ---------- */
+.walk-top{display:none}
+.app.is-walk .walk-top{display:block}
+.app.is-walk .headrow{display:none}
+.nextbar{padding:6px 20px 18px;display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:center;border-bottom:3px solid var(--lane)}
+.nextbar .sig{width:56px;height:56px;border-radius:16px;box-shadow:none}
+.nextbar .sig svg{width:34px;height:34px}
+.nextbar .lbl{font-size:13px;color:var(--muted);margin:0}
+.nextbar .dist{font-family:var(--display);font-size:40px;line-height:1.05;letter-spacing:-1px}
+.nextbar .state{font-size:16px;font-weight:600;margin:4px 0 0}
+.nextbar .state em{font-style:normal;color:var(--sig-go)}
+.nextbar .sub{font-size:12.5px;color:var(--muted);margin:3px 0 0}
+.walk-sheet{display:none}
+.app.is-walk .walk-sheet{display:flex}
+.app.is-walk .sheet.result{display:none}
+.walk-sheet .wrow{display:flex;align-items:center;gap:14px;padding:16px 20px 0}
+.walk-sheet .rem b{font-family:var(--display);font-size:26px;letter-spacing:-.5px}
+.walk-sheet .rem span{font-size:13px;color:var(--muted);margin-left:8px}
+.walk-sheet .track{margin:14px 20px 0}
+.walk-sheet .track .rail{background:var(--lane)}
+.walk-sheet .track .done{position:absolute;left:0;top:9px;height:4px;border-radius:2px;background:#6F7986}
+.walk-sheet .track .end{border-color:var(--lane)}
+.walk-sheet .track .end.s{border-color:#6F7986}
+.walk-sheet .track .you{position:absolute;top:3px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#3D86F7;border:3px solid #fff}
+.walk-sheet .tl{display:flex;justify-content:space-between;font-size:12px;color:#8C96A3;margin:6px 20px 0}
+.btn-end{margin-left:auto;flex:none;min-height:44px;padding:0 16px;background:var(--panel);color:var(--zebra);font-size:14px;font-weight:600;border-radius:12px}
+
+/* small phones */
+@media (max-height:700px){
+  .status{display:none}
+  .verdict{font-size:20px;margin-bottom:4px}
+  .basis{margin:6px 0 2px;font-size:12px}
+  .lane-row{padding:4px 0}
+  .nums .min{font-size:21px}.nums .wait{margin-top:3px}
+  .sheet .grip{margin-top:6px}
+  .lane-key{display:none}
+  .foot{padding:8px 16px 12px}
+  .btn{min-height:48px}
+  .sheet-scroll{padding:0 16px}
+  .headrow{padding-top:6px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="top" id="top">
+    <div class="status" aria-hidden="true"><span id="clock">14:10</span><span class="sys"><i style="width:17px;height:11px"></i><i style="width:15px;height:11px;border-radius:5px"></i><i style="width:25px;height:12px;border-radius:4px"></i></span></div>
+    <div class="headrow">
+      <span class="brand" aria-label="쭉고">쭉고<span class="lane-mark" aria-hidden="true"><i></i><i></i></span></span>
+      <button class="trip" aria-label="출발지와 도착지 바꾸기">
+        <span class="pt from"></span><span class="nm" id="from-nm">성수역</span><span class="arr"></span><span class="pt to"></span><span class="nm" id="to-nm">서울숲</span>
+      </button>
+    </div>
+    <div class="walk-top">
+      <div class="nextbar">
+        <div class="sig go" id="w-sig"></div>
+        <div>
+          <p class="lbl">다음 신호 횡단보도</p>
+          <div class="dist" id="w-dist">74m</div>
+          <p class="state" id="w-state"></p>
+          <p class="sub" id="w-sub"></p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="map" role="region" aria-label="경로 지도"></div>
+
+  <!-- RESULT / DETAIL sheet -->
+  <section class="sheet result" id="sheet" aria-label="경로 비교">
+    <div class="grip"></div>
+    <div class="sheet-scroll" id="scroll">
+      <p class="basis"><span class="pd"></span><span id="basis"></span></p>
+      <h1 class="verdict" id="verdict"></h1>
+      <div class="lanes" id="lanes" role="group" aria-label="경로 선택"></div>
+      <div class="lane-key" id="lane-key"><span><i style="background:var(--sig-stop)"></i>기다릴 신호</span><span><i style="background:var(--sig-go)"></i>바로 건널 신호</span></div>
+
+      <div class="detail" id="detail">
+        <div class="dsec">
+          <h3>두 길 자세히</h3>
+          <table class="cmp" id="cmp"></table>
+        </div>
+        <div class="dsec">
+          <h3 id="xing-h"></h3>
+          <div id="xings"></div>
+        </div>
+        <div class="dsec">
+          <h3>이 예상은 이렇게 계산해요</h3>
+          <p class="note" id="method"></p>
+          <button class="link">내 걸음 속도 재기</button>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn btn-more" id="more" aria-expanded="false">자세히 보기</button>
+      <button class="btn btn-go" id="go"><svg viewBox="0 0 24 24"><path d="M13.5 5.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7.3 7.3 0 0 0 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5 0-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg><span id="go-t">쭉고 길로 걷기 시작</span></button>
+    </div>
+  </section>
+
+  <!-- WALK sheet -->
+  <section class="sheet walk-sheet" id="wsheet" aria-label="걷는 중">
+    <div class="wrow">
+      <div class="rem"><b id="w-rem"></b><span id="w-rem2"></span></div>
+      <button class="btn btn-end">안내 끝내기</button>
+    </div>
+    <div class="track" id="w-track"></div>
+    <div class="tl"><span id="w-from"></span><span id="w-to"></span></div>
+    <div style="height:28px"></div>
+  </section>
+</div>
+
+<script>
+const ICON_WALK='<svg viewBox="0 0 24 24"><path d="M13.5 5.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7.3 7.3 0 0 0 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5 0-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>';
+const ICON_STAND='<svg viewBox="0 0 24 24"><circle cx="12" cy="4" r="2.2"/><path d="M9 7.5h6a1.5 1.5 0 0 1 1.5 1.5v5.5h-2V23h-2.2v-7h-.6v7H9.5v-8.5h-2V9A1.5 1.5 0 0 1 9 7.5z"/></svg>';
+const ICON_UNK='<svg viewBox="0 0 24 24"><text x="12" y="17.5" text-anchor="middle" font-size="16" font-weight="700" font-family="sans-serif" fill="#fff">?</text></svg>';
+
+const $=s=>document.querySelector(s);
+const fmtWait=s=>{if(!s)return '0초';const m=Math.floor(s/60),r=s%60;return (m?m+'분 ':'')+(r?r+'초':'').trim();};
+const km=m=>(m/1000).toFixed(1)+'km';
+const sigClass=x=>!x||!x.arrival?'unk':(x.arrival.kind==='wait'?'stop':'go');
+const sigIcon=c=>c==='stop'?ICON_STAND:c==='go'?ICON_WALK:ICON_UNK;
+
+// ---- geometry helpers ----
+const R=6371000,rad=d=>d*Math.PI/180;
+function hav(a,b){const dl=rad(b[1]-a[1]),dn=rad(b[0]-a[0]);const h=Math.sin(dl/2)**2+Math.cos(rad(a[1]))*Math.cos(rad(b[1]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+function cum(c){const o=[0];for(let i=1;i<c.length;i++)o.push(o[i-1]+hav(c[i-1],c[i]));return o;}
+// position at distance d along line, scaled so that total length == reported meters
+function along(c,d,total){const cs=cum(c);const k=cs[cs.length-1]/total;const t=d*k;
+  for(let i=1;i<c.length;i++){if(cs[i]>=t){const f=(t-cs[i-1])/((cs[i]-cs[i-1])||1);return {pt:[c[i-1][0]+(c[i][0]-c[i-1][0])*f,c[i-1][1]+(c[i][1]-c[i-1][1])*f],i};}}
+  return {pt:c[c.length-1],i:c.length-1};}
+function bearing(a,b){const y=Math.sin(rad(b[0]-a[0]))*Math.cos(rad(b[1]));const x=Math.cos(rad(a[1]))*Math.sin(rad(b[1]))-Math.sin(rad(a[1]))*Math.cos(rad(b[1]))*Math.cos(rad(b[0]-a[0]));return (Math.atan2(y,x)*180/Math.PI+360)%360;}
+
+const params=new URLSearchParams(location.search);
+const MODE=params.get('s')||'result'; // result | detail | walk
+let D, sel='jjuk', map, markers=[];
+
+fetch('../fixture-seongsu.json').then(r=>r.json()).then(d=>{D=d;init();});
+
+function init(){
+  $('#from-nm').textContent=D.from.name; $('#to-nm').textContent=D.to.name;
+  const app=$('#app');
+  if(MODE==='detail'){app.classList.add('is-detail');$('#more').setAttribute('aria-expanded','true');$('#more').textContent='간단히';}
+  if(MODE==='walk'){app.classList.add('is-walk');$('#clock').textContent='14:30';}
+  renderSheet(); renderDetail(); if(MODE==='walk')renderWalk();
+  syncTop();
+  buildMap();
+  $('#more').onclick=()=>{const on=app.classList.toggle('is-detail');$('#more').setAttribute('aria-expanded',on);$('#more').textContent=on?'간단히':'자세히 보기';$('#scroll').scrollTop=0;syncTop();fit();};
+  window.addEventListener('resize',()=>{syncTop();fit();});
+}
+function syncTop(){
+  const th=$('#top').offsetHeight; document.documentElement.style.setProperty('--top-h',th+'px');
+  const sh=(MODE==='walk'?$('#wsheet'):$('#sheet')).offsetHeight; document.documentElement.style.setProperty('--sheet-h',(sh+4)+'px');
+}
+
+// ---------- the decision ----------
+function verdictFor(k){
+  const a=D[k], o=D[k==='jjuk'?'fast':'jjuk'];
+  const dm=a.walk_min-o.walk_min, dw=o.wait_s-a.wait_s;
+  if(k==='jjuk') return [dm>0?`${dm}분 더 걷고,`:dm<0?`${-dm}분 덜 걷고,`:'걷는 시간은 같고,', dw>0?`신호 대기는 ${fmtWait(dw)} 줄여요`:'신호 대기는 비슷해요'];
+  return [dm<0?`${-dm}분 덜 걷지만,`:'걷는 시간은 비슷하지만,', -dw>0?`신호에서 ${fmtWait(-dw)} 더 기다려요`:'신호 대기는 비슷해요'];
+}
+function trackHTML(r,{dots=true}={}){
+  let h='<div class="rail"></div><span class="end s"></span><span class="end e"></span>';
+  if(dots) r.crossings.forEach(x=>{const p=Math.min(97,Math.max(3,x.dist_from_start_m/r.meters*100));h+=`<span class="dot ${sigClass(x)}" style="left:${p}%" title="${x.arrival.label}"></span>`;});
+  return h;
+}
+function renderSheet(){
+  $('#basis').textContent='화요일 14:10 출발 · 과거 기록으로 본 신호 예상';
+  $('#verdict').innerHTML=verdictFor(sel).map(s=>`<span>${s}</span>`).join('');
+  $('#lanes').innerHTML=['jjuk','fast'].map(k=>{const r=D[k];return `
+    <button class="lane-row" data-k="${k}" aria-pressed="${k===sel}">
+      <span class="who"><b>${r.name}${k==='jjuk'?'<span class="rec">추천</span>':''}</b><small>${km(r.meters)}</small></span>
+      <span class="track">${trackHTML(r)}</span>
+      <span class="nums"><span class="min">${r.walk_min}<small>분</small></span><span class="wait ${r.wait_s?'has':''}">신호 대기 ${fmtWait(r.wait_s)}</span></span>
+    </button>`;}).join('');
+  document.querySelectorAll('.lane-row').forEach(b=>b.onclick=()=>{sel=b.dataset.k;renderSheet();renderDetail();drawRoutes();});
+  $('#go-t').textContent=`${D[sel].name}로 걷기 시작`;
+}
+function renderDetail(){
+  const j=D.jjuk,f=D.fast;
+  const rows=[
+    ['걷는 시간',j.walk_min+'분',f.walk_min+'분',-1],
+    ['거리',j.meters.toLocaleString()+'m',f.meters.toLocaleString()+'m',-1],
+    ['예상 신호 대기',fmtWait(j.wait_s),fmtWait(f.wait_s),-1,j.wait_s,f.wait_s],
+    ['신호 횡단',j.signal_crossings+'곳',f.signal_crossings+'곳',-1,j.signal_crossings,f.signal_crossings],
+    ['전체 횡단보도',j.all_crossings+'곳',f.all_crossings+'곳',-1,j.all_crossings,f.all_crossings],
+    ['오르막',j.gain_m+'m',f.gain_m+'m',-1,j.gain_m,f.gain_m],
+    ['급경사 구간',j.steep8_m+'m',f.steep8_m+'m',-1,j.steep8_m,f.steep8_m],
+    ['계단',j.stairs+'곳',f.stairs+'곳',-1,j.stairs,f.stairs],
+  ];
+  rows[0][4]=j.walk_s;rows[0][5]=f.walk_s;rows[1][4]=j.meters;rows[1][5]=f.meters;
+  $('#cmp').innerHTML='<colgroup><col><col class="v"><col class="v"></colgroup><tr><th></th><th>쭉고 길</th><th>빠른 길</th></tr>'+
+    rows.map(r=>{const a=r[4],b=r[5];const wa=a<b,wb=b<a;return `<tr><td>${r[0]}</td><td class="${wa?'win':''}">${r[1]}</td><td class="${wb?'win':''}">${r[2]}</td></tr>`;}).join('');
+  const r=D[sel];
+  $('#xing-h').textContent=`${r.name}에서 만나는 신호`;
+  const unknown=r.signal_crossings-r.crossings.length;
+  $('#xings').innerHTML=r.crossings.map(x=>{const c=sigClass(x);return `<div class="xing"><span class="sig ${c}">${sigIcon(c)}</span><div><b>${(x.dist_from_start_m/1000).toFixed(2)}km 지점 · ${x.arrival.label}</b><p>${x.arrival.text}</p></div></div>`;}).join('')+
+    (unknown>0?`<div class="xing"><span class="sig unk">${ICON_UNK}</span><div><b>신호 ${unknown}곳은 기록이 없어요</b><p>대기 시간 계산에서 빠져 있어요</p></div></div>`:'');
+  $('#method').textContent=`신호는 실시간이 아니에요. ${D.signal_source_label.replace('패턴 예상 · ','')} 신호 기록에서 같은 요일·시간대 패턴을 보고, 시속 3.6km(아직 측정 전 기본값)로 걸어 도착할 때의 신호를 예상했어요. 걷는 시간에 신호 대기는 들어 있지 않아요.`;
+}
+
+// ---------- walking ----------
+const WALK_AT=()=>D.jjuk.crossings[0].dist_from_start_m-74;
+function renderWalk(){
+  const r=D.jjuk, x=r.crossings[0], c=sigClass(x);
+  $('#w-sig').className='sig '+c; $('#w-sig').innerHTML=sigIcon(c);
+  $('#w-dist').textContent='74m';
+  $('#w-state').innerHTML=`<em>초록 예상</em> · 도착 때 13초 남음`;
+  $('#w-sub').textContent='초록이 짧아요 · 건너는 데 약 12초 (과거 기록 예상)';
+  const at=WALK_AT(), rem=r.meters-at;
+  $('#w-rem').textContent=`${Math.round(rem)}m`; $('#w-rem2').textContent=`약 ${Math.floor(rem/60)}분 · ${D.to.name}까지`;
+  const p=at/r.meters*100;
+  $('#w-track').innerHTML=`<div class="rail"></div><div class="done" style="width:${p}%"></div><span class="end s"></span><span class="end e"></span>`+
+    r.crossings.map(x=>`<span class="dot ${sigClass(x)}" style="left:${x.dist_from_start_m/r.meters*100}%"></span>`).join('')+`<span class="you" style="left:${p}%"></span>`;
+  $('#w-from').textContent=D.from.name; $('#w-to').textContent=D.to.name;
+}
+
+// ---------- map ----------
+function buildMap(){
+  map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:[127.046,37.545],zoom:14.3,attributionControl:{compact:true},fadeDuration:0,preserveDrawingBuffer:true});
+  map.on('load',()=>{
+    document.querySelectorAll('.maplibregl-ctrl-attrib').forEach(a=>a.classList.remove('maplibregl-compact-show'));
+    const st=map.getStyle();
+    st.layers.forEach(l=>{
+      if(l.type==='symbol'&&l.layout&&l.layout['text-field']) map.setLayoutProperty(l.id,'text-field',['coalesce',['get','name:ko'],['get','name']]);
+      if(/poi|housenum|shield/i.test(l.id)) map.setLayoutProperty(l.id,'visibility','none');
+    });
+    // a touch warmer park/water so the light basemap reads as "city" not "chart"
+    st.layers.forEach(l=>{ if(l.type==='fill'&&/park|landcover_wood|landuse_park/i.test(l.id)) map.setPaintProperty(l.id,'fill-color','#DCEBD8');
+      if(l.type==='fill'&&/water/i.test(l.id)) map.setPaintProperty(l.id,'fill-color','#C9DCEB');});
+    map.addSource('nearby',{type:'geojson',data:{type:'FeatureCollection',features:D.nearby_crossings_known.map(n=>({type:'Feature',geometry:{type:'Point',coordinates:n.at}}))}});
+    map.addLayer({id:'nearby',type:'circle',source:'nearby',paint:{'circle-radius':['interpolate',['linear'],['zoom'],14,1.6,17,3],'circle-color':'#8E98A6','circle-opacity':.35}});
+    ['alt','sel'].forEach(id=>map.addSource(id,{type:'geojson',data:{type:'FeatureCollection',features:[]}}));
+    map.addSource('done',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+    map.addLayer({id:'alt-line',type:'line',source:'alt',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#7C8694','line-width':4,'line-opacity':.75,'line-dasharray':[1.2,1.6]}});
+    map.addLayer({id:'sel-case',type:'line',source:'sel',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#242A32','line-width':10}});
+    map.addLayer({id:'sel-line',type:'line',source:'sel',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#F6C343','line-width':5.5}});
+    map.addLayer({id:'done-line',type:'line',source:'done',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#8E98A6','line-width':6}});
+    drawRoutes();
+  });
+}
+const line=c=>({type:'Feature',geometry:{type:'LineString',coordinates:c}});
+function clearMarkers(){markers.forEach(m=>m.remove());markers=[];}
+function addMarker(el,ll,anchor='center'){const m=new maplibregl.Marker({element:el,anchor}).setLngLat(ll).addTo(map);markers.push(m);return m;}
+function el(html,cls){const e=document.createElement('div');if(cls)e.className=cls;e.innerHTML=html;return e;}
+
+function drawRoutes(){
+  if(!map||!map.getSource('sel'))return;
+  const r=D[sel], o=D[sel==='jjuk'?'fast':'jjuk'];
+  clearMarkers();
+  if(MODE==='walk'){
+    const at=WALK_AT(); const {pt,i}=along(r.coords,at,r.meters);
+    const passed=r.coords.slice(0,i).concat([pt]), ahead=[pt].concat(r.coords.slice(i));
+    map.getSource('sel').setData(line(ahead)); map.getSource('done').setData(line(passed));
+    map.getSource('alt').setData({type:'FeatureCollection',features:[]});
+    map.setLayoutProperty('nearby','visibility','none');
+    const x=r.crossings[0],c=sigClass(x);
+    addMarker(el(sigIcon(c),'sig big '+c),x.at);
+    addMarker(el('<b>'+D.to.name+'</b><i></i>','pin-end'),D.to.ll,'bottom');
+    addMarker(el('','me'),pt);
+    const ahead2=along(r.coords,at+60,r.meters).pt;
+    map.jumpTo({center:pt,zoom:17.1,bearing:bearing(pt,ahead2),padding:pad()});
+    // shift so the user sits low and the crossing sits mid-screen
+    map.jumpTo({center:along(r.coords,at+40,r.meters).pt,zoom:17.1,bearing:bearing(pt,ahead2),padding:pad()});
+    return;
+  }
+  map.getSource('sel').setData(line(r.coords)); map.getSource('alt').setData(line(o.coords));
+  map.getSource('done').setData({type:'FeatureCollection',features:[]});
+  addMarker(el('','pin-start'),D.from.ll);
+  addMarker(el('<b>'+D.to.name+'</b><i></i>','pin-end'),D.to.ll,'bottom');
+  // crossings on the selected route only; first one = big, with its arrival prediction
+  const xs=r.crossings.slice().sort((a,b)=>a.dist_from_start_m-b.dist_from_start_m);
+  xs.slice(1).forEach(x=>{const c=sigClass(x);addMarker(el(sigIcon(c),'sig '+c),x.at);});
+  if(xs[0]){const x=xs[0],c=sigClass(x);
+    const t2=x.arrival.kind==='wait'?`<em style="color:var(--sig-stop)">약 ${x.expected_wait_s}초 대기</em> <small>예상</small>`:
+      `<em>초록 예상</em> · 도착 때 ${(x.arrival.text.match(/(\d+)초 남음/)||[])[1]||''}초 남음`;
+    const wrap=el(`<div class="callout"><span class="sig big ${c}" style="width:30px;height:30px;box-shadow:none">${sigIcon(c)}</span><span><span class="t1">첫 신호 횡단보도 · ${km(x.dist_from_start_m)} 앞</span><span class="t2">${t2}</span></span></div><div class="sig big ${c}" style="margin:0 auto">${sigIcon(c)}</div>`);
+    wrap.style.cssText='display:flex;flex-direction:column;align-items:center';
+    addMarker(wrap,x.at,'bottom').setOffset([0,17]);
+  }
+  fit();
+}
+function pad(){const top=$('#top').offsetHeight, sh=(MODE==='walk'?$('#wsheet'):$('#sheet')).offsetHeight;
+  if(MODE==='walk')return {top:top+10,bottom:sh+10,left:20,right:20};
+  const det=$('#app').classList.contains('is-detail');
+  return {top:top+(det?62:86),bottom:sh+(det?22:34),left:34,right:34};}
+function fit(){
+  if(!map||MODE==='walk'||!D)return;
+  const all=D.jjuk.coords.concat(D.fast.coords);
+  const b=all.reduce((b,c)=>b.extend(c),new maplibregl.LngLatBounds(all[0],all[0]));
+  map.fitBounds(b,{padding:pad(),duration:0,maxZoom:16.5});
+}
+</script>
+</body>
+</html>
