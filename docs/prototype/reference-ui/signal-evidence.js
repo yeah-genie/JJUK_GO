@@ -20,20 +20,20 @@
   const phase=engine.predict(x,time);if(!phase){item.reason='방향별 예상 상태가 달라요';return item;}
   const seconds=phase.walk?phase.rem:phase.wait;
   if(!Number.isFinite(seconds)||seconds<0){item.reason='남은 시간 계산 불가';return item;}
-  item.state=phase.walk?'walk':'wait';item.trusted=true;item.remainingSeconds=Math.floor(seconds);
-  item.statusLabel=phase.walk?'초록 예상':'대기 예상';
-  item.secondsLabel=phase.walk?`지금 초록 예상 · 약 ${item.remainingSeconds}초 남음`:`다음 초록까지 약 ${Math.ceil(seconds)}초 (예상)`;
+  // 지금 시각 기준 초읽기: 'N초 뒤 빨간불/초록불'. 1초마다 다시 계산된다. 과거 기록 패턴의 예상이라 '(예상)'을 붙인다.
+  const left=Math.max(0,Math.ceil(seconds));
+  item.state=phase.walk?'walk':'wait';item.trusted=true;item.remainingSeconds=left;
+  item.statusLabel=phase.walk?'지금 초록(예상)':'지금 빨강(예상)';
+  item.countdown=phase.walk?`${left}초 뒤 빨간불`:`${left}초 뒤 초록불`;
+  item.secondsLabel=`${phase.walk?'지금 초록':'지금 빨강'} · ${item.countdown} (예상)`;
   item.reason=x.len?'현장 신호를 함께 확인하세요':'횡단 길이는 아직 미확인이에요';
   item.canCross=false;
   // 경로 위 횡단은 '지금'이 아니라 '내가 도착할 때'의 예상으로 보여 준다(경로의 예상 대기 계산과 같은 기준)
   const arrive=engine.arrival?.(x);
   if(Number.isFinite(arrive)){
    const v=engine.verdict(x,arrive,speed);
-   if(v.kind!=='unknown'){
-    item.arrival=true;item.state=v.kind==='wait'||v.kind==='short'?'wait':'walk';item.statusLabel=v.label;item.secondsLabel=v.text;item.canCross=v.kind==='go';
-    const p=engine.predict(x,arrive);item.remainingSeconds=p?Math.floor(p.walk?p.rem:p.wait):null;
-    item.sourceLabel=engine.period()+' · 도착할 때 기준';
-   }
+   // 제목은 지금 기준 초읽기, 설명 줄에 '내가 도착할 때' 예상을 덧붙인다
+   if(v.kind!=='unknown'){item.arrival=true;item.arrivalText=v.text;item.reason=v.text;item.canCross=v.kind==='go';}
   }
   return item;
  };}};

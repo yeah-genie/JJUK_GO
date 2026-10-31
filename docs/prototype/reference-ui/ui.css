@@ -18,3 +18,4 @@
 
 .find-error{margin:14px 0 4px;padding:14px 16px;border-radius:12px;background:#FFF6E0;border:1px solid #F1DDA6;color:var(--ink)}.find-error strong{display:block;font-size:14px}.find-error p{margin:4px 0 10px;font-size:12px;line-height:1.5;color:#4A5260}.find-error div{display:flex;gap:8px;flex-wrap:wrap}.find-error button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--navy);font:inherit;font-weight:700;font-size:13px}
 .ref-reroute{width:100%;margin-bottom:10px}
+.next-crossing:before,.instruction-progress{display:none!important}.next-crossing:has(.signal-disc.history) .row-copy small{color:var(--muted)}.next-crossing:has(.signal-disc.red) .row-copy small{color:var(--red)}
