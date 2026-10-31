@@ -96,6 +96,16 @@ async function main(){
  assert.equal(searchContext.refSearchHits[0].name,'new result');assert.doesNotMatch(searchHost.innerHTML,/stale result/);
  const places={refSample:false,refIcon:n=>n,esc:String};vm.createContext(places);vm.runInContext(ui.match(/function refPlaceInput[\s\S]*?\r?\n}\r?\n/)[0],places);
  assert.match(places.refPlaceInput('from',{name:'Station'}),/data-ref-clear="from"/);assert.doesNotMatch(places.refPlaceInput('from',null),/data-ref-clear/);
+ const selection={state:{},refPick:'to',store:{set(){selection.saved++;},get:()=>[]},saved:0,refShow:()=>{}};
+ vm.createContext(selection);vm.runInContext(ui.match(/function refChoose[\s\S]*?\r?\n}\r?\n/)[0],selection);
+ selection.refChoose({name:'Live place',source:'kakao',ll:[127,37.5]});assert.equal(selection.saved,0);assert.equal(selection.state.to.name,'Live place');
+ selection.refChoose({name:'Local place',ll:[127,37.5]});assert.equal(selection.saved,1);
+ const simple={state:{routes:{alt:false,short:{m:{waitUnknown:1}}}},refCard:()=>'<button>route</button>',refItinerary:()=>'<details>route detail</details>',refIcon:n=>n,esc:String};
+ vm.createContext(simple);vm.runInContext(ui.match(/function refResult[\s\S]*?\r?\n}\r?\n/)[0],simple);
+ assert.doesNotMatch(simple.refResult(),/data-ref-dep|평일 낮|ma-meta/);assert.match(simple.refResult(),/route detail/);assert.match(simple.refResult(),/안내 시작/);
+ const settings={refSample:false,refSettingsFromResult:true,refDep:0,readProfile:()=>({mode:'auto',autoEnabled:true,budgetSeconds:30}),refPace:()=>({pending:true,value:'3.6',label:'자동 맞춤'}),walkSpeed:()=>1,refIcon:n=>n,refToggle:()=>'',refDataLabel:()=>'',esc:String,store:{get:(_,fallback)=>fallback}};
+ vm.createContext(settings);vm.runInContext(ui.match(/function refSettings[\s\S]*?\r?\n}\r?\n/)[0],settings);
+ assert.match(settings.refSettings(),/<details class="manual-speed">/);assert.match(settings.refSettings(),/data-ref-dep="300"/);assert.match(settings.refSettings(),/<details class="settings-notes">/);
  const rank=ui.match(/pickAlternative=function[\s\S]*?\r?\n};/)[0];
  const route=(steep,gain,walk)=>({m:{steep,gain,walk},steps:[[1,2,{f:[0,0,steep],cls:0}]]});
  const normal=route(200,10,100),gentle=route(90,12,140),rejected=route(0,0,1000);rejected.rejected=true;

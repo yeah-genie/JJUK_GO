@@ -1439,12 +1439,12 @@ async function renderSearchList() {
   $("search-list").innerHTML = res.length ? res.map((p, i) => {
     return `<button class="res-item" data-res="${i}"><b>${hl(p.name, q)}</b><small>${esc(p.kind)}${p.near ? ` · ${esc(p.near)} 근처` : ""}</small>${kmCell(p)}</button>`;
   }).join("") : `<div class="empty-state"><b>‘${esc(q.trim())}’에 맞는 곳이 없어요</b><p>역·동네 이름으로 찾거나, 아래 공개 검색으로 더 찾아볼 수 있어요.</p><button class="btn btn-ghost" data-map-pick>지도에서 직접 고르기</button></div>`;
-  $("search-list").insertAdjacentHTML("beforeend",`<button class="btn btn-secondary" id="external-search">공개 지도에서 더 찾아보기</button><p class="note">누르면 검색어를 Photon에 보내요. 현재 GPS 위치는 보내지 않아요.</p>`);
+  $("search-list").insertAdjacentHTML("beforeend",`<button class="btn btn-secondary" id="external-search">가게·건물 더 찾기</button><p class="note">누르면 검색어를 외부 장소검색에 보내요. 현재 GPS 위치는 보내지 않아요.</p>`);
 }
 function choosePlace(p) {
   $("result-location").hidden = true;
   const place = { name: p.name, sub: p.kind && p.kind !== "역" ? p.kind : "", ll: p.ll, kind: p.kind };
-  if (!p.me) {
+  if (!p.me && p.source !== 'kakao') {
     const recent = store.get("recent", []).filter(r => r.name !== p.name);
     store.set("recent", [{ name: p.name, kind: p.kind, ll: p.ll }, ...recent].slice(0, 6));
   }
