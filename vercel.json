@@ -35,12 +35,15 @@
   },
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/reference-ui/index.html"
-    },
-    {
       "source": "/classic",
       "destination": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/reference-ui/",
+      "permanent": false
     }
   ]
 }
