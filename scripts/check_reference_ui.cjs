@@ -100,7 +100,7 @@ async function main(){
  vm.createContext(selection);vm.runInContext(ui.match(/function refChoose[\s\S]*?\r?\n}\r?\n/)[0],selection);
  selection.refChoose({name:'Live place',source:'kakao',ll:[127,37.5]});assert.equal(selection.saved,0);assert.equal(selection.state.to.name,'Live place');
  selection.refChoose({name:'Local place',ll:[127,37.5]});assert.equal(selection.saved,1);
- const simple={state:{routes:{alt:false,short:{m:{waitUnknown:1}}}},refCard:()=>'<button>route</button>',refItinerary:()=>'<details>route detail</details>',refIcon:n=>n,esc:String};
+ const simple={state:{routes:{alt:false,short:{m:{waitUnknown:1}}}},refCard:()=>'<button>route</button>',refItinerary:()=>'<details>route detail</details>',refIsStation:()=>false,refIcon:n=>n,esc:String};
  vm.createContext(simple);vm.runInContext(ui.match(/function refResult[\s\S]*?\r?\n}\r?\n/)[0],simple);
  assert.doesNotMatch(simple.refResult(),/data-ref-dep|평일 낮|ma-meta/);assert.match(simple.refResult(),/route detail/);assert.match(simple.refResult(),/안내 시작/);
  const settings={refSample:false,refSettingsFromResult:true,refDep:0,readProfile:()=>({mode:'auto',autoEnabled:true,budgetSeconds:30}),refPace:()=>({pending:true,value:'3.6',label:'자동 맞춤'}),walkSpeed:()=>1,refIcon:n=>n,refToggle:()=>'',refDataLabel:()=>'',esc:String,store:{get:(_,fallback)=>fallback}};

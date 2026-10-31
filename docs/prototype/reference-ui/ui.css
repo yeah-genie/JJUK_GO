@@ -129,3 +129,13 @@
 /* 패턴만 확인된(검증 중) 신호: 색은 같지만 숫자 배지를 흰 바탕·점선으로 구분 */
 .sig-sec.tentative{background:#fff;color:var(--navy);border:1.5px dashed var(--navy);line-height:15px}
 .signal-disc.tentative{opacity:.85}
+/* 지하철 실시간 도착 */
+.arr{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;max-height:220px;overflow:auto}
+.arr-route{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:0;max-height:none;background:#fff}
+.arr-head{display:flex;align-items:center;gap:6px;font-size:14px;margin-bottom:6px}.arr-head .mi{font-size:18px;color:var(--navy)}
+.arr-group{padding:6px 0;border-bottom:1px solid var(--line)}.arr-group:last-of-type{border-bottom:0}
+.arr-line{display:flex;align-items:center;gap:6px;font-size:13px}.arr-line i{width:10px;height:10px;border-radius:50%;flex:none}.arr-line small{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arr-row{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:3px 0 0 16px;font-size:13px;font-weight:700}.arr-row small{font-weight:500;color:var(--muted);font-size:11px}
+.arr-row em{font-style:normal;font-size:11.5px;font-weight:800;padding:1px 6px;border-radius:6px;margin-left:auto}
+.arr-row em.ok{background:#E6F4EC;color:#2F6B45}.arr-row em.tight{background:#FFF2C7;color:#6B4F00}.arr-row em.miss{background:#F1F2F4;color:#6B7480}
+.arr-note{font-size:11px;color:var(--muted);margin:6px 0 0;word-break:keep-all}

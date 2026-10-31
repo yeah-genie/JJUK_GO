@@ -157,10 +157,42 @@ function refPlaceInput(kind,item){
  return `<div class="place-input"><button class="place-select" data-ref-pick="${kind}">${content}</button>${item?`<button class="place-clear" data-ref-clear="${kind}" aria-label="${label} 지우기">${refIcon('close')}</button>`:from?`<button class="place-clear" data-ref-action="gps" aria-label="내 위치로 출발">${refIcon('my_location')}</button>`:refIcon('chevron_right')}</div>`;
 }
 // ---------- 홈: 네이버 지도처럼 지도가 첫 화면. 위 검색창, 장소를 고르면 아래 장소 카드(출발/도착). 쭉고만의 것: 주변 신호 남은 초 ----------
+// ---------- 지하철 실시간 도착(서울 열린데이터광장) ----------
+// 실시간 도착은 제공기관 값(실시간). 걷는 시간·신호 대기는 쭉고 예상. 둘을 합쳐 '이번 열차 / 다음 열차'를 고른다. 뛰라고 하지 않는다.
+const REF_STATION_INSIDE=120;   // 역 입구→승강장 이동 가정(역마다 다름, 화면에 '가정'이라고 적는다)
+let refArr={station:null,at:0,data:null,timer:null};
+const refIsStation=p=>!!p&&(p.kind==='역'||/지하철/.test(p.kind||'')||/역$/.test(p.name||'')&&/역|지하철/.test(p.sub||p.kind||''));
+async function refLoadArrivals(name){
+ if(refArr.station===name&&Date.now()-refArr.at<20000)return refArr.data;
+ try{const r=await fetch('/api/subway-arrival?station='+encodeURIComponent(name));const j=await r.json();refArr={...refArr,station:name,at:Date.now(),data:j};}catch{refArr={...refArr,station:name,at:Date.now(),data:{error:'지하철 실시간 정보에 연결하지 못했어요.'}};}
+ return refArr.data;
+}
+function refArrRows(data,walkS){
+ if(!data)return '<p class="arr-note">실시간 도착을 불러오는 중…</p>';
+ if(data.enabled===false)return '';
+ if(data.error)return `<p class="arr-note">${esc(data.error)}</p>`;
+ const age=(Date.now()-refArr.at)/1000,list=(data.arrivals||[]).filter(a=>a.seconds!=null||a.message);
+ if(!list.length)return `<p class="arr-note">${esc(data.note||'지금은 도착 예정 열차 정보가 없어요(운행 시간 밖일 수 있어요).')}</p>`;
+ const groups=new Map();for(const a of list){const k=a.line+'|'+a.updown;if(!groups.has(k))groups.set(k,[]);if(groups.get(k).length<2)groups.get(k).push(a);}
+ const need=walkS!=null?walkS+REF_STATION_INSIDE:null;
+ const farNote=need!=null&&list.every(a=>a.seconds!=null&&a.seconds-age<need)?`<p class="arr-note">역까지 약 ${Math.round(need/60)}분이라 지금 보이는 열차는 타기 어려워요. 가까워지면 다시 확인해 드려요.</p>`:'';
+ return farNote+[...groups.values()].map(g=>{const a0=g[0];let pickShown=false;
+  return `<div class="arr-group"><div class="arr-line"><i style="background:${esc(a0.color)}"></i><strong>${esc(a0.line)}</strong><small>${esc((a0.heading||'').replace(/\s*-\s*/,' → '))}</small></div>${g.map(a=>{
+   const left=a.seconds!=null?Math.max(0,Math.round(a.seconds-age)):null,txt=left!=null?(left<30?'곧 도착':`${Math.floor(left/60)}분${left%60?` ${left%60}초`:''} 후`):a.message;
+   let fit='';if(need!=null&&left!=null){const margin=left-need;if(margin<0)fit='<em class="miss">못 탈 것 같아요</em>';else if(margin<60)fit='<em class="tight">빠듯해요(예상)</em>';else{fit=`<em class="ok">여유 약 ${Math.floor(margin/60)}분(예상)${pickShown?'':' · 이 열차 기준'}</em>`;pickShown=true;}}
+   return `<div class="arr-row"><span>${esc(txt)}</span><small>${esc(a.position||'')}${a.last?' · 막차':''}</small>${fit}</div>`;}).join('')}</div>`;}).join('')+`<p class="arr-note">실시간 · ${esc(data.source||'')}${need!=null?` · 걷는 시간(신호 대기 포함 예상) + 역 안 이동 약 ${REF_STATION_INSIDE/60}분 가정`:''}</p>`;
+}
+function refPaintArrivals(){
+ const host=document.getElementById('ref-arr');if(!host)return;
+ const station=host.dataset.station,r=state.routes?.[state.focus],walkS=refScreen==='walking'&&!refNavigating&&r?refTotal(r):null;
+ if(refArr.station!==station||Date.now()-refArr.at>20000)refLoadArrivals(station).then(()=>{if(document.getElementById('ref-arr')===host)host.innerHTML=refArrRows(refArr.data,walkS);});
+ else host.innerHTML=refArrRows(refArr.data,walkS);
+}
 function refMapHome(){
  const recent=refRecent(),trusted=refSignals.filter(x=>x.trusted||x.tentative).length,p=refPlace;
  const sheet=p?`<div class="nm-place"><button class="icon-button nm-close" data-ref-action="place-close" aria-label="장소 닫기">${refIcon('close')}</button>
    <strong>${esc(p.name)}</strong><small>${esc([refHitDist(p),p.sub||p.kind||''].filter(Boolean).join(' · '))}</small>
+   ${refIsStation(p)?`<div class="arr" id="ref-arr" data-station="${esc(p.name)}"><p class="arr-note">실시간 도착을 불러오는 중…</p></div>`:''}
    <div class="nm-place-btns"><button class="white-button" data-ref-action="place-from">출발</button><button class="yellow-button" data-ref-action="place-to">${refIcon('directions_walk')}도착</button></div></div>`
   :refFindError?`<div class="find-error" role="alert"><strong>${esc(refFindError.title)}</strong><p>${esc(refFindError.text||'')}</p><div>${refFindError.retry?'<button data-ref-action="find">다시 시도</button>':''}<button data-ref-action="home-search">${refFindError.pick==='from'?'출발지':'도착지'} 다시 고르기</button></div></div>`
   :`<div class="nm-home-card"><div><strong>${refIcon('traffic')}주변 신호</strong><small id="ref-home-signal">${trusted?`남은 시간을 아는 신호 ${trusted}곳 · 아이콘 숫자는 남은 초(예상)`:'지도를 움직여 주변 신호를 찾아보세요 · 실시간 아님'}</small></div><button class="yellow-button nm-route" data-ref-action="home-search">${refIcon('directions')}길찾기</button></div>`;
@@ -339,7 +371,7 @@ function refResult(){
   <button class="icon-button" data-ref-action="swap-find" aria-label="출발 도착 바꾸기">${refIcon('swap_vert')}</button></header>
  <div class="map-buttons"><button data-ref-action="recenter" aria-label="내 위치">${refIcon('my_location')}</button><button data-ref-action="layers" aria-label="경로 전체 보기">${refIcon('route')}</button></div>
  <div class="ma-sheet"><div class="ma-sheet-head"><span><strong>걷기 경로</strong></span><span class="ma-head-btns"><button data-ref-action="share" aria-label="경로 공유">${refIcon('share')}</button><button data-ref-action="conditions">${refIcon('tune')}조건</button></span></div>
-  <div class="ma-cards">${cards}${refItinerary()}</div>
+  <div class="ma-cards">${cards}${refIsStation(state.to)?`<div class="arr arr-route"><div class="arr-head">${refIcon('subway')}<strong>${esc(state.to.name)} 실시간 도착</strong></div><div id="ref-arr" data-station="${esc(state.to.name)}"><p class="arr-note">실시간 도착을 불러오는 중…</p></div></div>`:''}${refItinerary()}</div>
   ${R&&[R.short,R.alt?R.jjuk:null].filter(Boolean).some(x=>x.m.waitUnknown)?'<p class="ma-note compact-note">시간을 모르는 신호의 대기는 제외한 예상이에요.</p>':''}
   <button class="yellow-button ma-start" data-ref-action="start">${refIcon('navigation')}안내 시작</button></div></section>`;
 }
@@ -547,7 +579,7 @@ function refShow(screen){
  clearTimeout(refSplashTimer);refMapEpoch++;refCloseSignal();refNaverHandle?.destroy();refNaverHandle=null;
  if(refScreen==='walking'&&screen!=='walking'&&!refSample){stopGPS();endWalk();refKeepAwake(false);}
  refClearMarkers();refScreen=screen;current=screen==='walking'?'walk':screen==='summary'?'done':screen;
- const views={home:refHome,search:refSearch,settings:refSettings,walking:refWalking,summary:refSummary,splash:refSplash,share:refShare};refRoot.innerHTML=views[screen]();refFitSheet();
+ const views={home:refHome,search:refSearch,settings:refSettings,walking:refWalking,summary:refSummary,splash:refSplash,share:refShare};refRoot.innerHTML=views[screen]();refFitSheet();if(!refSample)refPaintArrivals();
  if(screen==='share')document.fonts.ready.then(()=>{if(refScreen==='share')refPaintPoster();});
  document.title=`쭉고 · ${screen}${refSample?' · 시각 검증용 예시':''}`;
  if(screen==='search'){refDoSearch(document.getElementById('ref-query').value);if(!refSample)document.getElementById('ref-query').focus({preventScroll:true});}
@@ -779,6 +811,7 @@ setInterval(()=>{
   if(out)out.closest('button').querySelector('.row-copy strong').textContent=next?'다음 횡단보도':'횡단 정보';
  }
  if(refScreen==='home'&&!refSample){const hs=document.getElementById('ref-home-signal'),n=refSignals.filter(x=>x.trusted||x.tentative).length;if(hs)hs.textContent=n?`남은 시간을 아는 신호 ${n}곳 · 아이콘 숫자는 남은 초(예상)`:'지도를 움직여 주변 신호를 찾아보세요 · 실시간 아님';if(refRoot.dataset.mapProvider!=='naver')for(const{item,elm}of refSignalMarkers){const sc=elm.querySelector('.sig-sec');if(sc&&Number.isFinite(item.remainingSeconds))sc.textContent=item.remainingSeconds;}}
+ if(document.getElementById('ref-arr'))refPaintArrivals();
  if(gpsFresh()&&refPendingRecenter){if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);refPendingRecenter=false;}
  if(refScreen==='home'&&state.from){const n=document.getElementById('ref-origin');if(n)n.textContent=state.from.name;}
  const gpsMessage=$('walk-location')?.textContent||$('location-status')?.textContent||$('search-location')?.textContent||'';
