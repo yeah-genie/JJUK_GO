@@ -109,9 +109,10 @@
     const classes = {walk:'',wait:'red',unknown:'gray'};
     const signalHTML = (x, large = false) => {
       const state = statusOf(x), size = large ? 45 : options.summary ? 28 : 25;
-      let html = `<button type="button" aria-label="${escape(x.label||'횡단보도')} 신호 정보" class="signal-disc ${classes[state]}${x.trusted?' estimated':''}${large?'':options.summary?' summary-marker':' faded'}">${icon('directions_walk')}</button>`;
+      const history=state==='unknown'&&!!x.historyLabel;
+      let html = `<button type="button" data-ref-signal-key="${escape(x.key||'')}" aria-label="${escape(x.label||'횡단보도')} 신호 정보${history?' · 과거 기록, 현재 신호 아님':''}" class="signal-disc ${history?'history':classes[state]}${x.trusted?' estimated':''}${large?'':options.summary?' summary-marker':' faded'}">${icon(history?'history':'directions_walk')}</button>`;
       if (large) {
-        const distance = Number.isFinite(x.distanceM) ? Math.max(0,Math.round(x.distanceM))+'m' : '미확인';
+        const distance = Number.isFinite(x.distanceM) ? Math.max(0,Math.round(x.distanceM))+'m' : x.historyLabel?'과거 기록':x.crossingLength?'약 '+x.crossingLength+'m 횡단':'신호 위치';
         const remaining = Number.isFinite(x.remainingSeconds) ? Math.max(0,Math.floor(x.remainingSeconds)) : null;
         const message = x.secondsLabel || (state === 'walk' && remaining !== null ? `초록 예상 · ${remaining}초 남음` : state === 'wait' ? '대기 예상 · 현장 신호 확인' : '현장 신호를 확인하세요');
         html = `<div class="crossing-marker"><div class="signal-callout"><small>${escape(x.label || '다음 횡단보도')}</small><strong>${distance}</strong><p style="color:${state==='walk'?'#2FA866':state==='wait'?'#D9443F':'#718096'}">${message}</p></div>${html}</div>`;
@@ -163,6 +164,8 @@
         if(typeof map.setCenter==='function')map.setCenter(latLng(item.ll));
         if(typeof map.panBy==='function')map.panBy(new n.Point(0,-80));
         signalPopup.setContent(options.signalHTML(item));signalPopup.open(map,latLng(item.ll));
+        const close=signalPopup.getContentElement()?.querySelector('[data-ref-action="close-signal"]');
+        if(close)close.onclick=e=>{e.preventDefault();e.stopPropagation();options.onSignalClose?.();};
         host.classList.add('signal-detail-open');
       },
       closeSignal(){signalPopup?.close();selectedSignal=null;host.classList.remove('signal-detail-open');},
@@ -178,7 +181,7 @@
         const existing=new Set(signalMarkers.map(x=>x.item.key));
         for(const item of items)if(validLL(item.ll)&&!existing.has(item.key))signal(item,item.key===options.next?.key);
         for(const entry of signalMarkers){const item=byKey.get(entry.item.key);if(!item)continue;entry.item=item;const nextIcon=signalHTML(item,entry.large);if(nextIcon.content!==entry.html){entry.marker.setIcon(nextIcon);entry.html=nextIcon.content;}}
-        if(selectedSignal&&signalPopup){const current=byKey.get(selectedSignal.key);if(current){selectedSignal=current;const node=signalPopup.getContentElement(),strong=node?.querySelector('strong'),p=node?.querySelector('p');if(strong)strong.textContent=current.trusted?current.secondsLabel:current.statusLabel;if(p)p.textContent=!current.trusted&&current.historySummary?current.historySummary+' · '+current.reason:current.reason;}}
+        if(selectedSignal&&signalPopup){const current=byKey.get(selectedSignal.key);if(current){selectedSignal=current;const node=signalPopup.getContentElement(),strong=node?.querySelector('strong'),p=node?.querySelector('p');if(strong)strong.textContent=options.signalTitle?.(current)||(current.trusted?current.secondsLabel:current.statusLabel);if(p)p.textContent=options.signalDescription?.(current)||current.reason;}}
       },
       resize,
       fitRoute() { if (!destroyed && coords.length > 1) map.fitBounds(coords.map(latLng), options.summary ? {top:35,right:35,bottom:35,left:35,maxZoom:17} : {top:180,right:70,bottom:85,left:55,maxZoom:17}); },

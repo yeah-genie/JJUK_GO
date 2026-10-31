@@ -1,12 +1,14 @@
 """Build the isolated image-reference prototype; never writes the production entry."""
 import re
 from pathlib import Path
+from build_reference_signal_facts import main as build_signal_facts
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / 'docs/prototype/src'
 OUT = ROOT / 'docs/prototype/reference-ui'
 
 def main():
+    build_signal_facts()
     app = (SRC / 'app.js').read_text(encoding='utf-8')
     app = app.replace('/*WALKING_PROFILE*/', (SRC / 'walking-profile.js').read_text(encoding='utf-8'), 1)
     app = app.replace('/*ASPHALT_UI*/', (SRC / 'screens.js').read_text(encoding='utf-8'), 1)

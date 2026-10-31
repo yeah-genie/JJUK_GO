@@ -6,14 +6,17 @@
   const meta=engine.meta(id),direction=x.dir?engine.direction(x.dir):dirs.length?'방향 후보':x.locationOnly?'위치 정보':'방향 미연결';
   const name=meta?.name&&!meta.name.includes('\uFFFD')?meta.name:id==='unmapped'?'신호 횡단보도':'주변 교차로';
   const label=name+' · '+direction;
-  const item={key:id+':'+(x.dir||dirs.join(','))+':'+(x.mid||x.at||x.ll).join(','),id,ll:x.mid||x.at||x.ll,label,state:'unknown',trusted:false,remainingSeconds:null,statusLabel:'신호 상태 미확인',secondsLabel:'남은 시간 미확인',sourceLabel:engine.period(),reason:'이 시간대 기록 없음',raw:x};
+  const item={key:id+':'+(x.dir||dirs.join(','))+':'+(x.mid||x.at||x.ll).join(','),id,ll:x.mid||x.at||x.ll,label,state:'unknown',trusted:false,remainingSeconds:null,statusLabel:'시간 자료 없음',secondsLabel:'현재 신호는 알 수 없어요',sourceLabel:engine.period(),reason:'이 요일·시간의 신호 기록이 없어요',raw:x};
+  if(Number.isFinite(x.len)&&x.len>0&&Number.isFinite(speed)&&speed>0){item.crossingLength=Math.round(x.len);item.crossingSeconds=Math.ceil(x.len/speed);item.geometrySummary=`지도상 횡단 약 ${item.crossingLength}m · 걸어서 약 ${item.crossingSeconds}초`;}
   if(!dirs.length){item.reason=x.locationOnly?'위치는 있지만 시간·횡단 방향 정보가 없어요':'횡단 방향 미연결';item.statusLabel=x.locationOnly?'시간 정보 없음':item.statusLabel;if(x.locationOnly)item.sourceLabel='신호 위치 자료 · 현재 시간 정보 없음';return item;}
   const records=dirs.map(d=>engine.plan(id,time,d));
-  if(records.every(r=>!r))return item;
-  const lengths=records.filter(r=>r&&(r.observed_samples||0)>=900&&(r.test_samples||0)>=300&&(r.holdout_accuracy||0)>=.95&&(r.impurity??1)<=.02).flatMap(r=>(r.win||[]).map(([a,b])=>b-a)).filter(n=>Number.isFinite(n)&&n>0);
-  if(lengths.length){const lo=Math.round(Math.min(...lengths)),hi=Math.round(Math.max(...lengths));item.historySummary=`기록상 초록 구간 약 ${lo===hi?lo:lo+'–'+hi}초 (이력 추정)`;item.statusLabel='신호 기록 있음';}
+  const qualified=r=>r&&(r.observed_samples||0)>=900&&(r.test_samples||0)>=300&&(r.holdout_accuracy||0)>=.95&&(r.impurity??1)<=.02&&r.c>0&&Math.abs(r.c-Math.round(r.c))<=.06&&r.win?.length&&r.win.every(([a,b])=>a>=0&&b>a&&b<=r.c);
+  const otherPeriod=!records.every(qualified),durations=otherPeriod?dirs.map(d=>engine.history?.(id,d)):records;
+  const lengths=durations.every(qualified)?durations.flatMap(r=>r.win.map(([a,b])=>b-a)):[];
+  if(lengths.length){const lo=Math.round(Math.min(...lengths)),hi=Math.round(Math.max(...lengths));item.historySummary=`기록상 초록 구간 약 ${lo===hi?lo:lo+'–'+hi}초 (이력 추정)`;item.historyLabel=`과거 초록 약 ${lo===hi?lo:lo+'–'+hi}초`;item.statusLabel=item.historyLabel;item.secondsLabel=item.historyLabel+' · 현재 신호 아님';const dates=[...new Set(durations.filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&Number.isFinite(r.start)).map(r=>r.date.slice(5)+' '+Math.floor(r.start/3600)+'시'))];if(dates.length)item.sourceLabel=dates.join(', ')+' 기록으로 추정'+(otherPeriod?' · 다른 요일·시간':'');}
+  if(records.every(r=>!r)){if(item.historyLabel)item.reason='다른 시간의 과거 기록이에요. 현재 신호와 남은 시간은 알 수 없어요';else item.sourceLabel='보행 지도 · 이 요일·시간의 신호 기록 없음';return item;}
   if(records.some(r=>!r)){item.reason='방향별 기록 일부 미확인';return item;}
-  if(records.some(r=>engine.confidence(r)<=0)){item.reason=records.some(r=>!r.xd?.[0])?'여러 날 비교 자료가 더 필요해요':'날짜별 반복 패턴 검증 부족';return item;}
+  if(records.some(r=>engine.confidence(r)<=0)){item.reason=records.some(r=>!r.xd?.[0])?'다른 날짜에도 같은지 확인되지 않아 현재 남은 시간은 표시하지 않아요':'날짜별 신호가 일정하지 않아 현재 남은 시간은 표시하지 않아요';return item;}
   const phase=engine.predict(x,time);if(!phase){item.reason='방향별 예상 상태가 달라요';return item;}
   const seconds=phase.walk?phase.rem:phase.wait;
   if(!Number.isFinite(seconds)||seconds<0){item.reason='남은 시간 계산 불가';return item;}
