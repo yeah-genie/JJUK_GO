@@ -1,5 +1,7 @@
 # 쭉고 인수인계
 
+> **11/01 (Claude):** 다음 Claude 작업 목록은 [CLAUDE_NEXT](CLAUDE_NEXT.md), 코덱스 몫은 [CODEX_NEXT](CODEX_NEXT.md). 데모 판정·스레드 문구는 `docs/discussions/2026-11-01-demo-readiness.md`, 촬영물은 `reports/threads-demo/`.
+
 > **11/01 최신 Product Design 작업:** 사용자 승인된 Playwright로 전체 이용 흐름을 캡처·수정·재검증했다. 홈/검색/조건/지도/위치 오류/요약 개선, 아스팔트 테마와 작은 아이콘, '걸음 공유' 페이지(경로 실루엣·거리/시간/페이스·사진/투명 PNG)를 추가했다. 이전 '브라우저 확인 불가'는 이 점검 범위에서 해소. 현장 GPS/신호 정확도는 미검증이다. [감사 보고서](../reports/reference-ui/product-design-2026-11-01/AUDIT.md), [컨셉과 대중교통 확장 제안](EXPERIENCE_DIRECTION_2026-11-01.md)을 우선 읽는다. 최종 운영 반영 상태는 보고서의 후속 배포 확인을 본다.
 
 > **11/01 추가 요청 완료:** 카카오 서버 장소검색 어댑터 + 화면 단순화. 결과 카드의 정보량을 줄이고 출발 시각은 조건으로, 수동 속도/계산 설명은 접힌 메뉴로 이동했다. 신호창의 긴 설명과 걷기 중 중복 신호 줄도 줄였다. 앱 `ccc5d36` 운영 배포 `dpl_ASYC422sNmKitrPNAbaNMnZo9bjK` READY. 성신여자대학교 공개 검색 HTTP 200/Kakao Maps/15건/no-store 확인. 카카오 데이터는 무캐시/최근 목적지 미저장, 키는 서버 전용. [대화·검증 기록](discussions/2026-11-01.md)의 마지막 절을 우선 읽는다. 브라우저 시각·클릭 검증은 도구 초기화 오류로 미완료다.
