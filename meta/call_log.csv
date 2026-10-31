@@ -708,3 +708,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-10-31T05:18:02,1619,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-10-31T05:23:08,41816,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-10-31T05:28:15,2691,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-10-31T05:33:22,2419,2200,ok,,v2xSignalPhaseTimingFusionInformation
