@@ -20,19 +20,32 @@ function refOpenSignal(item){
  refSignalPopup?.remove();refSignalPopup=new maplibregl.Popup({closeButton:false,offset:27,maxWidth:'245px',className:'reference-signal-popup'}).setLngLat(item.ll).setHTML(refSignalHTML(item)).addTo(map);
  map.easeTo({center:item.ll,offset:[0,65],duration:250});
 }
-function refMakeSignals(route){
+function refMakeSignals(route,center=null){
  const raw=[...(route?.x||[]).filter(x=>x.dir||x.dirs?.length)];
  // Cross-count summaries have no controller/direction; do not invent a phase for them.
  for(const x of route?.m?.xlist||[])if(!raw.some(r=>distLL(r.mid||r.at,x.at)<35))raw.push({...x,s:'unmapped',dir:null});
- const near=(route?.coords||[]).filter((_,i)=>i%Math.max(1,Math.floor((route?.coords.length||1)/10))===0);
+ const near=center?[center]:(route?.coords||[]).filter((_,i)=>i%Math.max(1,Math.floor((route?.coords.length||1)/10))===0);
  const nearby=[];
- for(const[id,m]of SIGMETA)if(near.some(p=>distLL(p,m.ll)<900))for(const d of ['n','e','s','w']){
-  if(!signalPlan(id,SIG.now(),d)||raw.some(x=>String(x.s)===String(id)&&(x.dir===d||x.dirs?.includes(d))))continue;
-  nearby.push({s:id,dir:d,at:m.ll,len:null,nearby:true});
+ for(const[id,m]of SIGMETA)if(near.some(p=>distLL(p,m.ll)<900)){
+  const dirs=['n','e','s','w'].filter(d=>signalPlan(id,SIG.now(),d));
+  if(!dirs.length&&!raw.some(x=>String(x.s)===String(id)))nearby.push({s:id,dir:null,at:m.ll,len:null,nearby:true,locationOnly:true});
+  for(const d of dirs){
+   if(raw.some(x=>String(x.s)===String(id)&&(x.dir===d||x.dirs?.includes(d))))continue;
+   nearby.push({s:id,dir:d,at:m.ll,len:null,nearby:true});
+  }
  }
  nearby.sort((a,b)=>Number(!!trustedPlan(b.s,SIG.now(),b.dir))-Number(!!trustedPlan(a.s,SIG.now(),a.dir))||Math.min(...near.map(p=>distLL(p,a.at)))-Math.min(...near.map(p=>distLL(p,b.at))));
  raw.push(...nearby.slice(0,24));
  return raw.map(refSignalModel);
+}
+function refRefreshNearby(center){
+ if(refSample||refScreen!=='walking')return;
+ refSignals=refMakeSignals(state.routes?.[state.focus],center);
+ refNaverHandle?.updateSignals(refSignals);
+}
+function refEndpointHTML(kind,name){
+ const label=kind==='from'?'출발':'도착';
+ return `<span class="route-endpoint ${kind}" role="img" aria-label="${label}: ${esc(name||label)}"><span class="endpoint-disc">${refIcon(kind==='from'?'trip_origin':'flag')}</span><small>${label}</small></span>`;
 }
 const refEngineWalk=renderWalk;
 renderWalk=function(...args){if(refSample||refPaused||!refNavigating)return;return refEngineWalk(...args);};
@@ -146,7 +159,7 @@ async function refMountNaver(coords,summary){
   node=document.createElement('div');node.className='naver-basemap';node.style.opacity='0';host.append(node);
   const r=state.routes?.[state.focus];
   const crossings=refSignals;
-  handle=window.JJUKGO_NAVER.render(node,{coords,currentLL:gpsFresh()?gpsFix.ll:null,crossings,next:summary?null:crossings.find(x=>!x.raw.nearby),summary,sample:false,onSignalClick:refOpenSignal,signalHTML:refSignalHTML});
+  handle=window.JJUKGO_NAVER.render(node,{coords,currentLL:gpsFresh()?gpsFix.ll:null,crossings,next:summary?null:crossings.find(x=>!x.raw.nearby),summary,sample:false,onSignalClick:refOpenSignal,signalHTML:refSignalHTML,onViewportChange:summary?null:refRefreshNearby,endpointHTML:{from:refEndpointHTML('from',state.from?.name),to:refEndpointHTML('to',state.to?.name)}});
   refNaverHandle=handle;
   if(!await handle.ready||epoch!==refMapEpoch){handle.destroy();node.remove();if(refNaverHandle===handle){refNaverHandle=null;refRoot.dataset.mapProvider='osm';}return;}
   node.style.opacity='1';mapEl.style.opacity='0';mapEl.inert=true;mapEl.setAttribute('aria-hidden','true');refRoot.dataset.mapProvider='naver';delete refRoot.dataset.mapError;
@@ -195,8 +208,8 @@ async function refDrawMap(){
     map.resize();resolve();return;
    }
    else map.fitBounds(bounds,{padding:summary?{top:30,bottom:34,left:30,right:30}:{top:170,bottom:70,left:55,right:80},duration:0,maxZoom:summary?15.4:17});
-   refMark(coords[0],el('signal-disc summary-marker start',refIcon('directions_walk')));
-   refMark(coords.at(-1),el('signal-disc summary-marker end',refIcon('location_on')));
+   refMark(coords[0],el('endpoint-host',refEndpointHTML('from',state.from?.name)),{anchor:'top',offset:[0,-18]});
+   refMark(coords.at(-1),el('endpoint-host',refEndpointHTML('to',state.to?.name)),{anchor:'top',offset:[0,-18]});
    if(refSample){refMark(coords[6],el('signal-disc red summary-marker',refIcon('directions_walk')));}
    else if(!summary){refSignals=refMakeSignals(r);for(const item of refSignals){
     const elm=el('signal-disc '+(item.state==='wait'?'red':item.state==='walk'?'':'gray')+' estimated',refIcon('directions_walk'));
@@ -306,7 +319,7 @@ refRoot.addEventListener('click',async e=>{
  if(a==='sound'){refSound=!refSound;b.setAttribute('aria-pressed',refSound);b.innerHTML=refIcon(refSound?'volume_up':'volume_off');if(refSound&&!refSample&&'speechSynthesis'in window){speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById('ref-instruction').textContent));}}
  if(a==='recenter'&&map){if(!refSample&&!gpsFresh()){refPendingRecenter=true;locate(false);}else if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);else map.easeTo({center:gpsFix?.ll||refFixtureRoute[0],zoom:16.7,duration:300});}
  if(a==='layers'&&refRoute){if(refNaverHandle)refNaverHandle.fitRoute();else{const b=new maplibregl.LngLatBounds(refRoute[0],refRoute[0]);refRoute.forEach(c=>b.extend(c));map.fitBounds(b,{padding:{top:170,bottom:70,left:45,right:70},duration:300});}}
- if(a==='next-crossing'){const next=refSignals.find(x=>!x.raw.nearby);if(next)refOpenSignal(next);}
+ if(a==='next-crossing'){const next=refSignals.find(x=>!x.raw.nearby);if(next)refOpenSignal(next);else refToast('경로에 연결된 횡단 정보가 없어요. 지도 아이콘에서 주변 신호 위치를 볼 수 있어요.');}
  if(a==='save')refSave();
 });
 async function refSave(){
@@ -342,6 +355,8 @@ setInterval(()=>{
   if(refSelectedSignal&&refSignalPopup){const n=refSignalPopup.getElement().querySelector('strong');if(n)n.textContent=refSelectedSignal.trusted?refSelectedSignal.secondsLabel:refSelectedSignal.statusLabel;}
   const next=refSignals.find(x=>!x.raw.nearby),out=document.getElementById('ref-next-summary');
   if(next&&out){out.textContent=next.trusted?next.secondsLabel:next.reason;const disc=out.closest('button').querySelector('.signal-disc');disc.className='signal-disc '+(next.state==='wait'?'red':next.state==='walk'?'':'gray');}
+  else if(out)out.textContent='경로의 횡단 시간 미확인 · 주변 아이콘 보기';
+  if(out)out.closest('button').querySelector('.row-copy strong').textContent=next?'다음 횡단보도':'횡단 정보';
  }
  if(gpsFresh()&&refPendingRecenter){if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);refPendingRecenter=false;}
  if(refScreen==='home'&&state.from){const n=document.getElementById('ref-origin');if(n)n.textContent=state.from.name;}

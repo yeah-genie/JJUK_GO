@@ -3,11 +3,11 @@
  'use strict';
  root.JJUKGO_SIGNAL_EVIDENCE={create(engine){return function build(x){
   const id=x.s??x.id,dirs=x.dir?[x.dir]:x.dirs||[],time=engine.now(),speed=engine.speed();
-  const meta=engine.meta(id),direction=x.dir?engine.direction(x.dir):dirs.length?'방향 후보':'방향 미연결';
+  const meta=engine.meta(id),direction=x.dir?engine.direction(x.dir):dirs.length?'방향 후보':x.locationOnly?'위치 정보':'방향 미연결';
   const name=meta?.name&&!meta.name.includes('\uFFFD')?meta.name:id==='unmapped'?'신호 횡단보도':'주변 교차로';
   const label=name+' · '+direction;
   const item={key:id+':'+(x.dir||dirs.join(','))+':'+(x.mid||x.at||x.ll).join(','),id,ll:x.mid||x.at||x.ll,label,state:'unknown',trusted:false,remainingSeconds:null,statusLabel:'신호 상태 미확인',secondsLabel:'남은 시간 미확인',sourceLabel:engine.period(),reason:'이 시간대 기록 없음',raw:x};
-  if(!dirs.length){item.reason='횡단 방향 미연결';return item;}
+  if(!dirs.length){item.reason=x.locationOnly?'위치는 있지만 시간·횡단 방향 정보가 없어요':'횡단 방향 미연결';item.statusLabel=x.locationOnly?'시간 정보 없음':item.statusLabel;if(x.locationOnly)item.sourceLabel='신호 위치 자료 · 현재 시간 정보 없음';return item;}
   const records=dirs.map(d=>engine.plan(id,time,d));
   if(records.every(r=>!r))return item;
   const lengths=records.filter(r=>r&&(r.observed_samples||0)>=900&&(r.test_samples||0)>=300&&(r.holdout_accuracy||0)>=.95&&(r.impurity??1)<=.02).flatMap(r=>(r.win||[]).map(([a,b])=>b-a)).filter(n=>Number.isFinite(n)&&n>0);

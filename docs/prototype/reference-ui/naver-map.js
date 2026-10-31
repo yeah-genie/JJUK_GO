@@ -121,7 +121,8 @@
     const signal = (x,large=false) => {
       const initial=signalHTML(x,large),marker=new n.Marker({map,position:latLng(x.ll),zIndex:large?100:10,icon:initial});
       const entry={item:x,marker,large,html:initial.content};signalMarkers.push(entry);overlays.push(marker);
-      signalListeners.push(n.Event.addListener(marker,'click',()=>options.onSignalClick?.(entry.item)));
+      entry.listener=n.Event.addListener(marker,'click',()=>options.onSignalClick?.(entry.item));
+      signalListeners.push(entry.listener);
       return marker;
     };
     if (coords.length > 1) {
@@ -131,14 +132,18 @@
       }
       map.fitBounds(path,options.summary ? {top:35,right:35,bottom:35,left:35,maxZoom:17} : {top:180,right:70,bottom:85,left:55,maxZoom:17});
     }
-    for (const x of Array.isArray(options.crossings) ? options.crossings : []) if (x && validLL(x.ll)) signal(x);
+    for (const x of Array.isArray(options.crossings) ? options.crossings : []) if (x && validLL(x.ll) && x.key!==options.next?.key) signal(x);
     if (options.next && validLL(options.next.ll)) signal(options.next,true);
     let currentMarker = null;
     if (validLL(options.currentLL)) currentMarker=addMarker(options.currentLL,'<div class="m-me"></div>',28,110);
-    if (options.summary && coords.length) {
-      addMarker(coords[0],`<span class="signal-disc summary-marker start">${icon('directions_walk')}</span>`,28,50);
-      addMarker(coords.at(-1),`<span class="signal-disc summary-marker end">${icon('location_on')}</span>`,28,50);
+    if (coords.length && options.endpointHTML) {
+      addMarker(coords[0],options.endpointHTML.from,36,120);
+      addMarker(coords.at(-1),options.endpointHTML.to,36,120);
     }
+    const viewportListener=options.onViewportChange?n.Event.addListener(map,'idle',()=>{
+      if(destroyed)return;
+      const center=map.getCenter();options.onViewportChange([center.lng(),center.lat()]);
+    }):null;
     const resize = () => {
       if (destroyed) return;
       const nextSize = dimensions();
@@ -154,7 +159,7 @@
       showSignal(item){
         if(destroyed)return;
         selectedSignal=item;
-        if(!signalPopup)signalPopup=new n.InfoWindow({content:'',borderWidth:0,backgroundColor:'#FCFBF7',anchorColor:'#FCFBF7',anchorSize:new n.Size(12,10),pixelOffset:new n.Point(0,-23)});
+        if(!signalPopup)signalPopup=new n.InfoWindow({content:'',maxWidth:235,disableAutoPan:true,borderWidth:0,backgroundColor:'#FCFBF7',anchorColor:'#FCFBF7',anchorSize:new n.Size(12,10),pixelOffset:new n.Point(0,-23)});
         if(typeof map.setCenter==='function')map.setCenter(latLng(item.ll));
         if(typeof map.panBy==='function')map.panBy(new n.Point(0,-80));
         signalPopup.setContent(options.signalHTML(item));signalPopup.open(map,latLng(item.ll));
@@ -164,6 +169,14 @@
       updateSignals(items){
         if(destroyed)return;
         const byKey=new Map(items.map(x=>[x.key,x]));
+        for(let i=signalMarkers.length-1;i>=0;i--){
+          const entry=signalMarkers[i];if(byKey.has(entry.item.key))continue;
+          entry.marker.setMap(null);n.Event.removeListener(entry.listener);
+          signalListeners.splice(signalListeners.indexOf(entry.listener),1);
+          overlays.splice(overlays.indexOf(entry.marker),1);signalMarkers.splice(i,1);
+        }
+        const existing=new Set(signalMarkers.map(x=>x.item.key));
+        for(const item of items)if(validLL(item.ll)&&!existing.has(item.key))signal(item,item.key===options.next?.key);
         for(const entry of signalMarkers){const item=byKey.get(entry.item.key);if(!item)continue;entry.item=item;const nextIcon=signalHTML(item,entry.large);if(nextIcon.content!==entry.html){entry.marker.setIcon(nextIcon);entry.html=nextIcon.content;}}
         if(selectedSignal&&signalPopup){const current=byKey.get(selectedSignal.key);if(current){selectedSignal=current;const node=signalPopup.getContentElement(),strong=node?.querySelector('strong'),p=node?.querySelector('p');if(strong)strong.textContent=current.trusted?current.secondsLabel:current.statusLabel;if(p)p.textContent=!current.trusted&&current.historySummary?current.historySummary+' · '+current.reason:current.reason;}}
       },
@@ -177,7 +190,7 @@
       },
       destroy() {
         if (destroyed) return;
-        destroyed=true;finishReady(false);signalPopup?.close();signalListeners.forEach(l=>n.Event.removeListener(l));observer?.disconnect();overlays.forEach(x=>x.setMap(null));map.destroy();
+        destroyed=true;finishReady(false);signalPopup?.close();if(viewportListener)n.Event.removeListener(viewportListener);signalListeners.forEach(l=>n.Event.removeListener(l));observer?.disconnect();overlays.forEach(x=>x.setMap(null));map.destroy();
       }
     };
   }

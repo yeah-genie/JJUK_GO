@@ -1,0 +1,37 @@
+{
+  "snapshot": "2026-10-31 19h KST, origin default 67e7788",
+  "location_records": 5174,
+  "history_candidate_ids": 1734,
+  "history_ids_with_location": 1723,
+  "note": "Records, not deduplicated physical pedestrian crossings. Presence is not confidence.",
+  "areas": [
+    {
+      "landmark": "성신여대입구역",
+      "radius_m": 1000,
+      "locations": 8,
+      "any_hour_history": 2,
+      "saturday_19h_history": 0
+    },
+    {
+      "landmark": "혜화역",
+      "radius_m": 1000,
+      "locations": 25,
+      "any_hour_history": 15,
+      "saturday_19h_history": 6
+    },
+    {
+      "landmark": "강남역",
+      "radius_m": 1000,
+      "locations": 52,
+      "any_hour_history": 49,
+      "saturday_19h_history": 16
+    },
+    {
+      "landmark": "홍대입구역",
+      "radius_m": 1000,
+      "locations": 36,
+      "any_hour_history": 2,
+      "saturday_19h_history": 2
+    }
+  ]
+}
