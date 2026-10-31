@@ -126,6 +126,8 @@
       signalListeners.push(entry.listener);
       return marker;
     };
+    // 다른 후보 길은 회색으로 함께 보여 준다(지도 앱처럼 비교가 보이게)
+    if (Array.isArray(options.altCoords) && options.altCoords.length > 1) overlays.push(new n.Polyline({map,path:options.altCoords.filter(validLL).map(latLng),strokeColor:'#9AA3AD',strokeWeight:6,strokeOpacity:.85,strokeLineCap:'round',strokeLineJoin:'round'}));
     if (coords.length > 1) {
       const path = coords.map(latLng);
       for (const [strokeColor,strokeWeight] of [['#FFFFFF',10],['#4D8FFF',6]]) {

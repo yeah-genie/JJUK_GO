@@ -32,5 +32,18 @@
     "api/signal-live.js": {
       "includeFiles": "config/live_signals.json"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/classic",
+      "destination": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/reference-ui/",
+      "permanent": false
+    }
+  ]
 }

@@ -38,6 +38,11 @@ vm.runInContext(`
   assert.equal(SIG.verdict({s:'A',dir:'n',len:null},T+5).kind,'green','길이를 모르면 건널 수 있다고 하지 않음');
   assert.equal(SIG.verdict({s:'A',dir:null,len:24},T+5).kind,'unknown','방향을 모르면 정보 없음');
   assert.equal(SIG.verdict({s:'B',dir:'n',len:24},T+5).kind,'unknown','패턴이 없으면 정보 없음');
+  // 예상 대기도 같은 기준: 초록이 남아도 건너기에 짧으면 다음 초록까지 기다리는 것으로 센다(대기 0초로 낙관하지 않음)
+  assert.equal(crossingWait(x,T+5),0,'초록 35초 남음, 건너는 데 20+3초 → 대기 0');
+  assert.equal(Math.round(crossingWait(x,T+25)),95,'초록 15초 남음 < 23초 → 이번 초록 보내고 다음 초록까지 95초');
+  assert.equal(Math.round(crossingWait(x,T+60)),60,'빨강 → 다음 초록까지 60초');
+  assert.equal(crossingWait({s:'A',dir:'n',len:null},T+25),0,'길이를 모르면 남은 초록만 보고 0');
   REAL.signals.A.bands[0].legs.n={...P,holdout_accuracy:.8};
   assert.equal(SIG.verdict(x,T+5).kind,'unknown','신뢰 조건을 못 넘은 패턴은 쓰지 않음');
   REAL={signals:{},source_dates:[]};

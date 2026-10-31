@@ -15,7 +15,7 @@
   const meta=engine.meta(id),direction=x.dir?engine.direction(x.dir):dirs.length?'방향 후보':x.locationOnly?'위치 정보':'방향 미연결';
   const name=meta?.name&&!meta.name.includes('\uFFFD')?meta.name:id==='unmapped'?'신호 횡단보도':'주변 교차로';
   const label=name+' · '+direction;
-  const item={key:id+':'+(x.dir||dirs.join(','))+':'+(x.mid||x.at||x.ll).join(','),id,ll:x.mid||x.at||x.ll,label,state:'unknown',trusted:false,remainingSeconds:null,historyLabel:null,historySummary:null,recordedPattern:null,crossingLength:null,crossingSeconds:null,geometrySummary:null,canCross:false,statusLabel:'시간 자료 없음',secondsLabel:'현재 신호는 알 수 없어요',sourceLabel:engine.period(),reason:'이 요일·시간의 신호 기록이 없어요',raw:x};
+  const item={key:id+':'+(x.dir||dirs.join(','))+':'+(x.mid||x.at||x.ll).join(','),id,ll:x.mid||x.at||x.ll,label,state:'unknown',trusted:false,remainingSeconds:null,historyLabel:null,historySummary:null,recordedPattern:null,countdown:null,arrival:false,arrivalKind:null,arrivalText:null,crossingLength:null,crossingSeconds:null,geometrySummary:null,canCross:false,statusLabel:'시간 자료 없음',secondsLabel:'현재 신호는 알 수 없어요',sourceLabel:engine.period(),reason:'이 요일·시간의 신호 기록이 없어요',raw:x};
   if(Number.isFinite(x.len)&&x.len>0&&Number.isFinite(speed)&&speed>0){item.crossingLength=Math.round(x.len);item.crossingSeconds=Math.ceil(x.len/speed);item.geometrySummary=`지도상 횡단 약 ${item.crossingLength}m · 걸어서 약 ${item.crossingSeconds}초`;}
   if(!dirs.length){item.reason=x.locationOnly?'위치는 있지만 시간·횡단 방향 정보가 없어요':'횡단 방향 미연결';item.statusLabel=x.locationOnly?'시간 정보 없음':item.statusLabel;if(x.locationOnly)item.sourceLabel='신호 위치 자료 · 현재 시간 정보 없음';return item;}
   const records=dirs.map(d=>engine.plan(id,time,d));
@@ -30,11 +30,25 @@
   const phase=engine.predict(x,time);if(!phase){item.reason='방향별 예상 상태가 달라요';return item;}
   const seconds=phase.walk?phase.rem:phase.wait;
   if(!Number.isFinite(seconds)||seconds<0){item.reason='남은 시간 계산 불가';return item;}
-  item.state=phase.walk?'walk':'wait';item.trusted=true;item.remainingSeconds=Math.ceil(seconds);
-  item.statusLabel=phase.walk?'초록 예상':'대기 예상';
-  item.secondsLabel=phase.walk?`초록 예상 · ${item.remainingSeconds}초 남음`:`${item.remainingSeconds}초 뒤 초록 예상`;
+  // 지금 시각 기준 초읽기: 'N초 뒤 빨간불/초록불'. 1초마다 다시 계산된다. 과거 기록 패턴의 예상이라 '(예상)'을 붙인다.
+  const left=Math.max(0,Math.ceil(seconds));
+  item.state=phase.walk?'walk':'wait';item.trusted=true;item.remainingSeconds=left;
+  item.statusLabel=phase.walk?'지금 초록(예상)':'지금 빨강(예상)';
+  item.countdown=phase.walk?`${left}초 뒤 빨간불`:`${left}초 뒤 초록불`;
+  item.secondsLabel=`${phase.walk?'지금 초록':'지금 빨강'} · ${item.countdown} (예상)`;
   item.reason=x.len?'현장 신호를 함께 확인하세요':'횡단 길이는 아직 미확인이에요';
-  item.canCross=!!x.len&&engine.verdict(x,time,speed).kind==='go';
+  item.canCross=false;
+  // 경로 위 횡단은 '지금'이 아니라 '내가 도착할 때'의 예상으로 보여 준다(경로의 예상 대기 계산과 같은 기준)
+  const arrive=engine.arrival?.(x);
+  if(Number.isFinite(arrive)){
+   const v=engine.verdict(x,arrive,speed);
+   // 제목은 지금 기준 초읽기, 설명 줄에 '내가 도착할 때' 예상을 덧붙인다
+   if(v.kind!=='unknown'){item.arrival=true;item.arrivalKind=v.kind;item.arrivalText=v.text;item.reason=v.text;item.canCross=v.kind==='go';
+    // 경로를 고르는 화면에서는 '내가 도착할 때'가 중요하다: 제목·색을 도착 기준으로(걷는 중 가까운 신호만 지금 초읽기)
+    if(engine.preferArrival?.()){const p=engine.predict(x,arrive);item.state=v.kind==='wait'||v.kind==='short'?'wait':'walk';
+     item.secondsLabel=v.kind==='go'?'건널 수 있어요(예상)':v.kind==='green'?'도착 때 초록 예상':v.kind==='short'?'도착 때 초록이 짧아요(예상)':`도착하면 약 ${Math.round(p?.wait||0)}초 대기(예상)`;
+     item.statusLabel=v.label;item.reason=v.text+' · 지금 신호: '+item.countdown;}}
+  }
   return item;
  };}};
 })(window);

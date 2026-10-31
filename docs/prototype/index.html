@@ -370,9 +370,11 @@ let IDX = null, SIGS = null, GMETA = null, SEARCH = null, TERRAIN = null;
 const SIGMETA = new Map();
 
 async function getJSON(p) { const r = await fetch(DATA + p); if (!r.ok) throw new Error(p + " " + r.status); return r.json(); }
+// 저장공간이 막힌 브라우저(사파리 개인 모드 등)에서도 이번 방문 동안은 바꾼 설정이 적용되도록 메모리에도 둔다
+const storeMem = new Map();
 const store = {
-  get(k, d) { try { const v = localStorage.getItem("jjukgo:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem("jjukgo:" + k, JSON.stringify(v)); return true; } catch { return false; } },
+  get(k, d) { try { const v = localStorage.getItem("jjukgo:" + k); if (v) return JSON.parse(v); } catch {} return storeMem.has(k) ? storeMem.get(k) : d; },
+  set(k, v) { storeMem.set(k, v); try { localStorage.setItem("jjukgo:" + k, JSON.stringify(v)); return true; } catch { return false; } },
 };
 
 // 기기 내 설정과 보행 요약만 저장한다. 위치 경로는 메모리에만 머문다.
@@ -607,13 +609,20 @@ function planConfidence(r) {
 }
 function trustedPlan(id, t, dir) { const r = signalPlan(id, t, dir); return planConfidence(r) > 0 ? r : null; }
 // 도착 시각 t에 이 신호가 고정 초록이 아니면 다음 고정 초록 시작까지의 초. 신뢰 조건을 못 채우면 null.
-function expectedWait(id, t, dir) {
+// need: 이 횡단보도를 건너는 데 필요한 초(길이 ÷ 걷는 속도 + 여유). 도착 때 초록이어도 남은 초록이 need보다 짧으면
+// 이번 초록은 보내고 다음 초록 시작까지 기다리는 것으로 센다(2026-10-31: '초록이 짧아요'인데 대기 0초로 세던 문제).
+function expectedWait(id, t, dir, need = 0) {
   const r = trustedPlan(id, t, dir);
   if (!r) return null;
   const ph = (((r.day0 + ((t % 86400) + 86400) % 86400 - r.ref) % r.c) + r.c) % r.c;
   let wait = Infinity;
   for (const [a, b] of r.win) {
-    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) return 0;
+    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) {
+      const rem = b - ph - shift;
+      if (rem >= need) return 0;
+      const next = expectedWait(id, t + rem + 0.01, dir, 0);   // 이번 초록이 끝난 직후부터 다음 초록 시작까지
+      return next == null ? null : rem + 0.01 + next;
+    }
     wait = Math.min(wait, ((a - ph) % r.c + r.c) % r.c);
   }
   return wait === Infinity ? null : wait;
@@ -1278,8 +1287,10 @@ function nodeCrossLegs(v, e, eNext) {
 }
 // 횡단 x의 t초 예상 대기: 방향이 정해졌으면 그 다리, 후보만 있으면 후보 다리 패턴이 모두 같은 답일 때만(다르면 모름)
 function crossingWait(x, t) {
-  if (x.dir) return expectedWait(x.s, t, x.dir);
-  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d)).filter(w => w != null);
+  // 길이를 아는 횡단보도는 내 속도로 건너는 시간 + 여유(SIG.MARGIN_S와 같은 3초)만큼 초록이 남아야 '기다림 없음'
+  const need = x.len ? x.len / SPEED + 3 : 0;
+  if (x.dir) return expectedWait(x.s, t, x.dir, need);
+  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d, need)).filter(w => w != null);
   if (!ws.length || (ws.some(w => w === 0) && ws.some(w => w > 0))) return null;
   return Math.max(...ws);
 }
@@ -1414,11 +1425,12 @@ async function computeTrip() {
   if (state.tripKey === key && state.routes) { refreshSims(); return; }
   state.tripKey = key; state.routes = null; state.error = null; state.snapNote = ""; state.tripStartedAt = performance.now();
   const d = distLL(state.from.ll, state.to.ll);
-  if (d > 30000) { state.error = {kind:"too_far",title:"걷기 범위를 나눠 주세요",text:"직선30km를 넘는 구간은 중간 지점을 골라 나눠서 찾아 주세요."}; return; }
-  if (d < 30) { state.error = { kind: "too_near", title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
   // 지원 지역: 보행 그래프 조각이 있는 곳(서울). 밖이면 엉뚱한 출입구 안내 대신 지역 밖이라고 말한다.
   const outside = [["출발지", state.from], ["도착지", state.to]].filter(([, p]) => !cellsFor(p.ll, p.ll, 60).length).map(([n]) => n);
   if (outside.length) { state.error = { kind: "outside", title: `${outside.join("·")}가 지원 지역 밖이에요`, text: "쭉고는 서울 안의 보행 도로망에서만 길을 찾아요. 서울 안에서 다시 골라 주세요.", pick: outside[0] === "출발지" ? "from" : "to" }; return; }
+  // 서울 밖이면 거리보다 지역을 먼저 알린다(인천→서울숲이 "30km 나눠 주세요"로 나오지 않게)
+  if (d > 30000) { state.error = {kind:"too_far",title:"걷기 범위를 나눠 주세요",text:"직선30km를 넘는 구간은 중간 지점을 골라 나눠서 찾아 주세요."}; return; }
+  if (d < 30) { state.error = { kind: "too_near", title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
   const cells = cellsFor(state.from.ll, state.to.ll, Math.max(700, d * 0.25));
   if (cells.some(k => !G.cells.has(k))) setStatus("길 찾는 중…", `지도 조각 ${cells.length}개를 받고 있어요${d > 5000 ? " (먼 길이라 조금 걸려요)" : ""}.`);
   try {
@@ -1767,6 +1779,8 @@ function renderWalk(demo = false, resume = false) {
     if (current !== "walk" || session !== gpsRequest) return;
     try {
       gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
+      // 같은 시각의 위치가 다시 들어오면(다시 시작할 때 저장된 위치 + 브라우저 캐시) 새 정보가 없으니 넘긴다('위치가 갑자기 바뀌었어요' 거짓 경고 방지)
+      if (previous && gpsFix.timestamp <= previous.timestamp) return;
       if (walkTrack) trackAdd(walkTrack, gpsFix);
       // 걷기 시작 = 이 길로 걷기를 누른 뒤 위치가 실제로 처음 잡힌 때(위치 값은 보내지 않는다)
       if (!free && state.walkLogPending) { logEvent("walking_started", { trip: state.tripId, route: state.walkLogPending }); state.walkLogPending = null; }
