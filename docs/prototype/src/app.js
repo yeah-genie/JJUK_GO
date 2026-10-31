@@ -944,11 +944,12 @@ async function computeTrip() {
   if (state.tripKey === key && state.routes) { refreshSims(); return; }
   state.tripKey = key; state.routes = null; state.error = null; state.snapNote = ""; state.tripStartedAt = performance.now();
   const d = distLL(state.from.ll, state.to.ll);
-  if (d > 30000) { state.error = {kind:"too_far",title:"걷기 범위를 나눠 주세요",text:"직선30km를 넘는 구간은 중간 지점을 골라 나눠서 찾아 주세요."}; return; }
-  if (d < 30) { state.error = { kind: "too_near", title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
   // 지원 지역: 보행 그래프 조각이 있는 곳(서울). 밖이면 엉뚱한 출입구 안내 대신 지역 밖이라고 말한다.
   const outside = [["출발지", state.from], ["도착지", state.to]].filter(([, p]) => !cellsFor(p.ll, p.ll, 60).length).map(([n]) => n);
   if (outside.length) { state.error = { kind: "outside", title: `${outside.join("·")}가 지원 지역 밖이에요`, text: "쭉고는 서울 안의 보행 도로망에서만 길을 찾아요. 서울 안에서 다시 골라 주세요.", pick: outside[0] === "출발지" ? "from" : "to" }; return; }
+  // 서울 밖이면 거리보다 지역을 먼저 알린다(인천→서울숲이 "30km 나눠 주세요"로 나오지 않게)
+  if (d > 30000) { state.error = {kind:"too_far",title:"걷기 범위를 나눠 주세요",text:"직선30km를 넘는 구간은 중간 지점을 골라 나눠서 찾아 주세요."}; return; }
+  if (d < 30) { state.error = { kind: "too_near", title: "출발지와 도착지가 거의 같아요", text: "다른 곳을 골라 주세요." }; return; }
   const cells = cellsFor(state.from.ll, state.to.ll, Math.max(700, d * 0.25));
   if (cells.some(k => !G.cells.has(k))) setStatus("길 찾는 중…", `지도 조각 ${cells.length}개를 받고 있어요${d > 5000 ? " (먼 길이라 조금 걸려요)" : ""}.`);
   try {

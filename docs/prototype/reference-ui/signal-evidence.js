@@ -33,7 +33,11 @@
   if(Number.isFinite(arrive)){
    const v=engine.verdict(x,arrive,speed);
    // 제목은 지금 기준 초읽기, 설명 줄에 '내가 도착할 때' 예상을 덧붙인다
-   if(v.kind!=='unknown'){item.arrival=true;item.arrivalText=v.text;item.reason=v.text;item.canCross=v.kind==='go';}
+   if(v.kind!=='unknown'){item.arrival=true;item.arrivalKind=v.kind;item.arrivalText=v.text;item.reason=v.text;item.canCross=v.kind==='go';
+    // 경로를 고르는 화면에서는 '내가 도착할 때'가 중요하다: 제목·색을 도착 기준으로(걷는 중 가까운 신호만 지금 초읽기)
+    if(engine.preferArrival?.()){const p=engine.predict(x,arrive);item.state=v.kind==='wait'||v.kind==='short'?'wait':'walk';
+     item.secondsLabel=v.kind==='go'?'건널 수 있어요(예상)':v.kind==='green'?'도착 때 초록 예상':v.kind==='short'?'도착 때 초록이 짧아요(예상)':`도착하면 약 ${Math.round(p?.wait||0)}초 대기(예상)`;
+     item.statusLabel=v.label;item.reason=v.text+' · 지금 신호: '+item.countdown;}}
   }
   return item;
  };}};

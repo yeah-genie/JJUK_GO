@@ -11,9 +11,9 @@ const refPlaces = [
 let refScreen='home', refPick='to', refSearchHits=[], refPaused=false, refSound=true, refNavigating=false;
 let refMarkers=[], refRoute=null, refSearchSeq=0, refGPSMessage='', refNaverHandle=null, refMapEpoch=0, refSplashTimer=null, refDataStatus=null, refPendingRecenter=false;
 let refSignals=[],refSignalMarkers=[],refSignalPopup=null,refSelectedSignal=null,refSignalFacts={};
-let refProgress=null,refIgnoreUntil=0,refSettingsFromResult=false,refFindError=null,refArrivalCache={key:'',map:new Map()};
+let refFollow=true,refFollowZoomed=false,refLastFollow=0,refDragHooked=false,refRerouting=false,refProgress=null,refIgnoreUntil=0,refSettingsFromResult=false,refFindError=null,refArrivalCache={key:'',map:new Map()};
 const refHistory=(id,d)=>{const f=refSignalFacts[id]?.[d];return f?.[dayTypeNow()]||f?.wd||f?.we||null;};
-const refSignalModel=window.JJUKGO_SIGNAL_EVIDENCE.create({now:()=>SIG.now(),speed:()=>SPEED,meta:id=>SIGMETA.get(id),direction:d=>DIR_KO[d]||d,period:()=>planPeriodText(),plan:(...a)=>signalPlan(...a),history:refHistory,confidence:planConfidence,predict:(x,t)=>SIG.predictX(x,t),verdict:(...a)=>SIG.verdict(...a),arrival:x=>refArrival(x)});
+const refSignalModel=window.JJUKGO_SIGNAL_EVIDENCE.create({now:()=>SIG.now(),speed:()=>SPEED,meta:id=>SIGMETA.get(id),direction:d=>DIR_KO[d]||d,period:()=>planPeriodText(),plan:(...a)=>signalPlan(...a),history:refHistory,confidence:planConfidence,predict:(x,t)=>SIG.predictX(x,t),verdict:(...a)=>SIG.verdict(...a),arrival:x=>refArrival(x),preferArrival:()=>!refNavigating});
 // 경로 위 횡단에 '내가 도착할 때' 시각을 준다. 계획 화면은 지금 출발, 걷는 중은 내 위치에서 남은 거리 기준.
 // 앞 횡단에서 기다릴 시간도 더해 경로의 예상 대기 계산(routeWaits)과 같은 방식으로 센다. 주변 신호와 위치를 모를 때는 null(지금 기준).
 // 지금 위치(from m)부터 남은 신호 횡단의 예상 대기 합(패턴이 있는 곳만). 결과 카드의 '신호 대기 포함' 시간과 같은 방식.
@@ -200,7 +200,7 @@ function refBadge(key){
 function refSignalLine(m){
  if(!m||!Number.isFinite(m.waitTotal))return '신호 정보 확인 중';
  if(!m.waitTotal)return '신호 없는 길';
- const known=m.waitKnown?`신호 대기 ${m.wait<1?'거의 없음':'약 '+dur(m.wait)}`:'신호 대기 모름';
+ const known=m.waitKnown?`신호 대기 ${m.wait<1?'거의 없음':'약 '+dur(m.wait)}`:'이 시간대 신호 기록 없음';
  return `${known} · 신호 ${m.sig}곳${m.waitKnown&&m.waitUnknown?` (${m.waitUnknown}곳 모름)`:''}`;
 }
 function refCard(key){
@@ -212,9 +212,9 @@ function refCard(key){
   ${badge?`<span class="ma-badge ${key}">${esc(badge)}</span>`:''}
   <span class="ma-time"><strong>${mins(total)}</strong><span>${km(r.length)} · ${refClock(total)} 도착</span></span>
   <span class="ma-sig">${refIcon('traffic')}${esc(refSignalLine(m))}</span>
-  <span class="ma-meta">걷기 ${mins(m.walk)} · ${esc(meta)}</span>
+  ${on?`<span class="ma-meta">걷기 ${mins(m.walk)} · ${esc(meta)}</span>`:''}
   ${why&&on?`<span class="ma-why">${esc(why)}</span>`:''}
-  ${far?`<span class="ma-warn">${refIcon('warning')}걷기엔 먼 길이에요. 대중교통과 함께 쓰는 걸 권해요</span>`:''}
+  ${far&&on?`<span class="ma-warn">${refIcon('warning')}걷기엔 먼 길이에요. 대중교통과 함께 쓰는 걸 권해요</span>`:''}
  </button>`;
 }
 function refResult(){
@@ -227,6 +227,7 @@ function refResult(){
  <div class="map-buttons"><button data-ref-action="recenter" aria-label="내 위치">${refIcon('my_location')}</button><button data-ref-action="layers" aria-label="경로 전체 보기">${refIcon('route')}</button></div>
  <div class="ma-sheet"><div class="ma-sheet-head"><span><strong>도보</strong> 지금 출발 · 신호 대기 포함 예상</span><button data-ref-action="conditions">${refIcon('tune')}조건</button></div>
   ${R&&!R.alt?`<p class="ma-note">${esc(refNoAltText())}</p>`:''}
+  ${R&&[R.short,R.alt?R.jjuk:null].filter(Boolean).every(x=>x.m.waitTotal>0&&!x.m.waitKnown)?'<p class="ma-note">이 시간대엔 신호 기록이 적어 대기 시간을 예상하지 못했어요. 평일 낮(13~15시)에는 신호 절반쯤을 예상할 수 있어요.</p>':''}
   <div class="ma-cards">${cards}</div>
   <button class="yellow-button ma-start" data-ref-action="start">${refIcon('navigation')}안내 시작</button></div></section>`;
 }
@@ -250,7 +251,20 @@ function refFitSheet(){
  if(m)m.style.bottom=Math.max(0,h-20)+'px';if(b)b.style.bottom=(h+14)+'px';
 }
 function refWalking(){if(refSample)return refWalkingLegacy();return refNavigating?refNav():refResult();}
+function refSummaryReal(){
+ const rec=state.lastWalk,R=state.routes,r=R?.[state.focus],full=r&&rec.meters>=r.length*0.8,plan=r?refTotal(r):null;
+ const stopS=Math.max(0,(rec.elapsedS||0)-(rec.moveS||rec.elapsedS||0));
+ const a=R?.jjuk?.m,b=R?.short?.m,saved=R?.alt&&state.focus==='jjuk'&&a.waitKnown&&b.waitKnown&&a.waitUnknown<=b.waitUnknown?b.wait-a.wait:0;
+ return `<section class="page summary"><header class="topbar"><button class="icon-button" data-ref-screen="home" aria-label="닫기">${refIcon('close')}</button></header><h1>오늘의 걸음</h1>
+ <p class="intro">${full?esc((state.to?.name||'도착지')+'까지 걸었어요.'):`경로 중 ${km(rec.meters)}를 걸었어요.`}</p>
+ <div class="total-card"><span class="walk-disc">${refIcon('directions_walk')}</span><div><small>걸은 시간</small><strong>${mins(rec.elapsedS)}</strong><p>${plan&&full?'출발 전 예상 '+mins(plan)+' · ':''}GPS로 잰 실제 기록</p></div></div>
+ <div class="summary-metrics"><div><small>${refIcon('location_on')}걸은 거리</small><strong>${km(rec.meters)}</strong></div><div><small>${refIcon('pause_circle')}멈춘 시간</small><strong>${stopS<30?'거의 없음':mins(stopS)}</strong><p class="muted">신호 대기 등 · GPS 기준</p></div></div>
+ ${r?`<div class="ma-sumsig"><span>${refIcon('traffic')}</span><div><small>이 길의 신호 · 출발 전 예상</small><strong>${esc(refSignalLine(r.m))}</strong>${saved>=10?`<p>빠른 길보다 신호 대기가 약 ${esc(dur(saved))} 적은 길이었어요</p>`:''}</div></div>`:''}
+ <div class="mini-map-wrap"><div class="mapbox" id="ref-summary-map"></div><div class="map-attribution">© OpenStreetMap · Mapzen / USGS</div></div>
+ <div class="bottom-actions"><button class="white-button" data-ref-screen="home">${refIcon('home')}홈으로</button><button class="navy-button" data-ref-action="save">${refIcon('download')}이미지 저장</button></div></section>`;
+}
 function refSummary(){
+ if(!refSample&&state.lastWalk?.meters>0)return refSummaryReal();
  const rec=state.lastWalk,r=state.routes?.[state.focus],recorded=rec&&rec.meters>0;
  const time=refSample?'15분':recorded?mins(rec.elapsedS):'기록 없음',distance=refSample?'1.1 km':recorded?km(rec.meters):'—';
  return `<section class="page summary"><header class="topbar"><button class="icon-button" data-ref-screen="home" aria-label="닫기">${refIcon('close')}</button></header><h1>오늘의 걸음</h1><p class="intro">${refSample?'오늘도 조금 더 편안한 길을 걸었어요.':recorded?(r&&rec.meters<r.length*0.8?`경로 중 ${km(rec.meters)}를 걸었어요. 아래 지표는 계획 경로 기준이에요.`:'오늘도 내 걸음으로 걸었어요.'):'실측 기록 없음 · 아래 지도와 지표는 계획 경로예요.'}</p>
@@ -298,10 +312,11 @@ async function refMountNaver(coords,summary){
   node=document.createElement('div');node.className='naver-basemap';node.style.opacity='0';host.append(node);
   const r=state.routes?.[state.focus];
   const crossings=refSignals;
-  handle=window.JJUKGO_NAVER.render(node,{coords,currentLL:gpsFresh()?gpsFix.ll:null,crossings,next:summary?null:crossings.find(x=>!x.raw.nearby),summary,sample:false,onSignalClick:refOpenSignal,onSignalClose:refCloseSignal,signalHTML:refSignalHTML,signalTitle:refSignalTitle,signalDescription:refSignalDescription,onViewportChange:summary?null:refRefreshNearby,endpointHTML:{from:refEndpointHTML('from',state.from?.name),to:refEndpointHTML('to',state.to?.name)}});
+  handle=window.JJUKGO_NAVER.render(node,{coords,altCoords:!summary&&!refNavigating&&state.routes?.alt?state.routes[state.focus==='jjuk'?'short':'jjuk'].coords:null,currentLL:gpsFresh()?gpsFix.ll:null,crossings,next:summary?null:crossings.find(x=>!x.raw.nearby),summary,sample:false,onSignalClick:refOpenSignal,onSignalClose:refCloseSignal,signalHTML:refSignalHTML,signalTitle:refSignalTitle,signalDescription:refSignalDescription,onViewportChange:summary?null:refRefreshNearby,endpointHTML:{from:refEndpointHTML('from',state.from?.name),to:refEndpointHTML('to',state.to?.name)}});
   refNaverHandle=handle;
   if(!await handle.ready||epoch!==refMapEpoch){handle.destroy();node.remove();if(refNaverHandle===handle){refNaverHandle=null;refRoot.dataset.mapProvider='osm';}return;}
   node.style.opacity='1';mapEl.style.opacity='0';mapEl.inert=true;mapEl.setAttribute('aria-hidden','true');refRoot.dataset.mapProvider='naver';delete refRoot.dataset.mapError;
+  try{window.naver?.maps?.Event?.addListener(handle.map,'dragstart',()=>{refFollow=false;});}catch{}
   if(refSelectedSignal){refSignalPopup?.remove();refSignalPopup=null;handle.showSignal(refSelectedSignal);}
  }catch(e){handle?.destroy();node?.remove();if(refNaverHandle===handle)refNaverHandle=null;if(epoch===refMapEpoch){mapEl.style.opacity='';refRoot.dataset.mapProvider='osm';refRoot.dataset.mapError=e.message;console.warn('네이버 지도 대신 기존 지도 사용:',e.message);refToast(e.message);}}
 }
@@ -316,13 +331,14 @@ async function refDrawMap(){
  await refData();
  if(!['walking','summary'].includes(refScreen))return;
  mountMap();refClearMarkers();clearDyn();
+ if(!refDragHooked&&map){map.on('dragstart',()=>{refFollow=false;});refDragHooked=true;}
  await new Promise((resolve,reject)=>ready(()=>{try{
   if(!['walking','summary'].includes(refScreen)){resolve();return;}
   const summary=refScreen==='summary',r=state.routes?.[state.focus];
   const coords=refSample?(summary?refFixtureRoute.slice().reverse():refFixtureRoute):r?.coords;
   if(!coords){map.jumpTo({center:ME.ll,zoom:15});resolve();return;}
   refRoute=coords;
-  map.getSource('rj').setData(lineFC(coords));map.getSource('rs').setData(EMPTY);
+  map.getSource('rj').setData(lineFC(coords));map.getSource('rs').setData(!summary&&!refSample&&!refNavigating&&state.routes?.alt?lineFC(state.routes[state.focus==='jjuk'?'short':'jjuk'].coords):EMPTY);
   if(refSample&&!summary){
    map.jumpTo({center:[127.0052,37.5813],zoom:15.85,bearing:0});
    // Fixture geometry follows the supplied image, then becomes geographic map data.
@@ -365,7 +381,7 @@ async function refDrawMap(){
 function refShow(screen){
  if(!['home','search','settings','walking','summary','splash'].includes(screen))screen='home';
  clearTimeout(refSplashTimer);refMapEpoch++;refCloseSignal();refNaverHandle?.destroy();refNaverHandle=null;
- if(refScreen==='walking'&&screen!=='walking'&&!refSample){stopGPS();if(screen==='summary')endWalk();}
+ if(refScreen==='walking'&&screen!=='walking'&&!refSample){stopGPS();endWalk();}
  refClearMarkers();refScreen=screen;current=screen==='walking'?'walk':screen==='summary'?'done':screen;
  const views={home:refHome,search:refSearch,settings:refSettings,walking:refWalking,summary:refSummary,splash:refSplash};refRoot.innerHTML=views[screen]();refFitSheet();
  document.title=`쭉고 · ${screen}${refSample?' · 시각 검증용 예시':''}`;
@@ -404,13 +420,13 @@ function refChoose(p){
 }
 async function refFind(){
  if(refSample){refShow('walking');return;}
- if(!state.from){refToast('출발지를 선택하거나 현재 위치를 연결해 주세요.');refPick='from';state.pick='from';refShow('search');return;}
+ if(!state.from){refLocateStart();return;}
  if(!state.to){refPick='to';state.pick='to';refShow('search');return;}
  const btn=refRoot.querySelector('.find');if(btn){btn.disabled=true;btn.textContent='길을 찾고 있어요…';}
  refFindError=null;
  try{await refData();applyPace();state.budget=store.get('referenceBudget',readProfile().budgetSeconds/60)*60;if(state.mode==='actual'&&(!state.routes||state.tripKey!==tripKeyNow()))BASE=kstSec();await computeTrip();
-  if(state.error){logRouteSearch();refFindError={...state.error,retry:state.error.kind==='network'};refNavigating=false;refShow('home');return;}
-  logRouteSearch();refNavigating=false;refShow('walking');}
+  if(state.error){refRerouting=false;logRouteSearch();refFindError={...state.error,retry:state.error.kind==='network'};refNavigating=false;refShow('home');return;}
+  logRouteSearch();if(refRerouting){refRerouting=false;refNavigating=true;refPaused=false;refProgress=null;refFollow=true;refIgnoreUntil=performance.now()+600;refShow('walking');refToast('내 위치에서 다시 찾았어요. 안내를 이어 가요.');return;}refNavigating=false;refShow('walking');}
  catch(e){refFindError={title:'길을 찾지 못했어요',text:e.message,retry:true};refNavigating=false;refShow('home');}
 }
 function refUpdateProfile(change){const p=readProfile();Object.assign(p,change);writeProfile(p);applyPace();state.routes=null;state.tripKey=null;}
@@ -452,7 +468,7 @@ refRoot.addEventListener('click',async e=>{
  if(a==='close-signal'){refCloseSignal();return;}
  if(a==='conditions'){refSettingsFromResult=true;refShow('settings');return;}
  if(a==='back-result'){refSettingsFromResult=false;if(state.routes&&state.tripKey===tripKeyNow())refShow('walking');else{refToast('바뀐 조건으로 길을 다시 찾고 있어요…');refFind();}return;}
- if(a==='reroute'){rerouteFromGPS();return;}
+ if(a==='reroute'){const before=state.from;refRerouting=true;rerouteFromGPS();if(state.from===before)refRerouting=false;return;}
  if(a==='find')refFind();
  if(a==='gps'){await refData();refLocateStart();}
  if(a==='swap-find'){[state.from,state.to]=[state.to,state.from];state.routes=null;state.tripKey=null;refFind();return;}
@@ -470,9 +486,11 @@ refRoot.addEventListener('click',async e=>{
   const sr=state.routes?.[state.focus];if(!refSample&&sr&&sr.length>REF_FAR_M&&!confirm(`걷기엔 먼 길이에요(${km(sr.length)}, 약 ${mins(sr.m.walk)}). 그래도 도보 안내를 시작할까요?`))return;
   refIgnoreUntil=performance.now()+600;
   if(!refSample&&state.routes){const route=!state.routes.alt||state.focus==='short'?'fast':'jjukgo';logEvent('selected_route',{trip:state.tripId,route,alternative_available:!!state.routes.alt});state.walkLogPending=route;}
-  refNavigating=true;refPaused=false;refProgress=null;refShow('walking');}
- if(a==='finish'){if(!refSample&&!refNavigating){refShow('home');return;}if(!refSample&&!confirm('안내를 끝낼까요? 지금까지 걸은 기록을 보여 드려요.'))return;if(!refSample){endWalk();stopGPS();}refNavigating=false;refPaused=false;refShow('summary');}
+  refNavigating=true;refPaused=false;refProgress=null;refFollow=true;refFollowZoomed=false;refShow('walking');}
+ if(a==='finish'){if(!refSample&&!refNavigating){refShow('home');return;}if(!refSample&&refRoot.querySelector('.ma-end')?.textContent!=='기록 보기'&&!confirm('안내를 끝낼까요? 지금까지 걸은 기록을 보여 드려요.'))return;
+  if(!refSample){endWalk();stopGPS();if(!(state.lastWalk?.meters>0)){refNavigating=false;refPaused=false;refShow('walking');refToast('걸은 기록이 없어 경로 화면으로 돌아왔어요.');return;}}if(!refSample){endWalk();stopGPS();}refNavigating=false;refPaused=false;refShow('summary');}
  if(a==='sound'){refSound=!refSound;b.setAttribute('aria-pressed',refSound);b.innerHTML=refIcon(refSound?'volume_up':'volume_off');if(refSound&&!refSample&&'speechSynthesis'in window){speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById('ref-instruction').textContent));}}
+ if(a==='recenter'){refFollow=true;refFollowZoomed=false;refLastFollow=0;}
  if(a==='recenter'&&map){if(!refSample&&!gpsFresh()){refPendingRecenter=true;if(refNavigating&&!refPaused)renderWalk(false,true);else locate(false);}else if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);else map.easeTo({center:gpsFix?.ll||refFixtureRoute[0],zoom:16.7,duration:300});}
  if(a==='layers'&&refRoute){if(refNaverHandle)refNaverHandle.fitRoute();else{const b=new maplibregl.LngLatBounds(refRoute[0],refRoute[0]);refRoute.forEach(c=>b.extend(c));map.fitBounds(b,{padding:{top:170,bottom:70,left:45,right:70},duration:300});}}
  if(a==='next-crossing'){const next=refSignals.find(x=>!x.raw.nearby);if(next)refOpenSignal(next);else refToast('경로에 연결된 횡단 정보가 없어요. 지도 아이콘에서 주변 신호 위치를 볼 수 있어요.');}
@@ -503,6 +521,10 @@ const refPoint = value => {
  return Number.isFinite(lat)&&Number.isFinite(lon)&&lat>37.3&&lat<37.8&&lon>126.6&&lon<127.3?[lon,lat]:null;
 };
 const refFrom=refPoint(refParams.get('from')),refTo=refPoint(refParams.get('to'));
+if(!refSample&&!refFrom)navigator.permissions?.query({name:'geolocation'}).then(st=>{
+ if(st.state!=='granted')return;
+ navigator.geolocation.getCurrentPosition(p=>{try{if(state.from)return;const f=readFix(p,1000);if(f.accuracy>100)return;gpsFix=f;state.from={name:'내 위치',sub:'GPS',ll:[...f.ll],me:true};if(refScreen==='home')refShow('home');}catch{}},()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+}).catch(()=>{});
 refShow(refParams.get('screen')||(refSample||store.get('seenSplash',false)?'home':'splash'));
 if(!refSample&&refFrom&&refTo){
  state.from={name:refParams.get('fn')||'출발',ll:refFrom,sub:''};state.to={name:refParams.get('tn')||'도착',ll:refTo,sub:''};state.mode='actual';
@@ -519,47 +541,68 @@ setInterval(()=>{
   if(refSelectedSignal&&refSignalPopup){const e=refSignalPopup.getElement(),n=e.querySelector('strong'),d=e.querySelector('.signal-detail-card p');if(n)n.textContent=refSignalTitle(refSelectedSignal);if(d)d.textContent=refSignalDescription(refSelectedSignal);}
   const next=refSignals.find(x=>!x.raw.nearby&&(refProgress==null||!Number.isFinite(x.raw.d)||x.raw.d>refProgress+3)),out=document.getElementById('ref-next-summary');
   if(next&&out){out.textContent=(Number.isFinite(next.raw.d)&&refProgress!=null?Math.max(0,Math.round(next.raw.d-refProgress))+'m · ':'')+refRowText(next);const disc=out.closest('button').querySelector('.signal-disc');disc.className='signal-disc '+refSignalClass(next);disc.querySelector('.mi').textContent=next.historyLabel&&!next.trusted?'history':'directions_walk';}
-  else if(out)out.textContent='경로의 횡단 시간 미확인 · 주변 아이콘 보기';
+  else if(out)out.textContent=refNavigating&&refProgress!=null?'이 길에 남은 신호 횡단이 없어요':'경로의 횡단 시간 미확인';
   if(out)out.closest('button').querySelector('.row-copy strong').textContent=next?'다음 횡단보도':'횡단 정보';
  }
  if(gpsFresh()&&refPendingRecenter){if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);refPendingRecenter=false;}
  if(refScreen==='home'&&state.from){const n=document.getElementById('ref-origin');if(n)n.textContent=state.from.name;}
  const gpsMessage=$('walk-location')?.textContent||$('location-status')?.textContent||$('search-location')?.textContent||'';
  // 위치 알림은 걷는 중에만 띄운다(다른 화면에서 '위치 연결 대기'가 중요한 오류 알림을 덮지 않게)
- if(gpsMessage&&gpsMessage!==refGPSMessage){refGPSMessage=gpsMessage;if(refScreen==='walking'&&refNavigating&&!/^GPS 연결 ·/.test(gpsMessage))refToast(gpsMessage.replace("'위치 다시 연결'을 눌러",'지도 오른쪽 화살표 버튼을 눌러 다시 연결해'));}
+ if(gpsMessage&&gpsMessage!==refGPSMessage){refGPSMessage=gpsMessage;if(refScreen==='walking'&&refNavigating&&!/^GPS 연결 ·/.test(gpsMessage))refToast(gpsMessage.replace("'위치 다시 연결'을 눌러",'지도 오른쪽 ◎ 버튼을 눌러 다시 연결해'));}
  const reroute=refRoot.querySelector('.ref-reroute'),offRoute=walkingNow&&$('walk-reroute')&&!$('walk-reroute').hidden;
  if(reroute){const was=reroute.style.display;reroute.style.display=offRoute?'':'none';const nc=refRoot.querySelector('.next-crossing');if(nc)nc.style.display=offRoute?'none':'';if(was!==reroute.style.display){refFitSheet();map?.resize?.();}}
  if(walkingNow){
   const left=$('w-left')?.textContent,time=$('w-time')?.textContent,sp=$('w-pace')?.textContent;
-  if(left&&left!=='—')document.getElementById('ref-left').textContent=left;
+  const lf=document.getElementById('ref-left');if(left&&left!=='—'&&lf)lf.textContent=left;
   if(refProgress!=null&&!offRoute){const sp=trackSpeed(walkTrack)||SPEED,rem=Math.max(0,route.length-refProgress)/sp+refWaitAhead(route,refProgress,sp);document.getElementById('ref-time').textContent=mins(rem);const ar=document.getElementById('ref-arrival');if(ar)ar.textContent=refClock(rem)+' 도착';}
   if(gpsFresh()&&refNaverHandle)refNaverHandle.setCurrent(gpsFix.ll);
   if(sp&&sp!=='—')document.getElementById('ref-speed').textContent=sp;
-  // 엔진의 다음 안내를 종류별로 나눠 쓴다: '다음 …'만 'N m 후', 신호 횡단만 아래 '다음 횡단보도' 칸에.
-  const nl=$('next-label')?.textContent||'',nd=$('next-dist')?.textContent,ns=$('next-state')?.textContent;
-  const head=document.getElementById('ref-next-distance'),line=document.getElementById('ref-instruction'),sumOut=document.getElementById('ref-next-summary');
-  if(offRoute){head.textContent='경로 밖';line.textContent=$('walk-location')?.textContent||'경로에서 벗어났어요. 내 위치에서 다시 찾을 수 있어요.';}
-  else if(nl==='도착'){head.textContent='도착';line.textContent=ns||'도착지 근처예요';document.getElementById('ref-left').textContent='도착';document.getElementById('ref-time').textContent='—';if(sumOut)sumOut.textContent='도착지 근처예요';}
-  else if(nd&&gpsFresh()){
-   const unknownX=/신호 패턴이 아직 확인되지/.test(ns||'');
-   head.textContent=nl.startsWith('다음 횡단보도')?nd+' 후 횡단보도':nl.startsWith('다음')?nd+' 후':nl.startsWith('남은')?'남은 '+nd:'위치 확인 중';
-   line.textContent=unknownX?'신호 시간은 몰라요. 현장 신호를 확인하세요':ns||'경로를 따라 걸어가세요.';
-   if(sumOut&&nl.startsWith('다음 횡단보도')&&!refSignals.some(x=>!x.raw.nearby&&x.trusted))sumOut.textContent=nd+' · '+(unknownX?'신호 시간 모름 · 현장 신호를 확인하세요':ns||'현장 신호 확인');
-  }
-  // 위 카드 아이콘: 위치를 모르면 화살표 대신 '찾는 중'
+  // 위 카드: 가장 가까운 할 일(꺾기 또는 횡단보도). 신호 횡단은 '도착할 때' 예상 문장, 신호 띠와 같은 기준.
+  const nl=$('next-label')?.textContent||'',ns=$('next-state')?.textContent||'';
+  const head=document.getElementById('ref-next-distance'),line=document.getElementById('ref-instruction');
+  const spd=trackSpeed(walkTrack)||SPEED,arrived=nl==='도착';
+  const nx=refProgress==null?null:refSignals.find(x=>!x.raw.nearby&&Number.isFinite(x.raw.d)&&x.raw.d>refProgress+3);
+  const dist=nx?nx.raw.d-refProgress:Infinity;
+  const g=refProgress==null?null:routeGuidance(route,refProgress),turn=g&&/보행로를 따라/.test(g.label)?g:null,turnDist=turn?turn.d-refProgress:Infinity;
+  const locErr=!gpsFresh()&&/권한|서비스가 꺼져|못했|끊겨/.test(gpsMessage)?(/권한/.test(gpsMessage)?'위치 권한이 꺼져 있어요. 브라우저 설정에서 허용해 주세요':/서비스가 꺼져/.test(gpsMessage)?'휴대폰 위치 서비스를 켜 주세요':'위치를 받지 못하고 있어요. 지도 오른쪽 ◎ 버튼으로 다시 연결해요'):null;
+  if(refPaused){head.textContent='일시정지';line.textContent='다시 시작을 누르면 안내를 이어 가요';}
+  else if(offRoute){head.textContent='경로 밖';line.textContent=$('walk-location')?.textContent||'경로에서 벗어났어요. 내 위치에서 다시 찾을 수 있어요.';}
+  else if(arrived){head.textContent='도착';line.textContent=ns||'도착지 근처예요';document.getElementById('ref-time').textContent='도착';const bs=refRoot.querySelector('.ma-bar-copy>span');if(bs)bs.textContent=(state.to?.name||'도착지')+' 근처예요';const end=refRoot.querySelector('.ma-end');if(end)end.textContent='기록 보기';}
+  else if(refProgress==null){head.textContent='위치 확인 중';line.textContent=locErr||'위치를 잡는 중이에요. 잠시 기다려 주세요.';}
+  else if(turn&&turnDist<=300&&turnDist<dist){head.textContent=Math.round(turnDist)+'m 후';line.textContent=turn.label;}
+  else if(nx&&dist<=300){head.textContent=Math.round(dist)+'m 후 횡단보도';line.textContent=nx.trusted?'신호는 아래 안내를 보고 건너세요':'신호 시간은 몰라요. 현장 신호를 확인하세요';}
+  else if(turn){head.textContent=Math.round(turnDist)+'m 후';line.textContent=turn.label;}
+  else{head.textContent='남은 '+km(Math.max(0,route.length-refProgress));line.textContent='경로를 따라 쭉 걸어가세요.';}
   const ti=document.getElementById('ref-turn-icon');
-  if(ti){const h=head.textContent,ln=line.textContent;ti.innerHTML=refIcon(h==='위치 확인 중'?'location_searching':h==='경로 밖'?'wrong_location':h==='도착'?'flag':nl.startsWith('다음 횡단보도')?'directions_walk':/왼쪽/.test(ln)?'turn_left':/오른쪽/.test(ln)?'turn_right':'straight');ti.dataset.state=h==='위치 확인 중'?'search':h==='경로 밖'?'off':'';}
-  // 신호 초읽기 띠: 300m 안의 다음 신호 횡단, 패턴이 확인된 곳만. 초록이 건너기에 짧으면 숫자 대신 '다음 초록을 기다려요'(서두르지 않게)
+  if(ti){const h=head.textContent,ln=line.textContent;ti.innerHTML=refIcon(h==='일시정지'?'pause':h==='위치 확인 중'?'location_searching':h==='경로 밖'?'wrong_location':h==='도착'?'flag':/횡단보도$/.test(h)?'directions_walk':/왼쪽/.test(ln)?'turn_left':/오른쪽/.test(ln)?'turn_right':'straight');ti.dataset.state=h==='위치 확인 중'?'search':h==='경로 밖'?'off':'';}
+  // 신호 띠(300m 안, 패턴이 확인된 신호만). 60m보다 멀면 '도착할 때' 예상, 가까우면 지금 초읽기.
+  // 가까워도 남은 초록이 '가는 시간 + 건너는 시간 + 3초'보다 짧으면 숫자 대신 '다음 초록을 기다려요'(서두르지 않게).
   const banner=document.getElementById('ref-signal-banner');
   if(banner){
-   const nx=refProgress==null?null:refSignals.find(x=>!x.raw.nearby&&Number.isFinite(x.raw.d)&&x.raw.d>refProgress+3);
-   const dist=nx?nx.raw.d-refProgress:Infinity;
-   if(nx&&nx.trusted&&dist<=300&&!offRoute&&nl!=='도착'){
-    const need=nx.crossingSeconds,short=nx.state==='walk'&&need&&nx.remainingSeconds<need+3;
-    banner.hidden=false;banner.dataset.state=short?'wait':nx.state;
-    document.getElementById('ref-banner-main').textContent=short?'다음 초록을 기다려요':nx.countdown;
-    document.getElementById('ref-banner-sub').textContent=`${Math.round(dist)}m 앞 횡단보도 · ${short?`초록 ${nx.remainingSeconds}초 남음, 건너는 데 약 ${need}초`:nx.state==='walk'?'지금 초록':'지금 빨강'} · 예상`;
+   const card=refRoot.querySelector('.ma-turn');if(card)banner.style.top=(card.offsetTop+card.offsetHeight+8)+'px';
+   if(nx&&nx.trusted&&dist<=300&&!offRoute&&!arrived&&!refPaused){
+    let st,main,sub;
+    if(dist<=60){
+     const need=nx.raw.len?nx.raw.len/spd:0,make=nx.state==='walk'&&nx.remainingSeconds>=dist/spd+need+3;
+     if(nx.state==='walk'&&!make){st='wait';main='다음 초록을 기다려요';sub=`초록 ${nx.remainingSeconds}초 남음 · 건너는 데 약 ${Math.ceil(need)}초`;}
+     else{st=nx.state;main=nx.countdown;sub=nx.state==='walk'?'지금 초록':'지금 빨강';}
+    }else{
+     const at=SIG.now()+dist/spd,v=SIG.verdict(nx.raw,at,spd),p=SIG.predictX(nx.raw,at);
+     st=v.kind==='wait'||v.kind==='short'?'wait':v.kind==='unknown'?'':'walk';
+     main=v.kind==='go'?'도착 때 건널 수 있어요':v.kind==='green'?'도착 때 초록 예상':v.kind==='short'?'도착 때 초록이 짧아요':v.kind==='wait'?`도착하면 약 ${Math.round(p?.wait||0)}초 대기`:'신호 예상 어려움';
+     sub='지금 '+nx.countdown;
+    }
+    banner.hidden=false;banner.dataset.state=st;
+    document.getElementById('ref-banner-main').textContent=main;
+    document.getElementById('ref-banner-sub').textContent=`${Math.round(dist)}m 앞 횡단보도 · ${sub} · 예상`;
    }else banner.hidden=true;
+  }
+  // 지도가 내 위치를 따라간다(지도 앱처럼). 손으로 지도를 움직이면 멈추고, ◎ 버튼으로 다시 따라간다.
+  if(gpsFresh()&&refFollow&&!refPaused&&Date.now()-refLastFollow>2500){
+   refLastFollow=Date.now();
+   if(refNaverHandle&&refRoot.dataset.mapProvider==='naver')refNaverHandle.center(gpsFix.ll,refFollowZoomed?undefined:17);
+   else if(map)map.easeTo({center:gpsFix.ll,zoom:refFollowZoomed?map.getZoom():17,duration:600});
+   refFollowZoomed=true;
   }
  }
 },1000);

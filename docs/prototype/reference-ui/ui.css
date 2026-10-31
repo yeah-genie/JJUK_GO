@@ -65,3 +65,10 @@
 .route-endpoint.from .endpoint-disc{background:var(--navy)}
 @media (max-height:700px){.ma-sheet{max-height:54%}.ma-card{padding:9px 12px}.ma-time strong{font-size:21px}}
 .summary{overflow:auto!important;padding-bottom:0!important}.summary .bottom-actions{position:sticky;bottom:0;margin-top:auto;padding:12px 0 18px;background:linear-gradient(#FCFBF700,#FCFBF7 30%);z-index:3}.summary .mini-map-wrap{flex:none}
+/* BMAD 3인 회의 반영(2026-10-31): 누르기 쉬운 크기, 지도 출처, 요약의 신호 칸 */
+.icon-button{width:44px;height:44px}.map-buttons button{width:44px;height:44px}.ma-sheet-head button{min-height:44px}
+.ma-result .walk-map>.map-attribution,.ma-nav .walk-map>.map-attribution{bottom:26px}
+.ma-sumsig{display:flex;gap:12px;align-items:flex-start;margin-top:9px;padding:14px;border-radius:14px;background:color-mix(in srgb,var(--yellow) 15%,#FCFBF7);border:1px solid var(--line)}
+.ma-sumsig>span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--green);flex:none}
+.ma-sumsig small{display:block;font-size:11px;color:var(--muted)}.ma-sumsig strong{display:block;font-size:15px;margin-top:2px}.ma-sumsig p{font-size:12px;color:#2F6B45;font-weight:700;margin-top:4px}
+.summary .mini-map-wrap{margin-top:12px}.summary-metrics p.muted{color:var(--muted);text-align:left;font-weight:500}
