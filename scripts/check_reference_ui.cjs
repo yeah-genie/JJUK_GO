@@ -96,7 +96,7 @@ async function main(){
  assert.equal(searchContext.refSearchHits[0].name,'new result');assert.doesNotMatch(searchHost.innerHTML,/stale result/);
  const places={refSample:false,refIcon:n=>n,esc:String};vm.createContext(places);vm.runInContext(ui.match(/function refPlaceInput[\s\S]*?\r?\n}\r?\n/)[0],places);
  assert.match(places.refPlaceInput('from',{name:'Station'}),/data-ref-clear="from"/);assert.doesNotMatch(places.refPlaceInput('from',null),/data-ref-clear/);
- const selection={state:{},refPick:'to',store:{set(){selection.saved++;},get:()=>[]},saved:0,refShow:()=>{}};
+ const selection={state:{},refPick:'to',refSearchFrom:'form',store:{set(){selection.saved++;},get:()=>[]},saved:0,refShow:()=>{}};
  vm.createContext(selection);vm.runInContext(ui.match(/function refChoose[\s\S]*?\r?\n}\r?\n/)[0],selection);
  selection.refChoose({name:'Live place',source:'kakao',ll:[127,37.5]});assert.equal(selection.saved,0);assert.equal(selection.state.to.name,'Live place');
  selection.refChoose({name:'Local place',ll:[127,37.5]});assert.equal(selection.saved,1);

@@ -111,7 +111,10 @@
       large=large&&(x.trusted===true||options.sample===true);
       const state = statusOf(x), size = large ? 36 : options.summary ? 28 : 25;
       const history=state==='unknown'&&!!x.historyLabel;
-      let html = `<button type="button" data-ref-signal-key="${escape(x.key||'')}" aria-label="${escape(x.label||'횡단보도')} 신호 정보${history?' · 과거 기록, 현재 신호 아님':''}" class="signal-disc ${history?'history':classes[state]}${x.trusted?' estimated':''}${large?'':options.summary?' summary-marker':' faded'}">${icon(history?'history':'directions_walk')}</button>`;
+      // 패턴이 확인된 신호는 남은 초를 아이콘 옆에 작게 붙인다(지도에서 바로 보이게, 예상값)
+      const sec = options.showSeconds && x.trusted && Number.isFinite(x.remainingSeconds) ? `<span class="sig-sec">${Math.max(0,Math.round(x.remainingSeconds))}</span>` : '';
+      const dim = large || options.summary || (options.showSeconds && x.trusted) ? '' : ' faded';
+      let html = `<button type="button" data-ref-signal-key="${escape(x.key||'')}" aria-label="${escape(x.label||'횡단보도')} 신호 정보${history?' · 과거 기록, 현재 신호 아님':''}" class="signal-disc ${history?'history':classes[state]}${x.trusted?' estimated':''}${large?'':options.summary?' summary-marker':dim}">${icon(history?'history':'directions_walk')}${sec}</button>`;
       if (large) {
         const distance = Number.isFinite(x.distanceM) ? Math.max(0,Math.round(x.distanceM))+'m' : x.historyLabel?'과거 기록':x.crossingLength?'약 '+x.crossingLength+'m 횡단':'신호 위치';
         const remaining = Number.isFinite(x.remainingSeconds) ? Math.max(0,Math.floor(x.remainingSeconds)) : null;
@@ -139,6 +142,7 @@
     for (const x of Array.isArray(options.crossings) ? options.crossings : []) if (x && validLL(x.ll) && x.key!==options.next?.key) signal(x);
     if (options.next && validLL(options.next.ll)) signal(options.next,true);
     let currentMarker = null;
+    if (validLL(options.placeLL) && options.placeHTML) addMarker(options.placeLL,options.placeHTML,36,120);
     if (validLL(options.currentLL)) currentMarker=addMarker(options.currentLL,'<div class="m-me"></div>',28,110);
     if (coords.length && options.endpointHTML) {
       addMarker(coords[0],options.endpointHTML.from,28,120);
@@ -192,7 +196,8 @@
           const button=buttons.find(b=>b.dataset.refSignalKey===item.key);
           if(button){
             const state=statusOf(item),history=state==='unknown'&&!!item.historyLabel;
-            button.className=`signal-disc ${history?'history':classes[state]}${item.trusted?' estimated':''}${entry.large?'':options.summary?' summary-marker':' faded'}`;
+            button.className=`signal-disc ${history?'history':classes[state]}${item.trusted?' estimated':''}${entry.large?'':options.summary?' summary-marker':options.showSeconds&&item.trusted?'':' faded'}`;
+            const secNode=button.querySelector('.sig-sec');if(secNode&&Number.isFinite(item.remainingSeconds))secNode.textContent=Math.max(0,Math.round(item.remainingSeconds));
             button.setAttribute('aria-label',(item.label||'횡단보도')+' 신호 정보'+(history?' · 과거 기록, 현재 신호 아님':''));
             const iconNode=button.querySelector('.mi');if(iconNode)iconNode.textContent=history?'history':'directions_walk';
             const callout=button.closest('.crossing-marker');if(callout){const text=callout.querySelector('p');if(text){text.textContent=item.secondsLabel;text.style.color=state==='walk'?'#2FA866':state==='wait'?'#D9443F':'#718096';}}
