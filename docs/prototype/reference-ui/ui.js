@@ -10,19 +10,28 @@ const refPlaces = [
 ];
 let refScreen='home', refPick='to', refSearchHits=[], refPaused=false, refSound=true, refNavigating=false;
 let refMarkers=[], refRoute=null, refSearchSeq=0, refGPSMessage='', refNaverHandle=null, refMapEpoch=0, refSplashTimer=null, refDataStatus=null, refPendingRecenter=false;
-let refSignals=[],refSignalMarkers=[],refSignalPopup=null,refSelectedSignal=null,refSignalFacts={};
+let refSignals=[],refSignalMarkers=[],refSignalPopup=null,refSelectedSignal=null,refSignalFacts={},refReplay=null;
 const refHistory=(id,d)=>{const f=refSignalFacts[id]?.[d];return f?.[dayTypeNow()]||f?.wd||f?.we||null;};
 const refSignalModel=window.JJUKGO_SIGNAL_EVIDENCE.create({now:()=>SIG.now(),speed:()=>SPEED,meta:id=>SIGMETA.get(id),direction:d=>DIR_KO[d]||d,period:()=>planPeriodText(),plan:(...a)=>signalPlan(...a),history:refHistory,confidence:planConfidence,predict:(x,t)=>SIG.predictX(x,t),verdict:(...a)=>SIG.verdict(...a)});
 function refSignalTitle(item){return item.trusted?item.secondsLabel:item.historyLabel||(item.crossingLength?'지도상 횡단 약 '+item.crossingLength+'m':item.statusLabel);}
 function refSignalDescription(item){return (item.geometrySummary?item.geometrySummary+' · ':'')+item.reason;}
 function refSignalClass(item){return item.state==='wait'?'red':item.state==='walk'?'':item.historyLabel?'history':'gray';}
-function refSignalHTML(item){return `<div class="signal-detail-card"><button data-ref-action="close-signal" aria-label="신호 정보 닫기">${refIcon('close')}</button><h3>${esc(item.label)}</h3><strong>${esc(refSignalTitle(item))}</strong><p>${esc(refSignalDescription(item))}</p><small>${esc(item.sourceLabel)} · 실시간 아님</small></div>`;}
-function refCloseSignal(){refSignalPopup?.remove();refSignalPopup=null;refSelectedSignal=null;refNaverHandle?.closeSignal?.();refRoot.classList.remove('signal-detail-open');}
+function refSignalHTML(item){const preview=!item.trusted&&item.recordedPattern;return `<div class="signal-detail-card"><button data-ref-action="close-signal" aria-label="신호 정보 닫기">${refIcon('close')}</button><h3>${esc(item.label)}</h3>${preview?'<div class="signal-replay" hidden><small>기록 패턴 재생 · 현재 신호 아님</small><strong data-replay-count></strong><small>시작 위치를 임의로 잡은 시연</small></div>':''}<strong data-signal-value>${esc(refSignalTitle(item))}</strong>${preview?'<button class="pattern-preview-button" data-ref-action="preview-pattern">기록 패턴 보기</button>':''}<p>${esc(refSignalDescription(item))}</p><small>${esc(item.sourceLabel)} · 실시간 아님</small></div>`;}
+function refPaintReplay(){
+ if(!refReplay||refSelectedSignal?.key!==refReplay.key)return;
+ const phase=window.JJUKGO_SIGNAL_EVIDENCE.replayPhase(refReplay.pattern,(Date.now()-refReplay.started)/1000),panel=document.querySelector('.signal-detail-card .signal-replay');
+ if(!phase||!panel)return;
+ panel.hidden=false;panel.classList.toggle('replay-green',phase.state==='walk');panel.classList.toggle('replay-red',phase.state==='wait');
+ panel.querySelector('[data-replay-count]').textContent=phase.state==='walk'?`초록 ${phase.seconds}초 남음 · 시연`:`${phase.seconds}초 뒤 초록 · 시연`;
+}
+function refStartReplay(){if(!refSelectedSignal?.recordedPattern)return;const active=refReplay?.key===refSelectedSignal.key;refReplay=active?null:{key:refSelectedSignal.key,pattern:refSelectedSignal.recordedPattern,started:Date.now()};const button=document.querySelector('.pattern-preview-button');if(button)button.textContent=active?'기록 패턴 보기':'재생 멈추기';const panel=document.querySelector('.signal-replay');if(panel)panel.hidden=active;document.querySelector('.signal-detail-card')?.classList.toggle('replaying',!active);if(!active)refPaintReplay();}
+function refCloseSignal(){refReplay=null;refSignalPopup?.remove();refSignalPopup=null;refSelectedSignal=null;refNaverHandle?.closeSignal?.();refRoot.classList.remove('signal-detail-open');}
 function refOpenSignal(item){
+ refReplay=null;
  refSelectedSignal=item;refRoot.classList.add('signal-detail-open');
  if(refNaverHandle&&refRoot.dataset.mapProvider==='naver'){refNaverHandle.showSignal(item);return;}
  refSignalPopup?.remove();refSignalPopup=new maplibregl.Popup({closeButton:false,offset:27,maxWidth:'245px',className:'reference-signal-popup'}).setLngLat(item.ll).setHTML(refSignalHTML(item)).addTo(map);
- map.easeTo({center:item.ll,offset:[0,65],duration:250});
+ map.easeTo({center:item.ll,offset:[0,Math.max(70,map.getContainer().clientHeight/2-60)],duration:250});
 }
 function refMakeSignals(route,center=null){
  const raw=[...(route?.x||[]).filter(x=>x.dir||x.dirs?.length)];
@@ -81,12 +90,17 @@ function refPace(){
 }
 function refHeader(title,back='home'){return `<header class="topbar"><button class="icon-button" data-ref-screen="${back}" aria-label="뒤로">${refIcon('chevron_left')}</button><h2>${title}</h2><span></span></header>`;}
 function refRecentRows(rows,search=false){return rows.map((p,i)=>`<button class="recent-row" data-ref-recent="${i}">${refIcon('schedule')}<span class="row-copy"><strong>${esc(p.name)}</strong>${!search?`<small>${esc(p.sub||p.kind||'최근 찾은 장소')}</small>`:''}</span>${!search?refIcon('chevron_right'):''}</button>`).join('');}
+function refPlaceInput(kind,item){
+ const from=kind==='from',label=from?(refSample?'현재 위치':'출발지'):'도착지',name=item?.name||(from?(refSample?'혜화역 (4호선)':'출발지를 선택하세요'):'어디로 갈까요?');
+ const content=`${refIcon(from?'circle':'location_on').replace('class="mi"','class="mi '+(from?'origin':'destination')+'-icon"')}<span class="place-text"><small>${label}</small><strong id="ref-${from?'origin':'destination'}">${esc(name)}</strong></span>`;
+ if(refSample)return `<button class="place-input" data-ref-pick="${kind}">${content}<span class="mi close">close</span></button>`;
+ return `<div class="place-input"><button class="place-select" data-ref-pick="${kind}">${content}</button>${item?`<button class="place-clear" data-ref-clear="${kind}" aria-label="${label} 지우기">${refIcon('close')}</button>`:refIcon('chevron_right')}</div>`;
+}
 function refHome(){
  const pace=refPace(),from=state.from;
  return `<section class="page home"><header class="topbar"><button class="icon-button" data-ref-screen="settings" aria-label="걷기 설정">${refIcon('settings')}</button></header>
  <h1>어디로 걸어갈까요?</h1><p class="small intro">${refSample?'신호를 고려한 더 스마트한 보행 경로를 안내해요.':'조금 더 걸어도, 계단과 횡단 부담이 덜한 길.'}</p>
- <div class="trip-inputs"><button class="place-input" data-ref-pick="from">${refIcon('circle').replace('class="mi"','class="mi origin-icon"')}<span class="place-text"><small>${refSample?'현재 위치':'출발지'}</small><strong id="ref-origin">${esc(from?.name||(refSample?'혜화역 (4호선)':'출발지를 선택하세요'))}</strong></span><span class="mi close">${refSample?'close':'chevron_right'}</span></button>
- <button class="place-input" data-ref-pick="to">${refIcon('location_on').replace('class="mi"','class="mi destination-icon"')}<span class="place-text"><small>도착지</small><strong id="ref-destination">${esc(state.to?.name||'어디로 갈까요?')}</strong></span><span class="mi close">close</span></button>
+ <div class="trip-inputs">${refPlaceInput('from',from)}${refPlaceInput('to',state.to)}
  <button class="icon-button swap" data-ref-action="swap" aria-label="출발 도착 바꾸기">${refIcon('swap_vert')}</button></div>
  <button class="yellow-button find" data-ref-action="find">${refIcon('search')}길찾기</button>
  <button class="pace-link" data-ref-screen="settings"><span class="walk-disc">${refIcon('directions_walk')}</span><span class="pace-text"><small>내 걷기 속도</small><strong>${pace.label}${refSample||readProfile().learned.speed||readProfile().mode==='manual'?` (약 ${pace.value}km/h)`:''}</strong><p>${pace.detail}</p></span>${refIcon('chevron_right')}</button>
@@ -112,7 +126,7 @@ function refBurden(){
  const R=state.routes,r=R?.[state.focus];if(!r)return '';
  const value=(route,key)=>{const m=route?.m;if(!m||!Number.isFinite(m[key])||(['steep','gain'].includes(key)&&!refTerrainKnown(route)))return '미확인';return key==='walk'?mins(m[key]):key==='stairs'?m[key]+'구간':key==='sig'?m[key]+'곳':(key==='steep'?Math.round(m[key]/10)*10:Math.round(m[key]))+'m';};
  const rows=[['walk','걷는 시간'],['stairs','확인된 계단'],['steep','급경사 거리 · 8% 이상'],['gain','오르는 높이'],['sig','신호 횡단']];
- return `<div class="route-burden"><details><summary><span>이 길의 보행 부담</span><span>자세히 ${refIcon('expand_more')}</span></summary><div class="burden-comparison"><h3>${R.alt?'길 조건 비교':'이 길의 조건'}</h3><table><thead><tr><th>조건</th>${R.alt?'<th>편한 길</th><th>빠른 길</th>':'<th>선택한 길</th>'}</tr></thead><tbody>${rows.map(([key,label])=>`<tr><th>${label}</th>${R.alt?'<td>'+value(R.jjuk,key)+'</td>':''}<td>${value(R.short,key)}</td></tr>`).join('')}</tbody></table><p>신호 대기 별도 · 경사는 지면 높이로 추정<br>턱·보도 폭·노면·경사로 연결은 아직 미확인</p></div></details><div class="burden-facts">${[['stairs','stairs','확인된 계단'],['landscape','steep','급경사·추정'],['trending_up','gain','오르는 높이']].map(([icon,key,label])=>`<div>${refIcon(icon)}<span><small>${label}</small><strong>${value(r,key)}</strong></span></div>`).join('')}</div></div>`;
+ return `<div class="route-burden"><details><summary><span>이 길의 보행 부담</span><span><span class="burden-toggle-label">자세히</span> ${refIcon('expand_more')}</span></summary><div class="burden-comparison"><h3>${R.alt?'길 조건 비교':'이 길의 조건'}</h3><table><thead><tr><th>조건</th>${R.alt?'<th>편한 길</th><th>빠른 길</th>':'<th>선택한 길</th>'}</tr></thead><tbody>${rows.map(([key,label])=>`<tr><th>${label}</th>${R.alt?'<td>'+value(R.jjuk,key)+'</td>':''}<td>${value(R.short,key)}</td></tr>`).join('')}</tbody></table><p>신호 대기 별도 · 경사는 지면 높이로 추정<br>턱·보도 폭·노면·경사로 연결은 아직 미확인</p></div></details><div class="burden-facts">${[['stairs','stairs','확인된 계단'],['landscape','steep','급경사·추정'],['trending_up','gain','오르는 높이']].map(([icon,key,label])=>`<div>${refIcon(icon)}<span><small>${label}</small><strong>${value(r,key)}</strong></span></div>`).join('')}</div></div>`;
 }
 function refSplash(){return `<section class="page reference-splash"><div class="reference-brand"><div id="ref-brand-mark"></div><h1>쭉고</h1><p>내 걸음으로, 쭉.</p></div><p class="reference-splash-foot">조금 더 걸려도, 더 편한 길.</p><button class="reference-splash-skip" data-ref-screen="home">건너뛰기</button></section>`;}
 function refSettings(){
@@ -183,7 +197,7 @@ async function refMountNaver(coords,summary){
   node=document.createElement('div');node.className='naver-basemap';node.style.opacity='0';host.append(node);
   const r=state.routes?.[state.focus];
   const crossings=refSignals;
-  handle=window.JJUKGO_NAVER.render(node,{coords,currentLL:gpsFresh()?gpsFix.ll:null,crossings,next:summary?null:crossings.find(x=>!x.raw.nearby),summary,sample:false,onSignalClick:refOpenSignal,onSignalClose:refCloseSignal,signalHTML:refSignalHTML,signalTitle:refSignalTitle,signalDescription:refSignalDescription,onViewportChange:summary?null:refRefreshNearby,endpointHTML:{from:refEndpointHTML('from',state.from?.name),to:refEndpointHTML('to',state.to?.name)}});
+  handle=window.JJUKGO_NAVER.render(node,{coords,currentLL:gpsFresh()?gpsFix.ll:null,crossings,next:summary?null:crossings.find(x=>!x.raw.nearby),summary,sample:false,onSignalClick:refOpenSignal,onSignalClose:refCloseSignal,onPatternReplay:refStartReplay,signalHTML:refSignalHTML,signalTitle:refSignalTitle,signalDescription:refSignalDescription,onViewportChange:summary?null:refRefreshNearby,endpointHTML:{from:refEndpointHTML('from',state.from?.name),to:refEndpointHTML('to',state.to?.name)}});
   refNaverHandle=handle;
   if(!await handle.ready||epoch!==refMapEpoch){handle.destroy();node.remove();if(refNaverHandle===handle){refNaverHandle=null;refRoot.dataset.mapProvider='osm';}return;}
   node.style.opacity='1';mapEl.style.opacity='0';mapEl.inert=true;mapEl.setAttribute('aria-hidden','true');refRoot.dataset.mapProvider='naver';delete refRoot.dataset.mapError;
@@ -274,8 +288,8 @@ async function refDoSearch(q,category='전체'){
  if(refSample&&q==='낙산공원')refSearchHits=[refPlaces[0],{name:'낙산공원 주차장',sub:'서울 종로구 낙산길 41',ll:[127.0075,37.5806]},{name:'낙산공원 전망대',sub:'서울 종로구 낙산길 56',ll:[127.008,37.5808]},{name:'낙산공원 입구',sub:'서울 종로구 이화동 산1-3',ll:[127.005,37.5806]}];
  else{
   host.innerHTML='<p class="empty">장소를 찾고 있어요…</p>';
-  try{refSearchHits=q.trim()?await runSearch(q):refRecent();}catch{host.innerHTML='<p class="empty">연결을 확인하고 다시 검색해 주세요.</p>';return;}
-  if(seq!==refSearchSeq||refScreen!=='search')return;
+  let hits;try{hits=q.trim()?await runSearch(q):refRecent();}catch{if(seq===refSearchSeq&&refScreen==='search')host.innerHTML='<p class="empty">연결을 확인하고 다시 검색해 주세요.</p>';return;}
+  if(seq!==refSearchSeq||refScreen!=='search')return;refSearchHits=hits;
  }
  if(category==='최근 검색')refSearchHits=refRecent();
  if(category==='주소')refSearchHits=refSearchHits.filter(p=>p.kind==='주소');
@@ -311,9 +325,11 @@ function refLocateStart(){
  },e=>{if(request!==gpsRequest)return;gpsPending=false;gpsError(e);refPick='from';state.pick='from';refShow('search');refToast('위치를 연결하지 못했어요. 권한을 확인하거나 출발지를 직접 선택해 주세요.');});
 }
 refRoot.addEventListener('input',e=>{if(e.target.id==='ref-query')refDoSearch(e.target.value);});
+refRoot.addEventListener('toggle',e=>{if(e.target.matches('.route-burden details'))e.target.querySelector('.burden-toggle-label').textContent=e.target.open?'접기':'자세히';},true);
 refRoot.addEventListener('keydown',e=>{const key=e.target.closest('button')?.dataset.refSignalKey;if(key&&['Enter',' '].includes(e.key)){e.preventDefault();const item=refSignals.find(x=>x.key===key);if(item)refOpenSignal(item);}},true);
 refRoot.addEventListener('click',async e=>{
  const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.refClear){if(['from','to'].includes(b.dataset.refClear)){state[b.dataset.refClear]=null;state.routes=null;state.tripKey=null;refShow('home');}return;}
  if(b.dataset.refScreen){refShow(b.dataset.refScreen);return;}
  if(b.dataset.refPick){refPick=b.dataset.refPick;state.pick=refPick;refShow('search');return;}
  if(b.dataset.refRoute){if(!refNavigating&&state.routes?.alt&&['jjuk','short'].includes(b.dataset.refRoute)){state.focus=b.dataset.refRoute;refShow('walking');}return;}
@@ -328,6 +344,7 @@ refRoot.addEventListener('click',async e=>{
  if(b.id==='ref-slope'){const on=b.getAttribute('aria-checked')!=='true';store.set('avoidSlope',on);state.routes=null;state.tripKey=null;b.setAttribute('aria-checked',on);refToast(on?'급경사가 적은 대안을 먼저 찾아요.':'추가 시간이 적은 대안을 먼저 찾아요.');return;}
  const a=b.dataset.refAction;
  if(a==='close-signal'){refCloseSignal();return;}
+ if(a==='preview-pattern'){refStartReplay();return;}
  if(a==='find')refFind();
  if(a==='gps'){await refDataReady;refLocateStart();}
  if(a==='swap'){[state.from,state.to]=[state.to,state.from];state.routes=null;state.tripKey=null;refShow('home');}
@@ -335,8 +352,8 @@ refRoot.addEventListener('click',async e=>{
  if(a==='clear-query'){const q=document.getElementById('ref-query');q.value='';q.focus();refDoSearch('');}
  if(a==='clear-recent'){store.set('recent',[]);document.getElementById('ref-search-recent').innerHTML='';}
  if(a==='public-search'){
-  const q=document.getElementById('ref-query').value;b.disabled=true;
-  try{const r=await fetch('/api/places?q='+encodeURIComponent(q));const j=await r.json();if(!r.ok)throw new Error(j.error||'공개 검색 연결 실패');const rows=j.places||j.results||[];refSearchHits=rows;document.getElementById('ref-results').innerHTML=rows.map((p,i)=>`<button class="search-result" data-ref-hit="${i}">${refIcon('location_on')}<span class="row-copy"><strong>${esc(p.name)}</strong><small>${esc(p.sub||p.kind||'공개 검색')}</small></span></button>`).join('')||'<p class="empty">찾은 장소가 없어요.</p>';}catch(err){refToast(err.message);}finally{b.disabled=false;}
+  const q=document.getElementById('ref-query').value,seq=++refSearchSeq;b.disabled=true;
+  try{const r=await fetch('/api/places?q='+encodeURIComponent(q));const j=await r.json();if(refScreen!=='search'||seq!==refSearchSeq||document.getElementById('ref-query')?.value!==q)return;if(!r.ok)throw new Error(j.error||'공개 검색 연결 실패');const rows=j.places||j.results||[];refSearchHits=rows;document.getElementById('ref-results').innerHTML=rows.map((p,i)=>`<button class="search-result" data-ref-hit="${i}">${refIcon('location_on')}<span class="row-copy"><strong>${esc(p.name)}</strong><small>${esc(p.sub||p.kind||'공개 검색')}</small></span></button>`).join('')||'<p class="empty">찾은 장소가 없어요.</p>';}catch(err){if(seq===refSearchSeq&&refScreen==='search')refToast(err.message);}finally{b.disabled=false;}
  }
  if(a==='crossing-map'){if(refSample)refShow('walking');else location.href=new URL('index.html#home',document.baseURI).href;}
  if(a==='pause'){refPaused=!refPaused;if(!refSample){if(refPaused){stopGPS();clearInterval(walkClock);walkClock=null;resumeTrack(walkTrack);}else{renderWalk(false,true);}}b.innerHTML=refIcon(refPaused?'play_arrow':'pause')+`<span>${refPaused?'다시 시작':'일시정지'}</span>`;}
@@ -375,11 +392,12 @@ if(!refSample&&refFrom&&refTo){
 }
 setInterval(()=>{
  if(refSample)return;
+ refPaintReplay();
  if(['walking','summary'].includes(refScreen)&&refSignals.length){
   for(const item of refSignals)Object.assign(item,refSignalModel(item.raw));
   refNaverHandle?.updateSignals?.(refSignals);
   for(const{item,elm}of refSignalMarkers){elm.className='signal-disc '+refSignalClass(item)+' estimated';elm.querySelector('.mi').textContent=item.historyLabel&&!item.trusted?'history':'directions_walk';}
-  if(refSelectedSignal&&refSignalPopup){const n=refSignalPopup.getElement().querySelector('strong');if(n)n.textContent=refSignalTitle(refSelectedSignal);}
+  if(refSelectedSignal&&refSignalPopup){const n=refSignalPopup.getElement().querySelector('[data-signal-value]'),p=refSignalPopup.getElement().querySelector('p');if(n)n.textContent=refSignalTitle(refSelectedSignal);if(p)p.textContent=refSignalDescription(refSelectedSignal);}
   const next=refSignals.find(x=>!x.raw.nearby),out=document.getElementById('ref-next-summary');
   if(next&&out){out.textContent=next.trusted?next.secondsLabel:next.historyLabel||next.geometrySummary||next.reason;const disc=out.closest('button').querySelector('.signal-disc');disc.className='signal-disc '+refSignalClass(next);disc.querySelector('.mi').textContent=next.historyLabel&&!next.trusted?'history':'directions_walk';}
   else if(out)out.textContent='경로의 횡단 시간 미확인 · 주변 아이콘 보기';

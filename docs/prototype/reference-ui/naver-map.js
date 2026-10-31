@@ -162,10 +162,12 @@
         selectedSignal=item;
         if(!signalPopup)signalPopup=new n.InfoWindow({content:'',maxWidth:235,disableAutoPan:true,borderWidth:0,backgroundColor:'#FCFBF7',anchorColor:'#FCFBF7',anchorSize:new n.Size(12,10),pixelOffset:new n.Point(0,-23)});
         if(typeof map.setCenter==='function')map.setCenter(latLng(item.ll));
-        if(typeof map.panBy==='function')map.panBy(new n.Point(0,-80));
+        if(typeof map.panBy==='function')map.panBy(new n.Point(0,-Math.max(70,size.height/2-60)));
         signalPopup.setContent(options.signalHTML(item));signalPopup.open(map,latLng(item.ll));
         const close=signalPopup.getContentElement()?.querySelector('[data-ref-action="close-signal"]');
         if(close)close.onclick=e=>{e.preventDefault();e.stopPropagation();options.onSignalClose?.();};
+        const preview=signalPopup.getContentElement()?.querySelector('[data-ref-action="preview-pattern"]');
+        if(preview)preview.onclick=e=>{e.preventDefault();e.stopPropagation();options.onPatternReplay?.();};
         host.classList.add('signal-detail-open');
       },
       closeSignal(){signalPopup?.close();selectedSignal=null;host.classList.remove('signal-detail-open');},
@@ -180,8 +182,21 @@
         }
         const existing=new Set(signalMarkers.map(x=>x.item.key));
         for(const item of items)if(validLL(item.ll)&&!existing.has(item.key))signal(item,item.key===options.next?.key);
-        for(const entry of signalMarkers){const item=byKey.get(entry.item.key);if(!item)continue;entry.item=item;const nextIcon=signalHTML(item,entry.large);if(nextIcon.content!==entry.html){entry.marker.setIcon(nextIcon);entry.html=nextIcon.content;}}
-        if(selectedSignal&&signalPopup){const current=byKey.get(selectedSignal.key);if(current){selectedSignal=current;const node=signalPopup.getContentElement(),strong=node?.querySelector('strong'),p=node?.querySelector('p');if(strong)strong.textContent=options.signalTitle?.(current)||(current.trusted?current.secondsLabel:current.statusLabel);if(p)p.textContent=options.signalDescription?.(current)||current.reason;}}
+        const buttons=Array.from(container.querySelectorAll?.('button[data-ref-signal-key]')||[]);
+        for(const entry of signalMarkers){
+          const item=byKey.get(entry.item.key);if(!item)continue;entry.item=item;const nextIcon=signalHTML(item,entry.large);
+          if(nextIcon.content===entry.html)continue;
+          const button=buttons.find(b=>b.dataset.refSignalKey===item.key);
+          if(button){
+            const state=statusOf(item),history=state==='unknown'&&!!item.historyLabel;
+            button.className=`signal-disc ${history?'history':classes[state]}${item.trusted?' estimated':''}${entry.large?'':options.summary?' summary-marker':' faded'}`;
+            button.setAttribute('aria-label',(item.label||'횡단보도')+' 신호 정보'+(history?' · 과거 기록, 현재 신호 아님':''));
+            const iconNode=button.querySelector('.mi');if(iconNode)iconNode.textContent=history?'history':'directions_walk';
+            const callout=button.closest('.crossing-marker');if(callout){const text=callout.querySelector('p');if(text){text.textContent=item.secondsLabel;text.style.color=state==='walk'?'#2FA866':state==='wait'?'#D9443F':'#718096';}}
+          }else entry.marker.setIcon(nextIcon);
+          entry.html=nextIcon.content;
+        }
+        if(selectedSignal&&signalPopup){const current=byKey.get(selectedSignal.key);if(current){selectedSignal=current;const node=signalPopup.getContentElement(),strong=node?.querySelector('[data-signal-value]'),p=node?.querySelector('p');if(strong)strong.textContent=options.signalTitle?.(current)||(current.trusted?current.secondsLabel:current.statusLabel);if(p)p.textContent=options.signalDescription?.(current)||current.reason;}}
       },
       resize,
       fitRoute() { if (!destroyed && coords.length > 1) map.fitBounds(coords.map(latLng), options.summary ? {top:35,right:35,bottom:35,left:35,maxZoom:17} : {top:180,right:70,bottom:85,left:55,maxZoom:17}); },
