@@ -368,13 +368,15 @@ function refSignalLine(m){
 }
 function refRouteBenefit(key){
  const R=state.routes;if(key!=='jjuk'||!R?.alt)return '';
- const a=R.jjuk.m,b=R.short.m;let benefit='';
- if(a.stairs<b.stairs)benefit=`계단 ${b.stairs-a.stairs}구간 덜 지나가요`;
- else if(refTerrainKnown(R.jjuk)&&refTerrainKnown(R.short)&&a.steep<b.steep)benefit=`급경사 약 ${Math.round(b.steep-a.steep)}m 덜 걸어요`;
- else if(a.sig<b.sig)benefit=`신호 횡단 ${b.sig-a.sig}곳 적어요`;
- else if(refTerrainKnown(R.jjuk)&&refTerrainKnown(R.short)&&a.gain<b.gain)benefit=`오르는 높이 약 ${Math.round(b.gain-a.gain)}m 적어요`;
+ const a=R.jjuk.m,b=R.short.m,t=refTerrainKnown(R.jjuk)&&refTerrainKnown(R.short),out=[];
+ // 줄어드는 것을 두 개까지(계단 > 신호 횡단 > 급경사 > 오르막), 그리고 시간 차이
+ if(a.stairs<b.stairs)out.push(`계단 ${b.stairs-a.stairs}구간 덜`);
+ if(a.sig<b.sig)out.push(`신호 ${b.sig-a.sig}곳 덜`);
+ if(t&&b.steep-a.steep>=30)out.push(`급경사 약 ${Math.round((b.steep-a.steep)/10)*10}m 덜`);
+ if(t&&b.gain-a.gain>=5)out.push(`오르막 약 ${Math.round(b.gain-a.gain)}m 덜`);
+ if(!out.length)return '';
  const extra=refTotal(R.jjuk)-refTotal(R.short);
- return benefit+(benefit&&extra>0?' · '+dur(extra)+' 더':'');
+ return out.slice(0,2).join(' · ')+(Math.abs(extra)<30?' · 도착 시간은 거의 같아요(예상)':extra>0?` · 약 ${mins(extra)} 더`:` · 약 ${mins(-extra)} 덜`);
 }
 function refCard(key){
  const R=state.routes,r=R?.[key];if(!r)return '';
@@ -855,7 +857,8 @@ setInterval(()=>{
  if(walkingNow){
   const basis=document.getElementById('ref-timing-basis');if(basis)basis.textContent=gpsFresh()?'신호 대기 포함 예상':gpsFix?'마지막 위치 기준 예상':'출발지 기준 예상';
   const left=$('w-left')?.textContent,time=$('w-time')?.textContent,sp=$('w-pace')?.textContent;
-  const lf=document.getElementById('ref-left');if(left&&left!=='—'&&lf)lf.textContent=left;
+  // 남은 거리: 내 위치를 경로에 투영한 값으로 직접 계산(엔진 값이 멈춰 있어도 남은 시간과 같은 기준)
+  const lf=document.getElementById('ref-left');if(lf){if(refProgress!=null&&!offRoute)lf.textContent=km(Math.max(0,route.length-refProgress));else if(left&&left!=='—')lf.textContent=left;}
   if(refProgress!=null&&!offRoute){const sp=trackSpeed(walkTrack)||SPEED,rem=Math.max(0,route.length-refProgress)/sp+refWaitAhead(route,refProgress,sp);document.getElementById('ref-time').textContent=mins(rem);const ar=document.getElementById('ref-arrival');if(ar)ar.textContent=refClock(rem)+' 도착';}
   if(gpsFresh()&&refNaverHandle)refNaverHandle.setCurrent(gpsFix.ll);
   if(sp&&sp!=='—')document.getElementById('ref-speed').textContent=sp;
