@@ -691,3 +691,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-10-31T03:51:38,2975,2200,net_error,,TimeoutError
 2026-10-31T03:56:42,2975,2200,net_error,,TimeoutError
 2026-10-31T04:01:28,2975,2200,http_404,,
+2026-10-31T04:06:36,1855,2200,ok,,v2xSignalPhaseTimingFusionInformation
