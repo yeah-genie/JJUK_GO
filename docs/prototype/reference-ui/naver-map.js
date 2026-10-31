@@ -108,7 +108,8 @@
     };
     const classes = {walk:'',wait:'red',unknown:'gray'};
     const signalHTML = (x, large = false) => {
-      const state = statusOf(x), size = large ? 45 : options.summary ? 28 : 25;
+      large=large&&(x.trusted===true||options.sample===true);
+      const state = statusOf(x), size = large ? 36 : options.summary ? 28 : 25;
       const history=state==='unknown'&&!!x.historyLabel;
       let html = `<button type="button" data-ref-signal-key="${escape(x.key||'')}" aria-label="${escape(x.label||'횡단보도')} 신호 정보${history?' · 과거 기록, 현재 신호 아님':''}" class="signal-disc ${history?'history':classes[state]}${x.trusted?' estimated':''}${large?'':options.summary?' summary-marker':' faded'}">${icon(history?'history':'directions_walk')}</button>`;
       if (large) {

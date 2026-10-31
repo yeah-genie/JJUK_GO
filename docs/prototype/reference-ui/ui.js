@@ -186,7 +186,7 @@ function refSettings(){
  ${refSample?'':'</details>'}${!refSample&&refSettingsFromResult?`<h3 class="setting-label">출발 시각</h3><div class="ma-dep" role="group" aria-label="출발 시각">${[[0,'지금'],[300,'5분 뒤'],[600,'10분 뒤'],[900,'15분 뒤']].map(([v,l])=>`<button data-ref-dep="${v}" aria-pressed="${refDep===v}">${l}</button>`).join('')}</div>`:''}<h3 class="setting-label route-options">경로 옵션</h3><div class="setting-row">${refIcon('stairs')}<div class="setting-copy"><strong>계단 피하기</strong><p>${refSample?'가능한 계단이 적은 경로를 우선으로<br>추천해요.':'지도에 확인된 계단을 제외해요.'}</p></div>${refToggle('ref-stairs',refSample||p.avoidSteps,'계단 피하기')}</div>
  <div class="setting-row">${refIcon('signal_cellular_4_bar')}<div class="setting-copy"><strong>${refSample?'급경사 피하기':'급경사 덜 걷기'}</strong><p>${refSample?'가파른 오르막과 내리막 구간을 피해서<br>추천해요.':'추정 급경사가 적은 대안을 우선해요.'}</p></div>${refToggle('ref-slope',refSample||store.get('avoidSlope',true),'급경사 덜 걷기')}</div>
  <h3 class="budget-label">추가로 걸을 수 있는 시간</h3><p class="budget-copy">${refSample?'최단 경로 대비, 최대 몇 분까지 더 걸을 수 있는<br>대안 경로를 추천할지 설정해요.':'추가 시간 안에서 부담을 줄이는 길을 찾아요.'}</p><div class="budget-options">${[.5,1,2,3].map(v=>`<button class="${(refSample?1:store.get('referenceBudget',p.budgetSeconds/60))===v?'active':''}" data-ref-budget="${v}">+${v}분</button>`).join('')}</div>
- ${refSample?'':`<details class="settings-notes"><summary>계산 기준${refIcon('expand_more')}</summary><p class="small" id="ref-data-source">${esc(refDataLabel())}</p><p class="small">신호는 과거 패턴 예상, 경사는 지형 추정이에요. 턱과 노면은 미확인입니다.</p></details>`}
+ ${refSample||refSettingsFromResult?'':`<details class="settings-notes"><summary>계산 기준${refIcon('expand_more')}</summary><p class="small" id="ref-data-source">${esc(refDataLabel())}</p><p class="small">신호는 과거 패턴 예상, 경사는 지형 추정이에요. 턱과 노면은 미확인입니다.</p></details>`}
  ${refSample||refSettingsFromResult?'':`<div class="setting-row">${refIcon('bar_chart')}<div class="setting-copy"><strong>익명 사용 기록 보내기</strong><p>대안이 있었는지, 어느 길을 골랐는지만 보내요.<br>위치·장소 이름·이동 경로는 보내지 않아요.</p></div>${refToggle('ref-log',!store.get('nolog',false),'익명 사용 기록 보내기')}</div>`}${!refSample&&refSettingsFromResult?'<div class="settings-apply"><button class="yellow-button" data-ref-action="back-result">이 조건으로 길찾기</button></div>':''}</section>`;
 }
 function refNoAltText(){
@@ -298,7 +298,7 @@ function refNav(){
  <div class="ma-navbottom">
   <button class="next-crossing" data-ref-action="next-crossing"><span class="signal-disc gray">${refIcon('directions_walk')}</span><span class="row-copy"><strong>다음 횡단보도</strong><small id="ref-next-summary">위치 확인 후 안내해요</small></span>${refIcon('chevron_right')}</button>
   <button class="yellow-button ref-reroute" data-ref-action="reroute" style="display:none">${refIcon('refresh')}<span>내 위치에서 다시 찾기</span></button>
-  <div class="ma-bar"><div class="ma-bar-copy"><strong id="ref-time">${r?mins(refTotal(r)):'—'}</strong><span><b id="ref-left">${r?km(r.length):'—'}</b> · <span id="ref-arrival">${r?refClock(refTotal(r))+' 도착':''}</span></span><small>내 속도 <b id="ref-speed">${pace.label==='아직 측정 전'?'걸으면 재요':pace.value+' km/h'}</b> · 신호 대기 포함 예상</small></div>
+  <div class="ma-bar"><div class="ma-bar-copy"><strong id="ref-time">${r?mins(refTotal(r)):'—'}</strong><span><b id="ref-left">${r?km(r.length):'—'}</b> · <span id="ref-arrival">${r?refClock(refTotal(r))+' 도착':''}</span></span><small>내 속도 <b id="ref-speed">${pace.label==='아직 측정 전'?'걸으면 재요':pace.value+' km/h'}</b> · <span id="ref-timing-basis">출발지 기준 예상</span></small></div>
   <button class="ma-round" data-ref-action="pause" aria-label="${refPaused?'다시 시작':'일시정지'}">${refIcon(refPaused?'play_arrow':'pause')}</button><button class="ma-end" data-ref-action="finish">종료</button></div>
  </div></section>`;
 }
@@ -346,30 +346,30 @@ function refSummary(){
  <div class="bottom-actions"><button class="white-button" data-ref-screen="home">${refIcon('home')}홈으로</button><button class="navy-button" data-ref-action="save">${refIcon('download')}이미지 저장</button></div></section>`;
 }
 function refShare(){
- return `<section class="page share-page">${refHeader('걸음 공유','summary')}<p class="small">내 걸음으로 남긴 오늘.</p><div class="poster-preview"><canvas id="ref-poster" width="990" height="1800" role="img" aria-label="걸은 경로와 거리, 시간, 페이스 공유 카드"></canvas></div><div class="poster-styles" role="group" aria-label="카드 배경">${[['asphalt','아스팔트'],['light','밝게'],['transparent','투명']].map(([key,label])=>`<button data-ref-poster="${key}" aria-pressed="${refPosterSkin===key}">${label}</button>`).join('')}</div><div class="poster-photo-actions"><label class="white-button" for="ref-poster-photo">${refIcon('add_photo_alternate')}사진 넣기</label><input type="file" id="ref-poster-photo" accept="image/*" hidden>${refPosterPhoto?'<button data-ref-action="poster-clear-photo">사진 지우기</button>':''}</div><p class="small poster-privacy">사진은 서버로 보내지 않아요. 투명 카드는 사진 위에 얹어 쓸 수 있어요.</p><button class="yellow-button" data-ref-action="poster-save">${refIcon('download')}이미지 저장</button></section>`;
+ return `<section class="page share-page">${refHeader('걸음 공유','summary')}<p class="small">${refSample?'시각 예시 · 실제 이동 기록이 아닙니다.':'내 걸음으로 남긴 오늘.'}</p><div class="poster-preview"><canvas id="ref-poster" width="990" height="1800" role="img" aria-label="걸은 경로와 거리, 시간, 페이스 공유 카드"></canvas></div><div class="poster-styles" role="group" aria-label="카드 배경">${[['asphalt','아스팔트'],['light','밝게'],['transparent','투명']].map(([key,label])=>`<button data-ref-poster="${key}" aria-pressed="${refPosterSkin===key}">${label}</button>`).join('')}</div><div class="poster-photo-actions"><label class="white-button" for="ref-poster-photo">${refIcon('add_photo_alternate')}사진 넣기</label><input type="file" id="ref-poster-photo" accept="image/*" hidden>${refPosterPhoto?'<button data-ref-action="poster-clear-photo">사진 지우기</button>':''}</div><p class="small poster-privacy">사진은 서버로 보내지 않아요. 투명 카드는 사진 위에 얹어 쓸 수 있어요.</p><button class="yellow-button" data-ref-action="poster-save">${refIcon('download')}이미지 저장</button></section>`;
 }
 function refPaintPoster(){
  const c=document.getElementById('ref-poster');if(!c)return;
- const rec=state.lastWalk,route=state.routes?.[state.focus],segments=(rec?.trace||[]).filter(s=>s.length>1),actual=segments.length>0;
- const lines=actual?segments:route?.coords?.length?[route.coords]:[],points=lines.flat(),ctx=c.getContext('2d');
+ const rec=refSample?{trace:[refFixtureRoute],meters:1100,elapsedS:900}:state.lastWalk,route=state.routes?.[state.focus],segments=(rec?.trace||[]).filter(s=>s.length>1),actual=!refSample&&segments.length>0;
+ const lines=actual||refSample?segments:route?.coords?.length?[route.coords]:[],points=lines.flat(),ctx=c.getContext('2d');
  ctx.clearRect(0,0,c.width,c.height);ctx.save();ctx.scale(3,3);
  const light=refPosterSkin==='light',ink=light?'#242A32':'#F4F2E9',muted=light?'#59616D':'#B7BEC8';
  if(refPosterSkin==='photo'&&refPosterPhoto){const im=refPosterPhoto,k=Math.max(330/im.width,600/im.height);ctx.drawImage(im,(330-im.width*k)/2,(600-im.height*k)/2,im.width*k,im.height*k);ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(0,0,330,600);}
  else if(refPosterSkin!=='transparent'){ctx.fillStyle=light?'#F4F2E9':'#242A32';ctx.fillRect(0,0,330,600);}
  const text=(value,y,size,weight=600,color=ink)=>{ctx.fillStyle=color;ctx.font=`${weight} ${size}px "Noto Sans KR",sans-serif`;ctx.textAlign='center';ctx.fillText(value,165,y,300);};
- text('내 걸음으로, 쭉.',47,20,800);text(actual?'GPS로 기록한 오늘의 걸음':'계획 경로 · 실제 이동 궤적 없음',69,10,500,muted);
+ text('내 걸음으로, 쭉.',47,20,800);text(refSample?'시각 예시 · 실제 이동 기록 아님':actual?'GPS로 기록한 오늘의 걸음':'계획 경로 · 실제 이동 궤적 없음',69,10,500,muted);
  if(points.length){const cos=Math.cos(37.55*Math.PI/180),xs=points.map(p=>p[0]*cos),ys=points.map(p=>-p[1]),x0=Math.min(...xs),y0=Math.min(...ys),dx=Math.max(...xs)-x0,dy=Math.max(...ys)-y0,k=220/Math.max(dx,dy,1e-7);ctx.strokeStyle=light?'#946900':'#F6C343';ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';for(const line of lines){ctx.beginPath();line.forEach((p,i)=>{const x=55+(220-dx*k)/2+(p[0]*cos-x0)*k,y=95+(220-dy*k)/2+(-p[1]-y0)*k;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}}
- const meters=actual?rec.meters:route?.length,seconds=actual?rec.elapsedS:route?.m?.walk;
- text(meters>0?(meters/1000).toFixed(2):'—',377,49,900);text(actual?'킬로미터':'계획 거리 · km',398,11,500,muted);
- text(Number.isFinite(seconds)?dur(seconds):'—',451,25,800);text(actual?'걸은 시간':'예상 보행 시간',472,11,500,muted);
- const pace=actual&&meters>0&&seconds>0?Math.round(seconds/(meters/1000)):null;
- text(pace?`${Math.floor(pace/60)}'${String(pace%60).padStart(2,'0')}\"`:'—',518,25,800);text('평균 페이스 · 분/km',539,11,500,muted);
+ const meters=actual||refSample?rec.meters:route?.length,seconds=actual||refSample?rec.elapsedS:route?.m?.walk;
+ text(meters>0?(meters/1000).toFixed(2):'—',377,49,900);text(actual||refSample?'킬로미터':'계획 거리 · km',398,11,500,muted);
+ text(Number.isFinite(seconds)?dur(seconds):'—',451,25,800);text(actual||refSample?'걸은 시간':'예상 보행 시간',472,11,500,muted);
+ const pace=(actual||refSample)&&meters>=100&&seconds>=60?Math.round(seconds/(meters/1000)):null;
+ text(pace?`${Math.floor(pace/60)}'${String(pace%60).padStart(2,'0')}\"`:'—',518,25,800);text(pace?'평균 페이스 · 분/km':'평균 페이스 · 기록이 더 필요해요',539,11,500,muted);
  text('쭉고',575,16,900,light?'#242A32':'#F6C343');ctx.restore();
 }
 async function refSavePoster(){
  const c=document.getElementById('ref-poster');if(!c)return;
  const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!blob){refToast('저장하지 못했어요. 다시 시도해 주세요.');return;}
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='쭉고-오늘의-걸음.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);refToast('공유 이미지를 저장했어요.');
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=refSample?'쭉고-공유카드-시각예시.png':'쭉고-오늘의-걸음.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);refToast('공유 이미지를 저장했어요.');
 }
 // The map continues to use the bundled Seoul vector tiles and font protocol.
 const refOriginalMapStyle=mapStyle;
@@ -459,8 +459,8 @@ async function refDrawMap(){
     map.resize();resolve();return;
    }
    else map.fitBounds(bounds,{padding:summary?{top:30,bottom:34,left:30,right:30}:{top:170,bottom:70,left:55,right:80},duration:0,maxZoom:summary?15.4:17});
-   refMark(coords[0],el('endpoint-host',refEndpointHTML('from',state.from?.name)),{anchor:'top',offset:[0,-18]});
-   refMark(coords.at(-1),el('endpoint-host',refEndpointHTML('to',state.to?.name)),{anchor:'top',offset:[0,-18]});
+   refMark(coords[0],el('endpoint-host',refEndpointHTML('from',state.from?.name)),{anchor:'top',offset:[0,-14]});
+   refMark(coords.at(-1),el('endpoint-host',refEndpointHTML('to',state.to?.name)),{anchor:'top',offset:[0,-14]});
    if(refSample){refMark(coords[6],el('signal-disc red summary-marker',refIcon('directions_walk')));}
    else if(!summary){refSignals=refMakeSignals(r);for(const item of refSignals){
     const elm=el('signal-disc '+refSignalClass(item)+' estimated',refIcon(item.historyLabel&&!item.trusted?'history':'directions_walk'));
