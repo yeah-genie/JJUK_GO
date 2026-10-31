@@ -16,7 +16,7 @@ let refSignals=[],refSignalMarkers=[],refSignalPopup=null,refSelectedSignal=null
 let refPosterSkin='asphalt',refPosterPhoto=null;
 let refHomeMoveHooked=false,refPlace=null,refSearchFrom='home',refHomeCenter=null,refDep=0,refWake=null,refLastSpoken='',refFollow=true,refFollowZoomed=false,refLastFollow=0,refDragHooked=false,refRerouting=false,refProgress=null,refIgnoreUntil=0,refSettingsFromResult=false,refFindError=null,refArrivalCache={key:'',map:new Map()};
 const refHistory=(id,d)=>{const f=refSignalFacts[id]?.[d];return f?.[dayTypeNow()]||f?.wd||f?.we||null;};
-const refSignalModel=window.JJUKGO_SIGNAL_EVIDENCE.create({now:()=>SIG.now(),speed:()=>SPEED,meta:id=>SIGMETA.get(id),direction:d=>DIR_KO[d]||d,period:()=>planPeriodText(),plan:(...a)=>signalPlan(...a),history:refHistory,confidence:planConfidence,predict:(x,t)=>SIG.predictX(x,t),verdict:(...a)=>SIG.verdict(...a),arrival:x=>refArrival(x),preferArrival:()=>!refNavigating});
+const refSignalModelBase=window.JJUKGO_SIGNAL_EVIDENCE.create({now:()=>SIG.now(),speed:()=>SPEED,meta:id=>SIGMETA.get(id),direction:d=>DIR_KO[d]||d,period:()=>planPeriodText(),plan:(...a)=>signalPlan(...a),history:refHistory,confidence:planConfidence,predict:(x,t)=>SIG.predictX(x,t),verdict:(...a)=>SIG.verdict(...a),arrival:x=>refArrival(x),preferArrival:()=>!refNavigating});
 // 경로 위 횡단에 '내가 도착할 때' 시각을 준다. 계획 화면은 지금 출발, 걷는 중은 내 위치에서 남은 거리 기준.
 // 앞 횡단에서 기다릴 시간도 더해 경로의 예상 대기 계산(routeWaits)과 같은 방식으로 센다. 주변 신호와 위치를 모를 때는 null(지금 기준).
 // 지금 위치(from m)부터 남은 신호 횡단의 예상 대기 합(패턴이 있는 곳만). 결과 카드의 '신호 대기 포함' 시간과 같은 방식.
@@ -38,8 +38,34 @@ function refArrival(x){
  return refArrivalCache.map.get(x)??null;
 }
 // 이 시간대 패턴이 없으면 남은 초를 셀 수 없다. 다른 날 기록을 지금처럼 보이게 하지 않는다.
-function refSignalTitle(item){return item.trusted?item.secondsLabel:'남은 시간 모름';}
-function refRowText(item){return item.trusted?item.secondsLabel:'신호 시간 모름 · 현장 신호를 확인하세요';}
+// 패턴만 확인된 신호(확신 기준 미통과)도 빨강·초록을 보여 준다. 단 '검증 중'으로 구분하고 경로 계산·신호 띠에는 쓰지 않는다.
+// 1) 이 요일 종류·시간대 패턴이 있으나 다른 날 대조가 부족 → '검증 중'  2) 같은 시간대 다른 요일 종류 패턴만 있음 → '평일/주말 기록 기준'
+// 기준 시각(위상)이 없는 기록(초록 길이만 아는 곳)은 색을 지어내지 않고 회색으로 둔다. 매일 새벽 자료가 다시 만들어지면 자동으로 늘어난다.
+function refLoosePlan(id,t,dir){
+ const r=signalPlan(id,t,dir);if(r)return {r,basis:'검증 중'};
+ const bands=REAL.signals?.[id]?.bands||[],local=((t%86400)+86400)%86400,band=bands.find(b=>local>=b.start&&local<b.end);
+ if(!band)return null;const we=dayTypeNow()==='we',o=(we?band.legs:band.legsWe)?.[dir];
+ return o?{r:o,basis:we?'평일 기록 기준':'주말 기록 기준'}:null;
+}
+function refLoosePhase(r,t){
+ if(!r?.win?.length||!(r.c>=20&&r.c<=400)||!Number.isFinite(r.ref)||!Number.isFinite(r.day0??0))return null;
+ const ph=((((r.day0||0)+((t%86400)+86400)%86400-r.ref)%r.c)+r.c)%r.c;let wait=Infinity;
+ for(const[a,b]of r.win){for(const sh of[0,r.c])if(ph+sh>=a&&ph+sh<b)return {walk:true,rem:b-ph-sh};wait=Math.min(wait,((a-ph)%r.c+r.c)%r.c);}
+ return Number.isFinite(wait)?{walk:false,wait}:null;
+}
+function refSignalModel(x){
+ const item=refSignalModelBase(x);
+ if(item.trusted||!x.dir||x.s==null||x.s==='unmapped')return item;
+ const t=SIG.now(),lp=refLoosePlan(x.s,t,x.dir),ph=lp&&refLoosePhase(lp.r,t);if(!ph)return item;
+ const left=Math.max(0,Math.ceil(ph.walk?ph.rem:ph.wait));
+ Object.assign(item,{tentative:true,state:ph.walk?'walk':'wait',remainingSeconds:left,countdown:ph.walk?`${left}초 뒤 빨간불`:`${left}초 뒤 초록불`,
+  statusLabel:(ph.walk?'지금 초록':'지금 빨강')+'(예상·'+lp.basis+')',secondsLabel:`${ph.walk?'지금 초록':'지금 빨강'} · 약 ${left}초 뒤 ${ph.walk?'빨간불':'초록불'} (예상·${lp.basis})`,
+  reason:'기록이 적어 몇 초 어긋날 수 있어요. 자료가 쌓이면 자동으로 더 정확해져요 · 현장 신호를 함께 확인하세요',sourceLabel:engineSourceLabel(lp.basis)});
+ return item;
+}
+function engineSourceLabel(basis){return '과거 신호 기록 패턴 · '+basis+' · 실시간 아님';}
+function refSignalTitle(item){return item.trusted||item.tentative?item.secondsLabel:'남은 시간 모름';}
+function refRowText(item){return item.trusted||item.tentative?item.secondsLabel:'신호 시간 모름 · 현장 신호를 확인하세요';}
 function refSignalDescription(item){return (item.geometrySummary?item.geometrySummary+' · ':'')+(!item.trusted&&item.historySummary?'이 시간대 기록이 없어 초를 셀 수 없어요. '+item.historySummary.replace(' (이력 추정)','')+'(다른 날 기록) · ':'')+item.reason;}
 function refSignalClass(item){return item.state==='wait'?'red':item.state==='walk'?'':item.historyLabel?'history':'gray';}
 function refSignalHTML(item){const preview=!item.trusted&&item.recordedPattern;return `<div class="signal-detail-card"><button data-ref-action="close-signal" aria-label="신호 정보 닫기">${refIcon('close')}</button><h3>${esc(item.label)}</h3>${preview?'<div class="signal-replay" hidden><small>기록 패턴 재생 · 현재 신호 아님</small><strong data-replay-count></strong><small>시작 위치를 임의로 잡은 시연</small></div>':''}<strong data-signal-value>${esc(refSignalTitle(item))}</strong>${preview?'<button class="pattern-preview-button" data-ref-action="preview-pattern">기록 패턴 보기</button>':''}<small class="signal-disclaimer">패턴으로 추정 · 실시간 신호 아님</small><details class="signal-more"><summary>자료 기준 보기</summary><p>${esc(refSignalDescription(item))}</p><small>${esc(item.sourceLabel)}</small></details></div>`;}
@@ -132,7 +158,7 @@ function refPlaceInput(kind,item){
 }
 // ---------- 홈: 네이버 지도처럼 지도가 첫 화면. 위 검색창, 장소를 고르면 아래 장소 카드(출발/도착). 쭉고만의 것: 주변 신호 남은 초 ----------
 function refMapHome(){
- const recent=refRecent(),trusted=refSignals.filter(x=>x.trusted).length,p=refPlace;
+ const recent=refRecent(),trusted=refSignals.filter(x=>x.trusted||x.tentative).length,p=refPlace;
  const sheet=p?`<div class="nm-place"><button class="icon-button nm-close" data-ref-action="place-close" aria-label="장소 닫기">${refIcon('close')}</button>
    <strong>${esc(p.name)}</strong><small>${esc([refHitDist(p),p.sub||p.kind||''].filter(Boolean).join(' · '))}</small>
    <div class="nm-place-btns"><button class="white-button" data-ref-action="place-from">출발</button><button class="yellow-button" data-ref-action="place-to">${refIcon('directions_walk')}도착</button></div></div>`
@@ -147,7 +173,7 @@ function refMapHome(){
 function refDrawSignalMarkers(){
  refSignalMarkers.forEach(({elm})=>elm.closest('.maplibregl-marker')?.remove());refSignalMarkers=[];
  for(const item of refSignals){
-  const elm=el('signal-disc '+refSignalClass(item)+' estimated',refIcon(item.historyLabel&&!item.trusted?'history':'directions_walk')+(item.trusted&&Number.isFinite(item.remainingSeconds)?`<span class="sig-sec">${item.remainingSeconds}</span>`:''));
+  const elm=el('signal-disc '+refSignalClass(item)+' estimated',refIcon(item.historyLabel&&!item.trusted&&!item.tentative?'history':'directions_walk')+((item.trusted||item.tentative)&&Number.isFinite(item.remainingSeconds)?`<span class="sig-sec${item.tentative?' tentative':''}">${item.remainingSeconds}</span>`:''));
   elm.setAttribute('role','button');elm.tabIndex=0;elm.setAttribute('aria-label',item.label+' 신호 정보');
   elm.addEventListener('click',e=>{e.stopPropagation();refOpenSignal(item);});
   refMark(item.ll,elm);refSignalMarkers.push({item,elm});
@@ -505,7 +531,7 @@ async function refDrawMap(){
    refMark(coords.at(-1),el('endpoint-host',refEndpointHTML('to',state.to?.name)),{anchor:'top',offset:[0,-14]});
    if(refSample){refMark(coords[6],el('signal-disc red summary-marker',refIcon('directions_walk')));}
    else if(!summary){refSignals=refMakeSignals(r);for(const item of refSignals){
-    const elm=el('signal-disc '+refSignalClass(item)+' estimated',refIcon(item.historyLabel&&!item.trusted?'history':'directions_walk'));
+    const elm=el('signal-disc '+refSignalClass(item)+' estimated',refIcon(item.historyLabel&&!item.trusted&&!item.tentative?'history':'directions_walk'));
     elm.setAttribute('role','button');elm.tabIndex=0;elm.setAttribute('aria-label',item.label+' 신호 정보');
     elm.addEventListener('click',e=>{e.stopPropagation();refOpenSignal(item);});elm.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();refOpenSignal(item);}});
     refMark(item.ll,elm);refSignalMarkers.push({item,elm});
@@ -580,6 +606,31 @@ async function refFind(){
  catch(e){refFindError={title:'길을 찾지 못했어요',text:e.message,retry:true};refNavigating=false;refShow('home');}
 }
 function refUpdateProfile(change){const p=readProfile();Object.assign(p,change);writeProfile(p);applyPace();state.routes=null;state.tripKey=null;}
+function refGpsHelp(e){
+ const inapp=/KAKAOTALK|Instagram|FBAN|FBAV|Barcelona|Threads|NAVER\(inapp|Line\//i.test(navigator.userAgent);
+ if(e?.code===1)return '위치 권한이 꺼져 있어요. 주소창의 자물쇠(또는 aA) → 위치 허용 후 다시 눌러 주세요.'+(inapp?' 앱 안 브라우저라면 Safari·Chrome으로 열어 주세요.':'');
+ if(inapp)return '앱 안 브라우저에서는 위치가 잘 안 잡혀요. 메뉴(⋯)에서 Safari·Chrome으로 열어 주세요.';
+ if(e?.code===2)return '휴대폰 위치 서비스가 꺼져 있어요. 설정에서 켠 뒤 다시 눌러 주세요.';
+ return e?.message&&!/^Timeout|^User denied/i.test(e.message)&&/[가-힣]/.test(e.message)?e.message:'아직 위치를 받지 못했어요. 탁 트인 곳에서 다시 눌러 주세요.';
+}
+let refMeMarker=null;
+function refCenterHome(ll,zoom=16){
+ refHomeCenter=ll;
+ if(refNaverHandle&&refRoot.dataset.mapProvider==='naver'){refNaverHandle.setCurrent?.(ll);refNaverHandle.center(ll,zoom);}
+ else if(map){refMeMarker?.remove();refMeMarker=new maplibregl.Marker({element:el('m-me','')}).setLngLat(ll).addTo(map);refMarkers.push(refMeMarker);map.easeTo({center:ll,zoom,duration:400});}
+ refRefreshNearby(ll);
+}
+// 홈의 내 위치 버튼: 대략적인 위치(오차 100m 넘음)도 지도에는 보여 주고, 출발지로는 정확할 때만 쓴다
+function refHomeLocate(){
+ if(!navigator.geolocation||!window.isSecureContext){refToast('위치는 보안 연결(https) 주소에서만 쓸 수 있어요.');return;}
+ const request=++gpsRequest;refToast('내 위치를 찾고 있어요…');
+ requestLocation(p=>{if(request!==gpsRequest)return;try{
+  const f=readFix(p,1000);gpsFix=f;
+  if(f.accuracy<=100&&!state.from){state.from={name:'내 위치',sub:'GPS',ll:[...f.ll],me:true};}
+  if(refScreen==='home')refCenterHome(f.ll,f.accuracy>100?15:16);
+  refToast(f.accuracy>100?`대략적인 위치예요(오차 약 ${Math.round(f.accuracy)}m). 탁 트인 곳에서 다시 눌러 주세요.`:`내 위치 · 오차 약 ${Math.round(f.accuracy)}m`);
+ }catch(e){refToast(refGpsHelp(e));}},e=>{if(request!==gpsRequest)return;refToast(refGpsHelp(e));});
+}
 function refLocateStart(){
  refShow('home');const request=++gpsRequest;gpsPending=true;gpsStatus('내 위치를 찾고 있어요…');refToast('내 위치를 찾고 있어요…');
  if(!navigator.geolocation||!window.isSecureContext){gpsPending=false;refToast('위치 연결을 사용할 수 없어요. 출발지를 직접 선택해 주세요.');return;}
@@ -592,7 +643,7 @@ function refLocateStart(){
    state.from={name:'내 위치',sub:'GPS',ll:[...gpsFix.ll],me:true};state.mode='actual';state.routes=null;state.tripKey=null;state.fixedRoute=null;state.dep=0;state.focus='jjuk';
    refPick='to';state.pick='to';if(state.to)refFind();else refShow('search');
   }catch(e){gpsError(e);refToast('정확한 위치를 받지 못했어요. 출발지를 직접 선택해 주세요.');}
- },e=>{if(request!==gpsRequest)return;gpsPending=false;gpsError(e);refPick='from';state.pick='from';refShow('search');refToast('위치를 연결하지 못했어요. 권한을 확인하거나 출발지를 직접 선택해 주세요.');});
+ },e=>{if(request!==gpsRequest)return;gpsPending=false;gpsError(e);refPick='from';state.pick='from';refShow('search');refToast(refGpsHelp(e)+' 출발지를 직접 골라도 돼요.');});
 }
 refRoot.addEventListener('keydown',e=>{if(!refSample&&e.target.id==='ref-query'&&e.key==='Enter'){e.preventDefault();document.getElementById('ref-search-submit').click();}});
 refRoot.addEventListener('change',async e=>{if(e.target.id!=='ref-poster-photo')return;const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>20*1024*1024){refToast('20MB 이하의 이미지 파일을 골라 주세요.');return;}const url=URL.createObjectURL(file);try{const im=new Image();im.src=url;await im.decode();if(refScreen!=='share')return;refPosterPhoto=im;refPosterSkin='photo';refShow('share');}catch{refToast('사진을 읽지 못했어요. 다른 이미지를 골라 주세요.');}finally{URL.revokeObjectURL(url);}});
@@ -667,6 +718,7 @@ refRoot.addEventListener('click',async e=>{
  if(a==='finish'){if(!refSample&&!refNavigating){refShow('home');return;}if(!refSample&&refRoot.querySelector('.ma-end')?.textContent!=='기록 보기'&&!confirm('안내를 끝낼까요? 지금까지 걸은 기록을 보여 드려요.'))return;
   if(!refSample){endWalk();stopGPS();if(!(state.lastWalk?.meters>0)){refNavigating=false;refPaused=false;refShow('walking');refToast('걸은 기록이 없어 경로 화면으로 돌아왔어요.');return;}}if(!refSample){endWalk();stopGPS();}refNavigating=false;refPaused=false;refShow('summary');}
  if(a==='sound'){refSound=!refSound;b.setAttribute('aria-pressed',refSound);b.innerHTML=refIcon(refSound?'volume_up':'volume_off');if(refSound&&!refSample&&'speechSynthesis'in window){speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById('ref-instruction').textContent));}}
+ if(a==='recenter'&&refScreen==='home'&&!refSample){if(gpsFresh())refCenterHome(gpsFix.ll);else refHomeLocate();return;}
  if(a==='recenter'){refFollow=true;refFollowZoomed=false;refLastFollow=0;}
  if(a==='recenter'&&map){if(!refSample&&!gpsFresh()){refPendingRecenter=true;if(refNavigating&&!refPaused)renderWalk(false,true);else locate(false);}else if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);else map.easeTo({center:gpsFix?.ll||refFixtureRoute[0],zoom:16.7,duration:300});}
  if(a==='layers'&&refRoute){if(refNaverHandle)refNaverHandle.fitRoute();else{const b=new maplibregl.LngLatBounds(refRoute[0],refRoute[0]);refRoute.forEach(c=>b.extend(c));map.fitBounds(b,{padding:{top:170,bottom:70,left:45,right:70},duration:300});}}
@@ -704,7 +756,7 @@ const refPoint = value => {
 const refFrom=refPoint(refParams.get('from')),refTo=refPoint(refParams.get('to'));
 if(!refSample&&!refFrom)navigator.permissions?.query({name:'geolocation'}).then(st=>{
  if(st.state!=='granted')return;
- navigator.geolocation.getCurrentPosition(p=>{try{if(state.from)return;const f=readFix(p,1000);if(f.accuracy>100)return;gpsFix=f;state.from={name:'내 위치',sub:'GPS',ll:[...f.ll],me:true};if(refScreen==='home')refShow('home');}catch{}},()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+ navigator.geolocation.getCurrentPosition(p=>{try{if(state.from)return;const f=readFix(p,1000);if(f.accuracy>100)return;gpsFix=f;state.from={name:'내 위치',sub:'GPS',ll:[...f.ll],me:true};if(refScreen==='home'&&!refPlace)refCenterHome(f.ll);}catch{}},()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
 }).catch(()=>{});
 refShow(refParams.get('screen')||(refSample||store.get('seenSplash',false)?'home':'splash'));
 if(!refSample&&refFrom&&refTo){
@@ -719,14 +771,14 @@ setInterval(()=>{
  if(['walking','summary','home'].includes(refScreen)&&refSignals.length){
   for(const item of refSignals)Object.assign(item,refSignalModel(item.raw));
   refNaverHandle?.updateSignals?.(refSignals);
-  for(const{item,elm}of refSignalMarkers){elm.className='signal-disc '+refSignalClass(item)+' estimated';elm.querySelector('.mi').textContent=item.historyLabel&&!item.trusted?'history':'directions_walk';}
+  for(const{item,elm}of refSignalMarkers){elm.className='signal-disc '+refSignalClass(item)+' estimated';elm.querySelector('.mi').textContent=item.historyLabel&&!item.trusted&&!item.tentative?'history':'directions_walk';}
   if(refSelectedSignal&&refSignalPopup){const e=refSignalPopup.getElement(),n=e.querySelector('[data-signal-value]'),d=e.querySelector('.signal-detail-card p');if(n)n.textContent=refSignalTitle(refSelectedSignal);if(d)d.textContent=refSignalDescription(refSelectedSignal);}
   const next=refSignals.find(x=>!x.raw.nearby&&(refProgress==null||!Number.isFinite(x.raw.d)||x.raw.d>refProgress+3)),out=document.getElementById('ref-next-summary');
-  if(next&&out){out.textContent=(Number.isFinite(next.raw.d)&&refProgress!=null?Math.max(0,Math.round(next.raw.d-refProgress))+'m · ':'')+refRowText(next);const disc=out.closest('button').querySelector('.signal-disc');disc.className='signal-disc '+refSignalClass(next);disc.querySelector('.mi').textContent=next.historyLabel&&!next.trusted?'history':'directions_walk';}
+  if(next&&out){out.textContent=(Number.isFinite(next.raw.d)&&refProgress!=null?Math.max(0,Math.round(next.raw.d-refProgress))+'m · ':'')+refRowText(next);const disc=out.closest('button').querySelector('.signal-disc');disc.className='signal-disc '+refSignalClass(next);disc.querySelector('.mi').textContent=next.historyLabel&&!next.trusted&&!next.tentative?'history':'directions_walk';}
   else if(out)out.textContent=refNavigating&&refProgress!=null?'이 길에 남은 신호 횡단이 없어요':'경로의 횡단 시간 미확인';
   if(out)out.closest('button').querySelector('.row-copy strong').textContent=next?'다음 횡단보도':'횡단 정보';
  }
- if(refScreen==='home'&&!refSample){const hs=document.getElementById('ref-home-signal'),n=refSignals.filter(x=>x.trusted).length;if(hs)hs.textContent=n?`남은 시간을 아는 신호 ${n}곳 · 아이콘 숫자는 남은 초(예상)`:'지도를 움직여 주변 신호를 찾아보세요 · 실시간 아님';if(refRoot.dataset.mapProvider!=='naver')for(const{item,elm}of refSignalMarkers){const sc=elm.querySelector('.sig-sec');if(sc&&Number.isFinite(item.remainingSeconds))sc.textContent=item.remainingSeconds;}}
+ if(refScreen==='home'&&!refSample){const hs=document.getElementById('ref-home-signal'),n=refSignals.filter(x=>x.trusted||x.tentative).length;if(hs)hs.textContent=n?`남은 시간을 아는 신호 ${n}곳 · 아이콘 숫자는 남은 초(예상)`:'지도를 움직여 주변 신호를 찾아보세요 · 실시간 아님';if(refRoot.dataset.mapProvider!=='naver')for(const{item,elm}of refSignalMarkers){const sc=elm.querySelector('.sig-sec');if(sc&&Number.isFinite(item.remainingSeconds))sc.textContent=item.remainingSeconds;}}
  if(gpsFresh()&&refPendingRecenter){if(refNaverHandle)refNaverHandle.center(gpsFix.ll,16);refPendingRecenter=false;}
  if(refScreen==='home'&&state.from){const n=document.getElementById('ref-origin');if(n)n.textContent=state.from.name;}
  const gpsMessage=$('walk-location')?.textContent||$('location-status')?.textContent||$('search-location')?.textContent||'';

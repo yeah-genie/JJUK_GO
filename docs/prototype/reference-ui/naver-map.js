@@ -103,7 +103,7 @@
       return marker;
     };
     const statusOf = x => {
-      const supported = x && (x.trusted === true || options.sample === true);
+      const supported = x && (x.trusted === true || x.tentative === true || options.sample === true);
       return supported && x.state === 'walk' ? 'walk' : supported && x.state === 'wait' ? 'wait' : 'unknown';
     };
     const classes = {walk:'',wait:'red',unknown:'gray'};
@@ -112,8 +112,8 @@
       const state = statusOf(x), size = large ? 36 : options.summary ? 28 : 25;
       const history=state==='unknown'&&!!x.historyLabel;
       // 패턴이 확인된 신호는 남은 초를 아이콘 옆에 작게 붙인다(지도에서 바로 보이게, 예상값)
-      const sec = options.showSeconds && x.trusted && Number.isFinite(x.remainingSeconds) ? `<span class="sig-sec">${Math.max(0,Math.round(x.remainingSeconds))}</span>` : '';
-      const dim = large || options.summary || (options.showSeconds && x.trusted) ? '' : ' faded';
+      const sec = options.showSeconds && (x.trusted || x.tentative) && Number.isFinite(x.remainingSeconds) ? `<span class="sig-sec${x.tentative?' tentative':''}">${Math.max(0,Math.round(x.remainingSeconds))}</span>` : '';
+      const dim = large || options.summary || (options.showSeconds && (x.trusted || x.tentative)) ? '' : ' faded';
       let html = `<button type="button" data-ref-signal-key="${escape(x.key||'')}" aria-label="${escape(x.label||'횡단보도')} 신호 정보${history?' · 과거 기록, 현재 신호 아님':''}" class="signal-disc ${history?'history':classes[state]}${x.trusted?' estimated':''}${large?'':options.summary?' summary-marker':dim}">${icon(history?'history':'directions_walk')}${sec}</button>`;
       if (large) {
         const distance = Number.isFinite(x.distanceM) ? Math.max(0,Math.round(x.distanceM))+'m' : x.historyLabel?'과거 기록':x.crossingLength?'약 '+x.crossingLength+'m 횡단':'신호 위치';

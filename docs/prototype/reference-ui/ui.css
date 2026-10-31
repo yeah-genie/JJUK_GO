@@ -124,3 +124,8 @@
 .nm-place-btns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:14px}.nm-place-btns button{height:48px}
 .signal-disc{position:relative}
 .sig-sec{position:absolute;right:-12px;top:-9px;min-width:22px;height:18px;padding:0 4px;border-radius:9px;background:var(--navy);color:#fff;font:800 11px/18px "Noto Sans KR",sans-serif;text-align:center;box-shadow:0 1px 3px #0003;pointer-events:none}
+/* 경로 카드가 내용만큼 늘어나게(먼 길 경고 등으로 줄이 늘면 아래 '경로 상세'와 겹치던 문제) */
+.ma-cards{display:flex!important;flex-direction:column}.ma-cards>*{flex:none}.ma-card{height:auto!important}
+/* 패턴만 확인된(검증 중) 신호: 색은 같지만 숫자 배지를 흰 바탕·점선으로 구분 */
+.sig-sec.tentative{background:#fff;color:var(--navy);border:1.5px dashed var(--navy);line-height:15px}
+.signal-disc.tentative{opacity:.85}

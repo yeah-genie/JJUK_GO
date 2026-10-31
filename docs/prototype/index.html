@@ -1778,7 +1778,8 @@ function renderWalk(demo = false, resume = false) {
   const onFix = p => {
     if (current !== "walk" || session !== gpsRequest) return;
     try {
-      gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
+      // 빌딩 사이에서는 오차 50~100m가 흔하다. 100m까지 받아 진행을 이어 가고, 걸음 속도 학습은 trackAdd가 정확한 위치만 쓴다
+      gpsFix = readFix(p, 100); lastFix = gpsFix.timestamp;
       // 같은 시각의 위치가 다시 들어오면(다시 시작할 때 저장된 위치 + 브라우저 캐시) 새 정보가 없으니 넘긴다('위치가 갑자기 바뀌었어요' 거짓 경고 방지)
       if (previous && gpsFix.timestamp <= previous.timestamp) return;
       if (walkTrack) trackAdd(walkTrack, gpsFix);
