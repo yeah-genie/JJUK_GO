@@ -679,6 +679,7 @@ setInterval(()=>{
  const reroute=refRoot.querySelector('.ref-reroute'),offRoute=walkingNow&&$('walk-reroute')&&!$('walk-reroute').hidden;
  if(reroute){const was=reroute.style.display;reroute.style.display=offRoute?'':'none';const nc=refRoot.querySelector('.next-crossing');if(nc)nc.style.display=offRoute?'none':'';if(was!==reroute.style.display){refFitSheet();map?.resize?.();}}
  if(walkingNow){
+  const basis=document.getElementById('ref-timing-basis');if(basis)basis.textContent=gpsFresh()?'신호 대기 포함 예상':gpsFix?'마지막 위치 기준 예상':'출발지 기준 예상';
   const left=$('w-left')?.textContent,time=$('w-time')?.textContent,sp=$('w-pace')?.textContent;
   const lf=document.getElementById('ref-left');if(left&&left!=='—'&&lf)lf.textContent=left;
   if(refProgress!=null&&!offRoute){const sp=trackSpeed(walkTrack)||SPEED,rem=Math.max(0,route.length-refProgress)/sp+refWaitAhead(route,refProgress,sp);document.getElementById('ref-time').textContent=mins(rem);const ar=document.getElementById('ref-arrival');if(ar)ar.textContent=refClock(rem)+' 도착';}
@@ -701,7 +702,7 @@ setInterval(()=>{
   else if(turn){head.textContent=Math.round(turnDist)+'m 후';line.textContent=turn.label;}
   else{head.textContent='남은 '+km(Math.max(0,route.length-refProgress));line.textContent='경로를 따라 쭉 걸어가세요.';}
   const ti=document.getElementById('ref-turn-icon');
-  if(ti){const h=head.textContent,ln=line.textContent;ti.innerHTML=refIcon(h==='일시정지'?'pause':h==='위치 확인 중'?'location_searching':h==='경로 밖'?'wrong_location':h==='도착'?'flag':/횡단보도$/.test(h)?'directions_walk':/왼쪽/.test(ln)?'turn_left':/오른쪽/.test(ln)?'turn_right':'straight');ti.dataset.state=h==='위치 확인 중'?'search':h==='경로 밖'?'off':'';}
+  if(ti){const h=head.textContent,ln=line.textContent;ti.innerHTML=refIcon(h==='일시정지'?'pause':h.startsWith('위치 ')?'location_searching':h==='경로 밖'?'wrong_location':h==='도착'?'flag':/횡단보도$/.test(h)?'directions_walk':/왼쪽/.test(ln)?'turn_left':/오른쪽/.test(ln)?'turn_right':'straight');ti.dataset.state=h.startsWith('위치 ')?'search':h==='경로 밖'?'off':'';}
   if(['m 후','횡단보도','도착','경로 밖'].some(k=>head.textContent.includes(k)))refSpeak(head.textContent+'. '+line.textContent);
   // 신호 띠(300m 안, 패턴이 확인된 신호만). 60m보다 멀면 '도착할 때' 예상, 가까우면 지금 초읽기.
   // 가까워도 남은 초록이 '가는 시간 + 건너는 시간 + 3초'보다 짧으면 숫자 대신 '다음 초록을 기다려요'(서두르지 않게).
