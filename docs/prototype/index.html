@@ -607,13 +607,20 @@ function planConfidence(r) {
 }
 function trustedPlan(id, t, dir) { const r = signalPlan(id, t, dir); return planConfidence(r) > 0 ? r : null; }
 // 도착 시각 t에 이 신호가 고정 초록이 아니면 다음 고정 초록 시작까지의 초. 신뢰 조건을 못 채우면 null.
-function expectedWait(id, t, dir) {
+// need: 이 횡단보도를 건너는 데 필요한 초(길이 ÷ 걷는 속도 + 여유). 도착 때 초록이어도 남은 초록이 need보다 짧으면
+// 이번 초록은 보내고 다음 초록 시작까지 기다리는 것으로 센다(2026-10-31: '초록이 짧아요'인데 대기 0초로 세던 문제).
+function expectedWait(id, t, dir, need = 0) {
   const r = trustedPlan(id, t, dir);
   if (!r) return null;
   const ph = (((r.day0 + ((t % 86400) + 86400) % 86400 - r.ref) % r.c) + r.c) % r.c;
   let wait = Infinity;
   for (const [a, b] of r.win) {
-    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) return 0;
+    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) {
+      const rem = b - ph - shift;
+      if (rem >= need) return 0;
+      const next = expectedWait(id, t + rem + 0.01, dir, 0);   // 이번 초록이 끝난 직후부터 다음 초록 시작까지
+      return next == null ? null : rem + 0.01 + next;
+    }
     wait = Math.min(wait, ((a - ph) % r.c + r.c) % r.c);
   }
   return wait === Infinity ? null : wait;
@@ -1278,8 +1285,10 @@ function nodeCrossLegs(v, e, eNext) {
 }
 // 횡단 x의 t초 예상 대기: 방향이 정해졌으면 그 다리, 후보만 있으면 후보 다리 패턴이 모두 같은 답일 때만(다르면 모름)
 function crossingWait(x, t) {
-  if (x.dir) return expectedWait(x.s, t, x.dir);
-  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d)).filter(w => w != null);
+  // 길이를 아는 횡단보도는 내 속도로 건너는 시간 + 여유(SIG.MARGIN_S와 같은 3초)만큼 초록이 남아야 '기다림 없음'
+  const need = x.len ? x.len / SPEED + 3 : 0;
+  if (x.dir) return expectedWait(x.s, t, x.dir, need);
+  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d, need)).filter(w => w != null);
   if (!ws.length || (ws.some(w => w === 0) && ws.some(w => w > 0))) return null;
   return Math.max(...ws);
 }
