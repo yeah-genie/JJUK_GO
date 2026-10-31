@@ -140,8 +140,8 @@
     let currentMarker = null;
     if (validLL(options.currentLL)) currentMarker=addMarker(options.currentLL,'<div class="m-me"></div>',28,110);
     if (coords.length && options.endpointHTML) {
-      addMarker(coords[0],options.endpointHTML.from,36,120);
-      addMarker(coords.at(-1),options.endpointHTML.to,36,120);
+      addMarker(coords[0],options.endpointHTML.from,28,120);
+      addMarker(coords.at(-1),options.endpointHTML.to,28,120);
     }
     const viewportListener=options.onViewportChange?n.Event.addListener(map,'idle',()=>{
       if(destroyed)return;

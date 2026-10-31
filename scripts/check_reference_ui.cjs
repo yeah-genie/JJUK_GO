@@ -89,7 +89,7 @@ async function main(){
  const ui=fs.readFileSync(path.join(root,'docs/prototype/reference-ui/ui.js'),'utf8');
  const searchCode=ui.match(/async function refDoSearch[\s\S]*?\r?\n}\r?\n/)[0],pendingSearch={};
  const searchHost={innerHTML:'',insertAdjacentHTML(_,s){this.innerHTML+=s;}};
- const searchContext={refSearchSeq:0,refSearchHits:[],refSample:false,refScreen:'search',refPick:'to',refRecent:()=>[],refHitDist:()=>'',refIcon:n=>n,esc:String,runSearch:q=>new Promise(resolve=>pendingSearch[q]=resolve),document:{getElementById:()=>searchHost}};
+ const searchContext={refSearchSeq:0,refSearchHits:[],refSample:false,refScreen:'search',refPick:'to',refRecent:()=>[],refHitDist:()=>'',refIcon:n=>n,esc:String,runSearch:q=>new Promise(resolve=>pendingSearch[q]=resolve),document:{getElementById:()=>searchHost,querySelector:()=>null}};
  vm.createContext(searchContext);vm.runInContext(searchCode,searchContext);
  const before=searchContext.refDoSearch('before'),after=searchContext.refDoSearch('after');
  pendingSearch.after([{name:'new result'}]);await after;pendingSearch.before([{name:'stale result'}]);await before;
@@ -106,6 +106,14 @@ async function main(){
  const settings={refSample:false,refSettingsFromResult:true,refDep:0,readProfile:()=>({mode:'auto',autoEnabled:true,budgetSeconds:30}),refPace:()=>({pending:true,value:'3.6',label:'자동 맞춤'}),walkSpeed:()=>1,refIcon:n=>n,refToggle:()=>'',refDataLabel:()=>'',esc:String,store:{get:(_,fallback)=>fallback}};
  vm.createContext(settings);vm.runInContext(ui.match(/function refSettings[\s\S]*?\r?\n}\r?\n/)[0],settings);
  assert.match(settings.refSettings(),/<details class="manual-speed">/);assert.match(settings.refSettings(),/data-ref-dep="300"/);assert.match(settings.refSettings(),/<details class="settings-notes">/);
+ const searchView={refSample:false,refPick:'to',refHeader:()=>'',refIcon:n=>n};vm.createContext(searchView);vm.runInContext(ui.match(/function refSearch[\s\S]*?\r?\n}\r?\n/)[0],searchView);
+ assert.match(searchView.refSearch(),/ref-search-submit/);assert.doesNotMatch(searchView.refSearch(),/검색 분류|최근 검색/);
+ const commands=[],paintContext={};for(const name of ['clearRect','save','scale','fillRect','fillText','beginPath','moveTo','lineTo','stroke','restore','drawImage'])paintContext[name]=(...args)=>commands.push([name,...args]);
+ const poster={state:{lastWalk:{trace:[[[127,37.5],[127.001,37.501]],[[127.01,37.51],[127.011,37.511]]],meters:200,elapsedS:180}},refPosterSkin:'transparent',refPosterPhoto:null,dur:s=>s+'초',document:{getElementById:()=>({width:990,height:1800,getContext:()=>paintContext})}};
+ vm.createContext(poster);vm.runInContext(ui.match(/function refPaintPoster[\s\S]*?\r?\n}\r?\n/)[0],poster);poster.refPaintPoster();
+ assert.equal(commands.filter(c=>c[0]==='beginPath').length,2);assert.equal(commands.filter(c=>c[0]==='moveTo').length,2);assert.equal(commands.filter(c=>c[0]==='lineTo').length,2);assert.equal(commands.filter(c=>c[0]==='fillRect').length,0);
+ assert.ok(commands.some(c=>c[0]==='fillText'&&c[1]==='0.20'));assert.ok(commands.some(c=>c[0]==='fillText'&&c[1]==="15'00\""));
+ commands.length=0;poster.refPosterSkin='asphalt';poster.refPaintPoster();assert.equal(commands.filter(c=>c[0]==='fillRect').length,1);
  const rank=ui.match(/pickAlternative=function[\s\S]*?\r?\n};/)[0];
  const route=(steep,gain,walk)=>({m:{steep,gain,walk},steps:[[1,2,{f:[0,0,steep],cls:0}]]});
  const normal=route(200,10,100),gentle=route(90,12,140),rejected=route(0,0,1000);rejected.rejected=true;
