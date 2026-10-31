@@ -72,3 +72,8 @@
 .ma-sumsig>span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--green);flex:none}
 .ma-sumsig small{display:block;font-size:11px;color:var(--muted)}.ma-sumsig strong{display:block;font-size:15px;margin-top:2px}.ma-sumsig p{font-size:12px;color:#2F6B45;font-weight:700;margin-top:4px}
 .summary .mini-map-wrap{margin-top:12px}.summary-metrics p.muted{color:var(--muted);text-align:left;font-weight:500}
+.ma-head-btns{display:flex;gap:6px}.ma-head-btns button[data-ref-action=share]{width:44px;padding:0;justify-content:center}
+.ma-dep{display:flex;gap:6px;margin:0 0 8px;overflow-x:auto;scrollbar-width:none}
+.ma-dep button{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:44px;padding:4px 12px;border-radius:12px;background:#F0F0EB;font-size:12px;font-weight:700;color:#4A5260;line-height:1.2}
+.ma-dep button small{font-size:10px;font-weight:500;color:var(--muted)}
+.ma-dep button[aria-pressed=true]{background:var(--navy);color:#fff}.ma-dep button[aria-pressed=true] small{color:#C9D0DA}
