@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
   const key = subwayKey();
   if (!key) return send(res, 200, { enabled: false, arrivals: [] });
   const station = cleanStation(req.query?.station);
-  if (!station || station.length > 20) return send(res, 400, { error: '역 이름을 확인해 주세요.' });
+  if (!station || station.length > 20 || !/^[가-힣0-9A-Za-z·.]+$/.test(station)) return send(res, 400, { error: '역 이름을 확인해 주세요.' });
   try {
     const body = await cached('sub:' + station, 15000, async () => {
       const url = `http://swopenapi.seoul.go.kr/api/subway/${encodeURIComponent(key.value)}/json/realtimeStationArrival/0/30/${encodeURIComponent(station)}`;

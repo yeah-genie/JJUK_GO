@@ -16,7 +16,11 @@ const DEADLINE_KEY = "deadline";
 let IDX = null, SIGS = null, GMETA = null, SEARCH = null, TERRAIN = null;
 const SIGMETA = new Map();
 
-async function getJSON(p) { const r = await fetch(DATA + p); if (!r.ok) throw new Error(p + " " + r.status); return r.json(); }
+const HOUR_SHARDS = new Map();   // 같은 시간대 신호 파일을 두 번 받지 않게(홈 미리 받기 + 길찾기)
+async function getJSON(p) {
+  if (/^signal-hours\//.test(p)) { if (!HOUR_SHARDS.has(p)) HOUR_SHARDS.set(p, fetch(DATA + p).then(r => { if (!r.ok) throw new Error(p + " " + r.status); return r.json(); }).catch(e => { HOUR_SHARDS.delete(p); throw e; })); return HOUR_SHARDS.get(p); }
+  const r = await fetch(DATA + p); if (!r.ok) throw new Error(p + " " + r.status); return r.json();
+}
 // 저장공간이 막힌 브라우저(사파리 개인 모드 등)에서도 이번 방문 동안은 바꾼 설정이 적용되도록 메모리에도 둔다
 const storeMem = new Map();
 const store = {
