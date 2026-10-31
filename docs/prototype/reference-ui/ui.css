@@ -64,3 +64,4 @@
 .ma-end{height:48px;padding:0 18px;border-radius:24px;background:var(--navy);color:#fff;font-weight:800;font-size:14px;flex:none}
 .route-endpoint.from .endpoint-disc{background:var(--navy)}
 @media (max-height:700px){.ma-sheet{max-height:54%}.ma-card{padding:9px 12px}.ma-time strong{font-size:21px}}
+.summary{overflow:auto!important;padding-bottom:0!important}.summary .bottom-actions{position:sticky;bottom:0;margin-top:auto;padding:12px 0 18px;background:linear-gradient(#FCFBF700,#FCFBF7 30%);z-index:3}.summary .mini-map-wrap{flex:none}
