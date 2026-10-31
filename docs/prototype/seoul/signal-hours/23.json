@@ -1,1 +1,1 @@
-{}
+{"4763":[{"start":82800,"end":86400,"legs":{},"legsWe":{"e":{"c":109.98,"ref":1793455200.568,"win":[[69.0,83.0]],"impurity":0.006730174587317445,"holdout_accuracy":0.9924,"test_samples":661,"observed_samples":2201,"observed_min":36.7,"from":"10/31 23:00","to":"10/31 23:41","day0":1793372400.0,"date":"2026-10-31","code":"st","start":82800,"end":86400,"xd":[0,null,null,0,null]}}}]}
