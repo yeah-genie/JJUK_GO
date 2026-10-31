@@ -1,5 +1,9 @@
 # 쭉고 인수인계
 
+> **후속 요구 반영(10/31 저녁):** 원본 5화면 유지 + 기존 시작 로고(3.2초) + 실제 네이버 지도 + 신호 클릭 상세. 실행은 `reference-ui/demo.html`, 시각 비교는 `reference-ui/preview.html`. 신호 자료를 원격 67e7788의 10/30까지 17일/1734후보로 갱신했다. 새벽 수집 장애 보고 이후 저녁에는 5분 간격 성공이 확인됐다. 신호 ID/방향이 있는 route.x를 기존 신뢰 판정에 연결하며 검증된 예상 잔여시간과 기록만 있는 경우를 구분한다. 공개 Client ID는 Git 제외된 로컬 설정에 있다. **기본 브랜치 병합·운영 배포는 여전히 하지 않는다.** 최신 설명은 [프로토타입 README](prototype/reference-ui/README.md)와 [10/31 대화 기록](discussions/2026-10-31.md).
+
+> **2026-10-31 사용자 명시 요청: 첨부한 5개 화면 이미지만 시각 기준으로 재현.** 새 디자인 제안/기존 다크 UI 개선이 아니다. `codex/reference-ui-prototype`의 `docs/prototype/reference-ui/`에서만 구현·검토한다. 운영 `index.html`/앱 소스/신호 gate를 바꾸지 않았고 기본 브랜치 병합·운영 배포는 하지 않는다. **390×844 실제 브라우저 스크린샷 5개를 먼저 사용자에게 보여 주고 검토를 기다린다.** [구현 경계와 실행](prototype/reference-ui/README.md), [대화 기록](discussions/2026-10-31.md), [시각 검증](prototype/reference-ui/design-qa.md). `sample=1` 숫자와 경로는 첨부 재현용 예시이며 실제 신호/걸음이 아니다. 이전 제안 A/B/C를 새 시각 기준으로 혼합하지 않는다.
+
 > **2026-10-30부터 공개 준비 단계: [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md)의 TODO를 줄이는 것만 한다.** 신호 예측은 튜닝 중지, 11/10~15에 `scripts/signal_readiness.cjs`로 재평가. 새 기능 금지. 결정 기록 `docs/discussions/2026-10-30-release-candidate.md`.
 
 > **다음 할 일은 [NEXT_STEPS](NEXT_STEPS.md)부터 본다**(배포 확인 → 신호 방향 검증 → 신호 횡단 세기 → 걷기 화면 → 문서 정리).
