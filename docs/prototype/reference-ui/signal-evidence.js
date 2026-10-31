@@ -22,9 +22,19 @@
   if(!Number.isFinite(seconds)||seconds<0){item.reason='남은 시간 계산 불가';return item;}
   item.state=phase.walk?'walk':'wait';item.trusted=true;item.remainingSeconds=Math.floor(seconds);
   item.statusLabel=phase.walk?'초록 예상':'대기 예상';
-  item.secondsLabel=phase.walk?`초록 예상 · 약 ${item.remainingSeconds}초 남음`:`다음 초록까지 약 ${Math.ceil(seconds)}초`;
+  item.secondsLabel=phase.walk?`지금 초록 예상 · 약 ${item.remainingSeconds}초 남음`:`다음 초록까지 약 ${Math.ceil(seconds)}초 (예상)`;
   item.reason=x.len?'현장 신호를 함께 확인하세요':'횡단 길이는 아직 미확인이에요';
-  item.canCross=!!x.len&&engine.verdict(x,time,speed).kind==='go';
+  item.canCross=false;
+  // 경로 위 횡단은 '지금'이 아니라 '내가 도착할 때'의 예상으로 보여 준다(경로의 예상 대기 계산과 같은 기준)
+  const arrive=engine.arrival?.(x);
+  if(Number.isFinite(arrive)){
+   const v=engine.verdict(x,arrive,speed);
+   if(v.kind!=='unknown'){
+    item.arrival=true;item.state=v.kind==='wait'||v.kind==='short'?'wait':'walk';item.statusLabel=v.label;item.secondsLabel=v.text;item.canCross=v.kind==='go';
+    const p=engine.predict(x,arrive);item.remainingSeconds=p?Math.floor(p.walk?p.rem:p.wait):null;
+    item.sourceLabel=engine.period()+' · 도착할 때 기준';
+   }
+  }
   return item;
  };}};
 })(window);

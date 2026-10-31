@@ -370,9 +370,11 @@ let IDX = null, SIGS = null, GMETA = null, SEARCH = null, TERRAIN = null;
 const SIGMETA = new Map();
 
 async function getJSON(p) { const r = await fetch(DATA + p); if (!r.ok) throw new Error(p + " " + r.status); return r.json(); }
+// 저장공간이 막힌 브라우저(사파리 개인 모드 등)에서도 이번 방문 동안은 바꾼 설정이 적용되도록 메모리에도 둔다
+const storeMem = new Map();
 const store = {
-  get(k, d) { try { const v = localStorage.getItem("jjukgo:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem("jjukgo:" + k, JSON.stringify(v)); return true; } catch { return false; } },
+  get(k, d) { try { const v = localStorage.getItem("jjukgo:" + k); if (v) return JSON.parse(v); } catch {} return storeMem.has(k) ? storeMem.get(k) : d; },
+  set(k, v) { storeMem.set(k, v); try { localStorage.setItem("jjukgo:" + k, JSON.stringify(v)); return true; } catch { return false; } },
 };
 
 // 기기 내 설정과 보행 요약만 저장한다. 위치 경로는 메모리에만 머문다.
@@ -1776,6 +1778,8 @@ function renderWalk(demo = false, resume = false) {
     if (current !== "walk" || session !== gpsRequest) return;
     try {
       gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
+      // 같은 시각의 위치가 다시 들어오면(다시 시작할 때 저장된 위치 + 브라우저 캐시) 새 정보가 없으니 넘긴다('위치가 갑자기 바뀌었어요' 거짓 경고 방지)
+      if (previous && gpsFix.timestamp <= previous.timestamp) return;
       if (walkTrack) trackAdd(walkTrack, gpsFix);
       // 걷기 시작 = 이 길로 걷기를 누른 뒤 위치가 실제로 처음 잡힌 때(위치 값은 보내지 않는다)
       if (!free && state.walkLogPending) { logEvent("walking_started", { trip: state.tripId, route: state.walkLogPending }); state.walkLogPending = null; }

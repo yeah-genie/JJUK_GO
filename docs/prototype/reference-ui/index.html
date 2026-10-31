@@ -180,7 +180,7 @@
 
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script>window.JJUKGO_NO_LOG=true;// 쭉고 프로토타입. 지도·보행 그래프·검색 데이터는 서울 OpenStreetMap 추출본(© OpenStreetMap contributors, ODbL)에서
+<script>// 쭉고 프로토타입. 지도·보행 그래프·검색 데이터는 서울 OpenStreetMap 추출본(© OpenStreetMap contributors, ODbL)에서
 // scripts/build_seoul_map.py가 만들어 seoul/ 아래에 둔다. 신호 위치는 서울 C-ITS 교차로 + OSM 신호 표시.
 const $ = id => document.getElementById(id);
 const DATA = new URL("seoul/", document.baseURI).href;
@@ -199,9 +199,11 @@ let IDX = null, SIGS = null, GMETA = null, SEARCH = null, TERRAIN = null;
 const SIGMETA = new Map();
 
 async function getJSON(p) { const r = await fetch(DATA + p); if (!r.ok) throw new Error(p + " " + r.status); return r.json(); }
+// 저장공간이 막힌 브라우저(사파리 개인 모드 등)에서도 이번 방문 동안은 바꾼 설정이 적용되도록 메모리에도 둔다
+const storeMem = new Map();
 const store = {
-  get(k, d) { try { const v = localStorage.getItem("jjukgo:reference:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem("jjukgo:reference:" + k, JSON.stringify(v)); return true; } catch { return false; } },
+  get(k, d) { try { const v = localStorage.getItem("jjukgo:reference:" + k); if (v) return JSON.parse(v); } catch {} return storeMem.has(k) ? storeMem.get(k) : d; },
+  set(k, v) { storeMem.set(k, v); try { localStorage.setItem("jjukgo:reference:" + k, JSON.stringify(v)); return true; } catch { return false; } },
 };
 
 // 기기 내 설정과 보행 요약만 저장한다. 위치 경로는 메모리에만 머문다.
@@ -436,13 +438,20 @@ function planConfidence(r) {
 }
 function trustedPlan(id, t, dir) { const r = signalPlan(id, t, dir); return planConfidence(r) > 0 ? r : null; }
 // 도착 시각 t에 이 신호가 고정 초록이 아니면 다음 고정 초록 시작까지의 초. 신뢰 조건을 못 채우면 null.
-function expectedWait(id, t, dir) {
+// need: 이 횡단보도를 건너는 데 필요한 초(길이 ÷ 걷는 속도 + 여유). 도착 때 초록이어도 남은 초록이 need보다 짧으면
+// 이번 초록은 보내고 다음 초록 시작까지 기다리는 것으로 센다(2026-10-31: '초록이 짧아요'인데 대기 0초로 세던 문제).
+function expectedWait(id, t, dir, need = 0) {
   const r = trustedPlan(id, t, dir);
   if (!r) return null;
   const ph = (((r.day0 + ((t % 86400) + 86400) % 86400 - r.ref) % r.c) + r.c) % r.c;
   let wait = Infinity;
   for (const [a, b] of r.win) {
-    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) return 0;
+    for (const shift of [0, r.c]) if (ph + shift >= a && ph + shift < b) {
+      const rem = b - ph - shift;
+      if (rem >= need) return 0;
+      const next = expectedWait(id, t + rem + 0.01, dir, 0);   // 이번 초록이 끝난 직후부터 다음 초록 시작까지
+      return next == null ? null : rem + 0.01 + next;
+    }
     wait = Math.min(wait, ((a - ph) % r.c + r.c) % r.c);
   }
   return wait === Infinity ? null : wait;
@@ -1107,8 +1116,10 @@ function nodeCrossLegs(v, e, eNext) {
 }
 // 횡단 x의 t초 예상 대기: 방향이 정해졌으면 그 다리, 후보만 있으면 후보 다리 패턴이 모두 같은 답일 때만(다르면 모름)
 function crossingWait(x, t) {
-  if (x.dir) return expectedWait(x.s, t, x.dir);
-  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d)).filter(w => w != null);
+  // 길이를 아는 횡단보도는 내 속도로 건너는 시간 + 여유(SIG.MARGIN_S와 같은 3초)만큼 초록이 남아야 '기다림 없음'
+  const need = x.len ? x.len / SPEED + 3 : 0;
+  if (x.dir) return expectedWait(x.s, t, x.dir, need);
+  const ws = (x.dirs || []).map(d => expectedWait(x.s, t, d, need)).filter(w => w != null);
   if (!ws.length || (ws.some(w => w === 0) && ws.some(w => w > 0))) return null;
   return Math.max(...ws);
 }
@@ -1596,6 +1607,8 @@ function renderWalk(demo = false, resume = false) {
     if (current !== "walk" || session !== gpsRequest) return;
     try {
       gpsFix = readFix(p, 50); lastFix = gpsFix.timestamp;
+      // 같은 시각의 위치가 다시 들어오면(다시 시작할 때 저장된 위치 + 브라우저 캐시) 새 정보가 없으니 넘긴다('위치가 갑자기 바뀌었어요' 거짓 경고 방지)
+      if (previous && gpsFix.timestamp <= previous.timestamp) return;
       if (walkTrack) trackAdd(walkTrack, gpsFix);
       // 걷기 시작 = 이 길로 걷기를 누른 뒤 위치가 실제로 처음 잡힌 때(위치 값은 보내지 않는다)
       if (!free && state.walkLogPending) { logEvent("walking_started", { trip: state.tripId, route: state.walkLogPending }); state.walkLogPending = null; }

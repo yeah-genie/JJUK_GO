@@ -101,11 +101,14 @@ async function main(){
  const sigmeta=new global.Map(metadata.map(([id,x,y,name])=>[id,{name,ll:[126.58+x/1e5,37.35+y/1e5]}]));
  const collector={SIGMETA:sigmeta,SIG:{now:()=>68400},signalPlan:()=>null,refHistory:()=>null,trustedPlan:()=>null,refSignalModel:x=>x,distLL:(a,b)=>Math.hypot((a[0]-b[0])*88000,(a[1]-b[1])*110540)};
  vm.createContext(collector);vm.runInContext(collect,collector);
- const positions=collector.refMakeSignals({coords:[[127.0163,37.5927]],x:[]});
- assert.ok(positions.some(x=>String(x.s)==='2705'&&x.locationOnly));
- assert.ok(positions.length<=24);assert.ok(positions.every(x=>!x.dir));
+ // 계획 화면(지도 중심 없음): 경로 위 신호만. 주변 신호는 넣지 않는다(2026-10-31 BMAD 체험 결정)
+ assert.equal(collector.refMakeSignals({coords:[[127.0163,37.5927]],x:[]}).length,0);
+ // 신호가 아닌 횡단(xlist sig:false)은 신호 아이콘으로 만들지 않는다
+ assert.equal(collector.refMakeSignals({coords:[],x:[],m:{xlist:[{at:[127,37.5],sig:false},{at:[127.01,37.5],sig:true}]}}).length,1);
+ // 걷는 중(지도 중심 있음): 150m 안, 최대 8개, 위치만 아는 신호는 시간 없이
  const moved=collector.refMakeSignals({coords:[[126.977,37.566]],x:[]},[127.0163,37.5927]);
- assert.ok(moved.some(x=>String(x.s)==='2705'));
+ assert.ok(moved.some(x=>String(x.s)==='2705'&&x.locationOnly));
+ assert.ok(moved.length<=8);assert.ok(moved.every(x=>!x.dir&&collector.distLL(x.at,[127.0163,37.5927])<150));
  console.log('PASS reference UI: configuration, SDK, sizing, cleanup, route ends, viewport signals, Sungshin location without timing, historical/live separation');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

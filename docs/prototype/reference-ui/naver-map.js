@@ -162,7 +162,7 @@
         selectedSignal=item;
         if(!signalPopup)signalPopup=new n.InfoWindow({content:'',maxWidth:235,disableAutoPan:true,borderWidth:0,backgroundColor:'#FCFBF7',anchorColor:'#FCFBF7',anchorSize:new n.Size(12,10),pixelOffset:new n.Point(0,-23)});
         if(typeof map.setCenter==='function')map.setCenter(latLng(item.ll));
-        if(typeof map.panBy==='function')map.panBy(new n.Point(0,-80));
+        if(typeof map.panBy==='function')map.panBy(new n.Point(0,-150));
         signalPopup.setContent(options.signalHTML(item));signalPopup.open(map,latLng(item.ll));
         const close=signalPopup.getContentElement()?.querySelector('[data-ref-action="close-signal"]');
         if(close)close.onclick=e=>{e.preventDefault();e.stopPropagation();options.onSignalClose?.();};
