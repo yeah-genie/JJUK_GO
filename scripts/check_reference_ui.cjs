@@ -112,6 +112,19 @@ async function main(){
  assert.match(routeContext.refRouteOptions(),/18분/);assert.match(routeContext.refRouteOptions(),/15분/);
  routeContext.state.routes.alt=false;assert.equal(routeContext.refRouteOptions(),'');
  routeContext.state.routes.alt=true;routeContext.refNavigating=true;assert.equal(routeContext.refRouteOptions(),'');
+ const itinerary={state:{from:{name:'출발'},to:{name:'도착'}},G:{node:{get:id=>({h:id===9?null:10})}},edgePts:()=>[[0,0],[1,1]],distLL:(a,b)=>Math.abs(a[0]-b[0])};
+ vm.createContext(itinerary);vm.runInContext(ui.match(/function refRouteEvents[\s\S]*?\r?\n}\r?\n/)[0],itinerary);
+ const routeList={coords:[[0,0],[10,0],[60,0],[110,0],[160,0],[200,0]],cum:[0,10,60,110,160,200],length:200,
+  x:[{d:70,at:[70,0],s:'1',dir:'w'}],m:{xlist:[{d:71,at:[71,0],sig:true},{d:145,at:[145,0],sig:true}]},guides:[{d:120,label:'계단'}],
+  steps:[[1,2,{cls:0,f:[0,0,20]}],[2,3,{cls:0,f:[0,0,30]}],[3,9,{cls:0,f:[0,0,40]}]]};
+ const events=itinerary.refRouteEvents(routeList);
+ assert.equal(events[0].kind,'from');assert.equal(events.at(-1).kind,'to');
+ assert.equal(events.filter(e=>e.kind==='signal').length,2); // Mapped and count-only crossings stay distinct; duplicates collapse.
+ assert.equal(events.filter(e=>e.kind==='steep').length,1);assert.equal(events.find(e=>e.kind==='steep').meters,50);
+ assert.equal(events.find(e=>e.kind==='stairs').ll[0],160);assert.ok(events.every((e,i)=>!i||e.d>=events[i-1].d));
+ assert.equal(events.find(e=>e.kind==='signal'&&e.d===155).raw,null); // Count-only distances include the origin connector; no controller is invented.
+ routeList.steps[0][2].cls=4;assert.equal(itinerary.refRouteEvents(routeList).find(e=>e.kind==='steep').meters,30);
+ assert.equal(itinerary.refRouteEvents(null).length,0);
  const collect=ui.match(/function refMakeSignals[\s\S]*?\r?\n}\r?\n/)[0];
  const metadata=JSON.parse(fs.readFileSync(path.join(root,'docs/prototype/seoul/signals.json'),'utf8'));
  const sigmeta=new global.Map(metadata.map(([id,x,y,name])=>[id,{name,ll:[126.58+x/1e5,37.35+y/1e5]}]));
