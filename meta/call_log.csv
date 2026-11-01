@@ -973,3 +973,5 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-01T03:45:07,4500,2200,net_error,,TimeoutError
 2026-11-01T03:50:12,4500,2200,net_error,,TimeoutError
 2026-11-01T03:54:57,4500,2200,http_404,,
+2026-11-01T04:00:22,3688,2200,net_error,,TimeoutError
+2026-11-01T04:05:09,3688,2200,ok,,v2xSignalPhaseTimingFusionInformation
