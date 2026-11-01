@@ -1161,3 +1161,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-01T19:40:27,1619,2200,http_404,,
 2026-11-01T19:45:54,1832,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-01T19:50:40,2691,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-01T19:55:49,2091,2200,ok,,v2xSignalPhaseTimingFusionInformation
