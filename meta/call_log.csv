@@ -1839,3 +1839,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-04T05:07:14,2974,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-04T05:12:23,21847,2200,net_error,,TimeoutError
 2026-11-04T05:17:26,21847,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-04T05:22:33,2212,2200,ok,,v2xSignalPhaseTimingFusionInformation
