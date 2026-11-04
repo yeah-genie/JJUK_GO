@@ -1939,3 +1939,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-04T13:35:18,1537,2200,http_404,,
 2026-11-04T13:40:34,32571,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-04T13:45:33,1619,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-04T13:50:53,3709,2200,net_error,,TimeoutError
+2026-11-04T13:55:58,3709,2200,net_error,,TimeoutError
+2026-11-04T14:01:03,3709,2200,net_error,,TimeoutError
+2026-11-04T14:05:48,3709,2200,http_404,,
