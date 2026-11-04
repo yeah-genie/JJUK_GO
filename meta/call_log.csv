@@ -1973,3 +1973,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-04T16:28:17,2974,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-04T16:33:19,11927,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-04T16:38:18,11927,2200,http_404,,
+2026-11-04T16:43:33,2212,2200,ok,,v2xSignalPhaseTimingFusionInformation
