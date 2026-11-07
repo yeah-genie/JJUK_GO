@@ -2723,3 +2723,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-07T13:54:46,3011,2200,net_error,,TimeoutError
 2026-11-07T13:59:51,3011,2200,net_error,,TimeoutError
 2026-11-07T14:04:36,3011,2200,http_404,,
+2026-11-07T14:10:01,3829,2200,net_error,,TimeoutError
+2026-11-07T14:15:05,3829,2200,net_error,,TimeoutError
+2026-11-07T14:20:11,3829,2200,net_error,,TimeoutError
+2026-11-07T14:24:56,3829,2200,http_404,,
