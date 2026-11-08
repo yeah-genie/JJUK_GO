@@ -2977,3 +2977,9 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-08T11:25:56,2212,2200,net_error,,URLError
 2026-11-08T11:31:01,2212,2200,net_error,,URLError
 2026-11-08T11:36:05,2212,2200,net_error,,URLError
+2026-11-08T11:41:10,400,2200,net_error,,URLError
+2026-11-08T11:46:15,400,2200,net_error,,URLError
+2026-11-08T11:51:20,400,2200,net_error,,URLError
+2026-11-08T11:56:25,400,2200,net_error,,URLError
+2026-11-08T12:01:31,400,2200,net_error,,URLError
+2026-11-08T12:06:35,400,2200,net_error,,URLError
