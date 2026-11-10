@@ -3618,3 +3618,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-10T17:44:22,2212,2200,net_error,,TimeoutError
 2026-11-10T17:49:27,2212,2200,net_error,,TimeoutError
 2026-11-10T17:54:12,2212,2200,http_404,,
+2026-11-10T17:59:30,3617,2200,ok,,v2xSignalPhaseTimingFusionInformation
