@@ -4212,3 +4212,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-12T20:03:52,2974,2200,net_error,,TimeoutError
 2026-11-12T20:08:57,2974,2200,net_error,,TimeoutError
 2026-11-12T20:13:42,2974,2200,http_404,,
+2026-11-12T20:19:07,1199,2200,net_error,,TimeoutError
+2026-11-12T20:24:12,1199,2200,net_error,,TimeoutError
+2026-11-12T20:29:17,1199,2200,net_error,,TimeoutError
+2026-11-12T20:34:02,1199,2200,http_404,,
