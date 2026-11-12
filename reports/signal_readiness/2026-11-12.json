@@ -1,0 +1,324 @@
+{
+ "measured_at": "2026-11-12T01:26:10.500Z",
+ "days": {
+  "official": 28,
+  "first": "20261014",
+  "last": "20261110",
+  "realtime_filled": 0,
+  "used_by_app": 28
+ },
+ "hourly": {
+  "wd": {
+   "app_signal_intersections": 2719,
+   "rows": [
+    {
+     "hour": 0,
+     "with_pattern": 1621,
+     "trusted": 1281,
+     "trusted_ratio": 0.471
+    },
+    {
+     "hour": 1,
+     "with_pattern": 1643,
+     "trusted": 1402,
+     "trusted_ratio": 0.516
+    },
+    {
+     "hour": 2,
+     "with_pattern": 1681,
+     "trusted": 1461,
+     "trusted_ratio": 0.537
+    },
+    {
+     "hour": 3,
+     "with_pattern": 1680,
+     "trusted": 1087,
+     "trusted_ratio": 0.4
+    },
+    {
+     "hour": 4,
+     "with_pattern": 1677,
+     "trusted": 942,
+     "trusted_ratio": 0.346
+    },
+    {
+     "hour": 5,
+     "with_pattern": 1488,
+     "trusted": 931,
+     "trusted_ratio": 0.342
+    },
+    {
+     "hour": 6,
+     "with_pattern": 1195,
+     "trusted": 714,
+     "trusted_ratio": 0.263
+    },
+    {
+     "hour": 7,
+     "with_pattern": 1380,
+     "trusted": 674,
+     "trusted_ratio": 0.248
+    },
+    {
+     "hour": 8,
+     "with_pattern": 1504,
+     "trusted": 480,
+     "trusted_ratio": 0.177
+    },
+    {
+     "hour": 9,
+     "with_pattern": 1401,
+     "trusted": 770,
+     "trusted_ratio": 0.283
+    },
+    {
+     "hour": 10,
+     "with_pattern": 1278,
+     "trusted": 851,
+     "trusted_ratio": 0.313
+    },
+    {
+     "hour": 11,
+     "with_pattern": 1625,
+     "trusted": 1477,
+     "trusted_ratio": 0.543
+    },
+    {
+     "hour": 12,
+     "with_pattern": 1707,
+     "trusted": 1528,
+     "trusted_ratio": 0.562
+    },
+    {
+     "hour": 13,
+     "with_pattern": 1689,
+     "trusted": 1503,
+     "trusted_ratio": 0.553
+    },
+    {
+     "hour": 14,
+     "with_pattern": 1694,
+     "trusted": 1374,
+     "trusted_ratio": 0.505
+    },
+    {
+     "hour": 15,
+     "with_pattern": 1679,
+     "trusted": 1406,
+     "trusted_ratio": 0.517
+    },
+    {
+     "hour": 16,
+     "with_pattern": 1366,
+     "trusted": 979,
+     "trusted_ratio": 0.36
+    },
+    {
+     "hour": 17,
+     "with_pattern": 1416,
+     "trusted": 487,
+     "trusted_ratio": 0.179
+    },
+    {
+     "hour": 18,
+     "with_pattern": 1296,
+     "trusted": 149,
+     "trusted_ratio": 0.055
+    },
+    {
+     "hour": 19,
+     "with_pattern": 778,
+     "trusted": 23,
+     "trusted_ratio": 0.008
+    },
+    {
+     "hour": 20,
+     "with_pattern": 315,
+     "trusted": 1,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 21,
+     "with_pattern": 107,
+     "trusted": 0,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 22,
+     "with_pattern": 205,
+     "trusted": 0,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 23,
+     "with_pattern": 9,
+     "trusted": 0,
+     "trusted_ratio": 0
+    }
+   ],
+   "daytime_7_22_mean_ratio": 0.269
+  },
+  "we": {
+   "app_signal_intersections": 2719,
+   "rows": [
+    {
+     "hour": 0,
+     "with_pattern": 1277,
+     "trusted": 639,
+     "trusted_ratio": 0.235
+    },
+    {
+     "hour": 1,
+     "with_pattern": 1587,
+     "trusted": 1227,
+     "trusted_ratio": 0.451
+    },
+    {
+     "hour": 2,
+     "with_pattern": 1667,
+     "trusted": 1476,
+     "trusted_ratio": 0.543
+    },
+    {
+     "hour": 3,
+     "with_pattern": 1663,
+     "trusted": 1323,
+     "trusted_ratio": 0.487
+    },
+    {
+     "hour": 4,
+     "with_pattern": 1636,
+     "trusted": 960,
+     "trusted_ratio": 0.353
+    },
+    {
+     "hour": 5,
+     "with_pattern": 1473,
+     "trusted": 823,
+     "trusted_ratio": 0.303
+    },
+    {
+     "hour": 6,
+     "with_pattern": 1053,
+     "trusted": 190,
+     "trusted_ratio": 0.07
+    },
+    {
+     "hour": 7,
+     "with_pattern": 779,
+     "trusted": 8,
+     "trusted_ratio": 0.003
+    },
+    {
+     "hour": 8,
+     "with_pattern": 1092,
+     "trusted": 87,
+     "trusted_ratio": 0.032
+    },
+    {
+     "hour": 9,
+     "with_pattern": 1265,
+     "trusted": 300,
+     "trusted_ratio": 0.11
+    },
+    {
+     "hour": 10,
+     "with_pattern": 1429,
+     "trusted": 540,
+     "trusted_ratio": 0.199
+    },
+    {
+     "hour": 11,
+     "with_pattern": 1578,
+     "trusted": 782,
+     "trusted_ratio": 0.288
+    },
+    {
+     "hour": 12,
+     "with_pattern": 1603,
+     "trusted": 822,
+     "trusted_ratio": 0.302
+    },
+    {
+     "hour": 13,
+     "with_pattern": 1560,
+     "trusted": 763,
+     "trusted_ratio": 0.281
+    },
+    {
+     "hour": 14,
+     "with_pattern": 1681,
+     "trusted": 1031,
+     "trusted_ratio": 0.379
+    },
+    {
+     "hour": 15,
+     "with_pattern": 1649,
+     "trusted": 1033,
+     "trusted_ratio": 0.38
+    },
+    {
+     "hour": 16,
+     "with_pattern": 1509,
+     "trusted": 528,
+     "trusted_ratio": 0.194
+    },
+    {
+     "hour": 17,
+     "with_pattern": 1289,
+     "trusted": 94,
+     "trusted_ratio": 0.035
+    },
+    {
+     "hour": 18,
+     "with_pattern": 723,
+     "trusted": 35,
+     "trusted_ratio": 0.013
+    },
+    {
+     "hour": 19,
+     "with_pattern": 507,
+     "trusted": 0,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 20,
+     "with_pattern": 183,
+     "trusted": 0,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 21,
+     "with_pattern": 258,
+     "trusted": 0,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 22,
+     "with_pattern": 190,
+     "trusted": 0,
+     "trusted_ratio": 0
+    },
+    {
+     "hour": 23,
+     "with_pattern": 0,
+     "trusted": 0,
+     "trusted_ratio": 0
+    }
+   ],
+   "daytime_7_22_mean_ratio": 0.138
+  }
+ },
+ "qa": {
+  "routes": 42,
+  "signal_crossings": 121,
+  "direction_matched": 59,
+  "direction_match_ratio": 0.488,
+  "wait_known": 3,
+  "wait_total": 68,
+  "crossing_coverage": 0.044,
+  "routes_with_any_wait_shown": 2,
+  "routes_with_signals": 34,
+  "note": "QA 결과를 만든 시각의 요일 종류·시간대 기준(빠른 길)"
+ }
+}
