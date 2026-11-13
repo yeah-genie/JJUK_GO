@@ -4512,3 +4512,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-13T21:28:52,22654,2200,net_error,,TimeoutError
 2026-11-13T21:33:57,22654,2200,net_error,,TimeoutError
 2026-11-13T21:38:42,22654,2200,http_404,,
+2026-11-13T21:44:07,2974,2200,net_error,,TimeoutError
+2026-11-13T21:49:12,2974,2200,net_error,,TimeoutError
+2026-11-13T21:54:17,2974,2200,net_error,,TimeoutError
+2026-11-13T21:59:02,2974,2200,http_404,,
