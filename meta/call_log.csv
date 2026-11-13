@@ -4458,3 +4458,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-13T16:54:07,2650,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-13T16:59:21,4500,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-13T17:04:27,1977,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-13T17:09:33,2974,2200,ok,,v2xSignalPhaseTimingFusionInformation
