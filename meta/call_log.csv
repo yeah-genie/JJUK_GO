@@ -4430,3 +4430,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-13T14:32:02,3608,2200,net_error,,TimeoutError
 2026-11-13T14:37:07,3608,2200,net_error,,TimeoutError
 2026-11-13T14:41:52,3608,2200,http_404,,
+2026-11-13T14:47:17,3011,2200,net_error,,TimeoutError
+2026-11-13T14:52:22,3011,2200,net_error,,TimeoutError
+2026-11-13T14:57:27,3011,2200,net_error,,TimeoutError
+2026-11-13T15:02:12,3011,2200,http_404,,
