@@ -4550,3 +4550,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-14T00:42:02,3011,2200,net_error,,TimeoutError
 2026-11-14T00:47:07,3011,2200,net_error,,TimeoutError
 2026-11-14T00:51:52,3011,2200,http_404,,
+2026-11-14T00:57:09,2358,2200,ok,,v2xSignalPhaseTimingFusionInformation
