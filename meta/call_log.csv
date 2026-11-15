@@ -4933,3 +4933,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-15T09:08:58,452,2200,net_error,,TimeoutError
 2026-11-15T09:14:03,452,2200,net_error,,TimeoutError
 2026-11-15T09:18:48,452,2200,http_404,,
+2026-11-15T09:24:13,1537,2200,net_error,,TimeoutError
+2026-11-15T09:29:18,1537,2200,net_error,,TimeoutError
+2026-11-15T09:34:23,1537,2200,net_error,,TimeoutError
+2026-11-15T09:39:08,1537,2200,http_404,,
