@@ -4929,3 +4929,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-15T08:48:38,3011,2200,net_error,,TimeoutError
 2026-11-15T08:53:43,3011,2200,net_error,,TimeoutError
 2026-11-15T08:58:27,3011,2200,http_404,,
+2026-11-15T09:03:52,452,2200,net_error,,TimeoutError
+2026-11-15T09:08:58,452,2200,net_error,,TimeoutError
+2026-11-15T09:14:03,452,2200,net_error,,TimeoutError
+2026-11-15T09:18:48,452,2200,http_404,,
