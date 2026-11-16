@@ -5268,3 +5268,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-16T13:31:53,2975,2200,net_error,,TimeoutError
 2026-11-16T13:36:58,2975,2200,net_error,,TimeoutError
 2026-11-16T13:41:43,2975,2200,http_404,,
+2026-11-16T13:47:04,414,2200,ok,,v2xSignalPhaseTimingFusionInformation
