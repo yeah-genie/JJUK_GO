@@ -5363,3 +5363,9 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-16T22:22:34,3085,2200,net_error,,URLError
 2026-11-16T22:27:39,3085,2200,net_error,,URLError
 2026-11-16T22:32:44,3085,2200,net_error,,URLError
+2026-11-16T22:37:49,2975,2200,net_error,,URLError
+2026-11-16T22:42:55,2975,2200,net_error,,URLError
+2026-11-16T22:48:00,2975,2200,net_error,,URLError
+2026-11-16T22:53:04,2975,2200,net_error,,URLError
+2026-11-16T22:58:10,2975,2200,net_error,,URLError
+2026-11-16T23:03:14,2975,2200,net_error,,URLError
