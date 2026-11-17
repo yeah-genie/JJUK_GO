@@ -5533,3 +5533,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-17T12:46:45,2217,2200,net_error,,TimeoutError
 2026-11-17T12:51:50,2217,2200,net_error,,TimeoutError
 2026-11-17T12:56:35,2217,2200,http_404,,
+2026-11-17T13:02:00,416,2200,net_error,,TimeoutError
+2026-11-17T13:07:05,416,2200,net_error,,TimeoutError
+2026-11-17T13:12:10,416,2200,net_error,,TimeoutError
+2026-11-17T13:16:55,416,2200,http_404,,
