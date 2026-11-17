@@ -5641,3 +5641,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-17T21:55:25,2219,2200,http_404,,
 2026-11-17T22:00:50,2360,2200,net_error,,TimeoutError
 2026-11-17T22:05:38,2360,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-17T22:10:44,4500,2200,ok,,v2xSignalPhaseTimingFusionInformation
