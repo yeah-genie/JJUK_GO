@@ -6015,3 +6015,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-19T05:36:55,1537,2200,net_error,,TimeoutError
 2026-11-19T05:41:45,1537,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-19T05:46:56,422,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-19T05:51:53,1619,2200,ok,,v2xSignalPhaseTimingFusionInformation
