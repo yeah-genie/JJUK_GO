@@ -6226,3 +6226,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-19T23:29:33,1619,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-19T23:34:38,2627,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-19T23:39:24,2691,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-19T23:44:45,23007,2200,net_error,,TimeoutError
+2026-11-19T23:49:49,23007,2200,net_error,,TimeoutError
+2026-11-19T23:54:55,23007,2200,net_error,,TimeoutError
+2026-11-19T23:59:40,23007,2200,http_404,,
