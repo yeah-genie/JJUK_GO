@@ -6083,3 +6083,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-19T11:22:35,2219,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-19T11:27:42,3051,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-19T11:32:48,4500,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-19T11:37:40,3086,2200,ok,,v2xSignalPhaseTimingFusionInformation
