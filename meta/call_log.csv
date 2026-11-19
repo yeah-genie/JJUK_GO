@@ -6181,3 +6181,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-19T19:40:44,33914,2200,net_error,,TimeoutError
 2026-11-19T19:45:49,33914,2200,net_error,,TimeoutError
 2026-11-19T19:50:34,33914,2200,http_404,,
+2026-11-19T19:55:59,2212,2200,net_error,,TimeoutError
+2026-11-19T20:01:04,2212,2200,net_error,,TimeoutError
+2026-11-19T20:06:09,2212,2200,net_error,,TimeoutError
+2026-11-19T20:10:54,2212,2200,http_404,,
