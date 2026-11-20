@@ -6259,3 +6259,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-20T02:17:15,4383,2200,net_error,,TimeoutError
 2026-11-20T02:22:19,4383,2200,net_error,,TimeoutError
 2026-11-20T02:27:05,4383,2200,http_404,,
+2026-11-20T02:32:29,2974,2200,net_error,,TimeoutError
+2026-11-20T02:37:35,2974,2200,net_error,,TimeoutError
+2026-11-20T02:42:40,2974,2200,net_error,,TimeoutError
+2026-11-20T02:47:25,2974,2200,http_404,,
