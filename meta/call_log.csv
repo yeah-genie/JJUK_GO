@@ -6349,3 +6349,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-20T09:54:45,4500,2200,net_error,,TimeoutError
 2026-11-20T09:59:50,4500,2200,net_error,,TimeoutError
 2026-11-20T10:04:36,4500,2200,http_404,,
+2026-11-20T10:09:44,3372,2200,ok,,v2xSignalPhaseTimingFusionInformation
