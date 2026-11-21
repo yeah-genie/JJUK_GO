@@ -6729,3 +6729,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-21T18:06:25,1619,2200,net_error,,TimeoutError
 2026-11-21T18:11:30,1619,2200,net_error,,TimeoutError
 2026-11-21T18:16:15,1619,2200,http_404,,
+2026-11-21T18:21:40,21202,2200,net_error,,TimeoutError
+2026-11-21T18:26:46,21202,2200,net_error,,TimeoutError
+2026-11-21T18:31:50,21202,2200,net_error,,TimeoutError
+2026-11-21T18:36:35,21202,2200,http_404,,
