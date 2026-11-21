@@ -6583,3 +6583,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-21T05:44:13,3908,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-21T05:49:21,2219,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-21T05:54:13,1082,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-21T05:59:29,4500,2200,net_error,,TimeoutError
+2026-11-21T06:04:34,4500,2200,net_error,,TimeoutError
+2026-11-21T06:09:40,4500,2200,net_error,,TimeoutError
+2026-11-21T06:14:24,4500,2200,http_404,,
