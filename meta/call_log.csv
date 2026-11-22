@@ -7058,3 +7058,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-22T21:58:50,3019,2200,net_error,,TimeoutError
 2026-11-22T22:03:35,3019,2200,http_404,,
 2026-11-22T22:08:44,1537,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-22T22:13:50,3917,2200,ok,,v2xSignalPhaseTimingFusionInformation
