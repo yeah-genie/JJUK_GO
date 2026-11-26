@@ -7939,3 +7939,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-26T00:37:16,3011,2200,net_error,,TimeoutError
 2026-11-26T00:42:22,3011,2200,net_error,,TimeoutError
 2026-11-26T00:47:07,3011,2200,http_404,,
+2026-11-26T00:52:32,3170,2200,net_error,,TimeoutError
+2026-11-26T00:57:36,3170,2200,net_error,,TimeoutError
+2026-11-26T01:02:42,3170,2200,net_error,,TimeoutError
+2026-11-26T01:07:27,3170,2200,http_404,,
