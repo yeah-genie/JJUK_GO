@@ -8049,3 +8049,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-26T09:56:06,1796,2200,http_404,,
 2026-11-26T10:01:12,1619,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-26T10:06:17,1619,2200,http_404,,
+2026-11-26T10:11:22,131,2200,ok,,v2xSignalPhaseTimingFusionInformation
