@@ -8365,3 +8365,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-27T12:42:47,2975,2200,net_error,,TimeoutError
 2026-11-27T12:47:52,2975,2200,net_error,,TimeoutError
 2026-11-27T12:52:36,2975,2200,http_404,,
+2026-11-27T12:57:56,1385,2200,ok,,v2xSignalPhaseTimingFusionInformation
