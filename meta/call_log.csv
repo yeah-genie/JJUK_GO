@@ -8485,3 +8485,4 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-27T22:52:41,3011,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-27T22:57:44,966,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-27T23:02:52,1537,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-27T23:07:59,20967,2200,ok,,v2xSignalPhaseTimingFusionInformation
