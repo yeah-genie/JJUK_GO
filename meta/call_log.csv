@@ -8443,3 +8443,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-27T19:19:18,1537,2200,net_error,,TimeoutError
 2026-11-27T19:24:23,1537,2200,net_error,,TimeoutError
 2026-11-27T19:29:08,1537,2200,http_404,,
+2026-11-27T19:34:33,20963,2200,net_error,,TimeoutError
+2026-11-27T19:39:38,20963,2200,net_error,,TimeoutError
+2026-11-27T19:44:42,20963,2200,net_error,,TimeoutError
+2026-11-27T19:49:28,20963,2200,http_404,,
