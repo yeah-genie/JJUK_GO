@@ -8565,3 +8565,9 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-28T05:39:10,1537,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-28T05:44:33,2987,2200,ok,,v2xSignalPhaseTimingFusionInformation
 2026-11-28T05:49:21,1619,2200,ok,,v2xSignalPhaseTimingFusionInformation
+2026-11-28T05:54:42,903,2200,net_error,,TimeoutError
+2026-11-28T05:59:27,903,2200,429_repeat,14,
+2026-11-28T06:04:53,903,2200,net_error,,TimeoutError
+2026-11-28T06:09:58,903,2200,net_error,,TimeoutError
+2026-11-28T06:15:03,903,2200,net_error,,TimeoutError
+2026-11-28T06:19:48,903,2200,http_404,,
