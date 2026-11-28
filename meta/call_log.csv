@@ -8612,3 +8612,6 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-28T09:38:23,2974,2200,net_error,,TimeoutError
 2026-11-28T09:43:28,2974,2200,net_error,,TimeoutError
 2026-11-28T09:48:14,2974,2200,http_404,,
+2026-11-28T09:53:38,1744,2200,net_error,,TimeoutError
+2026-11-28T09:58:43,1744,2200,net_error,,TimeoutError
+2026-11-28T10:03:30,1744,2200,ok,,v2xSignalPhaseTimingFusionInformation
