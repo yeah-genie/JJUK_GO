@@ -8510,3 +8510,7 @@ utc,itst_id,rows,outcome,retry_after_s,extra
 2026-11-28T00:59:52,22268,2200,net_error,,TimeoutError
 2026-11-28T01:04:58,22268,2200,net_error,,TimeoutError
 2026-11-28T01:09:42,22268,2200,http_404,,
+2026-11-28T01:15:08,2974,2200,net_error,,TimeoutError
+2026-11-28T01:20:13,2974,2200,net_error,,TimeoutError
+2026-11-28T01:25:18,2974,2200,net_error,,TimeoutError
+2026-11-28T01:30:03,2974,2200,http_404,,
